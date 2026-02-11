@@ -1,0 +1,55 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'person.freezed.dart';
+part 'person.g.dart';
+
+@freezed
+class Person with _$Person {
+  const Person._();
+
+  const factory Person({
+    required String id,
+    required String name,
+    String? phone,
+    String? note,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    DateTime? deletedAt,
+    @Default(0) double netBalance,
+  }) = _Person;
+
+  factory Person.fromJson(Map<String, dynamic> json) =>
+      _$PersonFromJson(json);
+
+  bool get isDeleted => deletedAt != null;
+
+  Person copyWithDelete() => copyWith(deletedAt: DateTime.now());
+
+  Map<String, dynamic> toSheetRow() {
+    return {
+      'id': id,
+      'name': name,
+      'phone': phone ?? '',
+      'note': note ?? '',
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'deleted_at': deletedAt?.toIso8601String() ?? '',
+    };
+  }
+
+  static Person fromSheetRow(List<dynamic> row) {
+    return Person(
+      id: row[0]?.toString() ?? '',
+      name: row[1]?.toString() ?? '',
+      phone: row[2]?.toString().isNotEmpty == true ? row[2].toString() : null,
+      note: row[3]?.toString().isNotEmpty == true ? row[3].toString() : null,
+      createdAt: DateTime.parse(
+          row[4]?.toString() ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(
+          row[5]?.toString() ?? DateTime.now().toIso8601String()),
+      deletedAt: row[6]?.toString().isNotEmpty == true
+          ? DateTime.parse(row[6].toString())
+          : null,
+    );
+  }
+}
