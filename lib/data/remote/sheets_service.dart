@@ -709,6 +709,42 @@ class SheetsService {
     }
   }
 
+  // Person read operations
+  Future<List<Person>> getAllPeople(String spreadsheetId) async {
+    try {
+      final api = await _api;
+      final response = await api.spreadsheets.values.get(
+        spreadsheetId,
+        SheetConstants.getDataRange(SheetConstants.peopleSheet),
+      );
+
+      final values = response.values;
+      if (values == null || values.isEmpty) return [];
+
+      return values.map((row) => Person.fromSheetRow(row)).toList();
+    } catch (e) {
+      throw SheetsException.readFailed(e);
+    }
+  }
+
+  // Loan read operations
+  Future<List<Loan>> getAllLoans(String spreadsheetId) async {
+    try {
+      final api = await _api;
+      final response = await api.spreadsheets.values.get(
+        spreadsheetId,
+        SheetConstants.getDataRange(SheetConstants.loansSheet),
+      );
+
+      final values = response.values;
+      if (values == null || values.isEmpty) return [];
+
+      return values.map((row) => Loan.fromSheetRow(row)).toList();
+    } catch (e) {
+      throw SheetsException.readFailed(e);
+    }
+  }
+
   Future<void> updateLoan(
     String spreadsheetId,
     Loan loan,
@@ -727,6 +763,67 @@ class SheetsService {
       row['updated_at'],
       row['deleted_at'],
     ], rowIndex);
+  }
+
+  /// Ensures that People and Loans sheets exist in the spreadsheet.
+  /// Creates any missing sheets with headers. This handles the case where
+  /// a user connected to an existing spreadsheet created before the loans feature.
+  Future<void> ensureSheetsExist(String spreadsheetId) async {
+    final api = await _api;
+    final spreadsheet = await api.spreadsheets.get(spreadsheetId);
+    final existingNames = spreadsheet.sheets!
+        .map((s) => s.properties!.title!)
+        .toSet();
+
+    final requiredSheets = {
+      SheetConstants.peopleSheet: SheetConstants.personHeaders,
+      SheetConstants.loansSheet: SheetConstants.loanHeaders,
+    };
+
+    final missing = <String, List<String>>{};
+    for (final entry in requiredSheets.entries) {
+      if (!existingNames.contains(entry.key)) {
+        missing[entry.key] = entry.value;
+      }
+    }
+
+    if (missing.isEmpty) {
+      debugPrint('ensureSheetsExist: all required sheets present');
+      return;
+    }
+
+    debugPrint('ensureSheetsExist: creating missing sheets: ${missing.keys.join(', ')}');
+
+    // Add missing sheets
+    final addRequests = missing.keys.map((name) => sheets.Request(
+      addSheet: sheets.AddSheetRequest(
+        properties: sheets.SheetProperties(
+          title: name,
+          gridProperties: sheets.GridProperties(frozenRowCount: 1),
+        ),
+      ),
+    )).toList();
+
+    await api.spreadsheets.batchUpdate(
+      sheets.BatchUpdateSpreadsheetRequest(requests: addRequests),
+      spreadsheetId,
+    );
+
+    // Add headers to new sheets
+    final headerRanges = missing.entries.map((e) => sheets.ValueRange(
+      range: '${e.key}!A1',
+      values: [e.value],
+    )).toList();
+
+    await api.spreadsheets.values.batchUpdate(
+      sheets.BatchUpdateValuesRequest(
+        valueInputOption: 'RAW',
+        data: headerRanges,
+      ),
+      spreadsheetId,
+    );
+
+    debugPrint('ensureSheetsExist: created ${missing.length} sheet(s) with headers');
   }
 
   Future<String?> getSpreadsheetUrl(String spreadsheetId) async {

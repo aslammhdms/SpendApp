@@ -140,6 +140,17 @@ class SyncQueueDao {
     return await db.delete('sync_queue');
   }
 
+  Future<int> resetFailedItems(List<String> entityTypes) async {
+    if (entityTypes.isEmpty) return 0;
+    final db = await _db;
+    final placeholders = entityTypes.map((_) => '?').join(', ');
+    return await db.rawUpdate(
+      'UPDATE sync_queue SET retry_count = 0, error_message = NULL '
+      'WHERE entity_type IN ($placeholders) AND retry_count >= 3',
+      entityTypes,
+    );
+  }
+
   Future<int> deleteCompleted() async {
     final db = await _db;
     return await db.delete(
