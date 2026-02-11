@@ -16,6 +16,9 @@ import '../models/app_settings.dart';
 import '../local/local_transaction_dao.dart';
 import '../local/local_category_dao.dart';
 import '../local/local_account_dao.dart';
+import '../local/local_budget_dao.dart';
+import '../local/local_person_dao.dart';
+import '../local/local_loan_dao.dart';
 import '../local/sync_queue_dao.dart';
 import 'sheets_service.dart';
 
@@ -32,6 +35,9 @@ class SyncEngine {
   final LocalTransactionDao _transactionDao;
   final LocalCategoryDao _categoryDao;
   final LocalAccountDao _accountDao;
+  final LocalBudgetDao _budgetDao;
+  final LocalPersonDao _personDao;
+  final LocalLoanDao _loanDao;
   final SyncQueueDao _syncQueueDao;
 
   final _statusController = StreamController<SyncStatus>.broadcast();
@@ -52,15 +58,40 @@ class SyncEngine {
     required LocalTransactionDao transactionDao,
     required LocalCategoryDao categoryDao,
     required LocalAccountDao accountDao,
+    required LocalBudgetDao budgetDao,
+    required LocalPersonDao personDao,
+    required LocalLoanDao loanDao,
     required SyncQueueDao syncQueueDao,
   })  : _sheetsService = sheetsService,
         _transactionDao = transactionDao,
         _categoryDao = categoryDao,
         _accountDao = accountDao,
+        _budgetDao = budgetDao,
+        _personDao = personDao,
+        _loanDao = loanDao,
         _syncQueueDao = syncQueueDao;
 
   Future<void> initialize(String spreadsheetId) async {
     _spreadsheetId = spreadsheetId;
+
+    // Ensure People/Loans sheets exist (handles pre-loans spreadsheets)
+    // Use a timeout so this never blocks app startup
+    try {
+      await _sheetsService.ensureSheetsExist(spreadsheetId).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('SyncEngine: ensureSheetsExist timed out, will retry next sync');
+        },
+      );
+      // Reset any previously-failed person/loan sync items so they get retried
+      final resetCount = await _syncQueueDao.resetFailedItems(['person', 'loan']);
+      if (resetCount > 0) {
+        debugPrint('SyncEngine: reset $resetCount failed person/loan sync items');
+      }
+    } catch (e) {
+      debugPrint('SyncEngine: ensureSheetsExist failed (will retry next sync): $e');
+    }
+
     await _checkPendingSync();
     _startPeriodicSync();
   }
@@ -89,8 +120,14 @@ class SyncEngine {
 
   Future<bool> isOnline() async {
     final result = await Connectivity().checkConnectivity();
+    // connectivity_plus 5.x returns List<ConnectivityResult>
+    if (result is List) {
+      return !(result as List).contains(ConnectivityResult.none);
+    }
     return result != ConnectivityResult.none;
   }
+
+  static const String _lastSyncKey = 'settings_last_sync_at';
 
   Future<void> sync() async {
     if (_isSyncing || _spreadsheetId == null) return;
@@ -109,11 +146,13 @@ class SyncEngine {
       await _pushPendingChanges();
 
       // Then pull remote changes
-      await _pullRemoteChanges();
+      final allPulled = await _pullRemoteChanges();
 
-      // Update last sync time
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('last_sync_at', DateTime.now().toIso8601String());
+      // Only update last sync time if all pulls succeeded
+      if (allPulled) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
+      }
 
       _updateStatus(SyncStatus.synced);
     } catch (e, stackTrace) {
@@ -137,17 +176,85 @@ class SyncEngine {
     _updateStatus(SyncStatus.syncing);
 
     try {
-      // Clear local data
-      await _transactionDao.deleteAll();
-      await _categoryDao.deleteAll();
-      await _accountDao.deleteAll();
+      // Pull all data into memory FIRST — before clearing anything
+      List<Transaction>? transactions;
+      List<Category>? categories;
+      List<Account>? accounts;
+      List<Budget>? budgets;
+      List<Person>? people;
+      List<Loan>? loans;
+      bool allSucceeded = true;
+
+      transactions = await _pullWithRetry(
+        () => _sheetsService.getAllTransactions(_spreadsheetId!),
+        'transactions',
+      );
+      if (transactions == null) allSucceeded = false;
+
+      categories = await _pullWithRetry(
+        () => _sheetsService.getAllCategories(_spreadsheetId!),
+        'categories',
+      );
+      if (categories == null) allSucceeded = false;
+
+      accounts = await _pullWithRetry(
+        () => _sheetsService.getAllAccounts(_spreadsheetId!),
+        'accounts',
+      );
+      if (accounts == null) allSucceeded = false;
+
+      budgets = await _pullWithRetry(
+        () => _sheetsService.getAllBudgets(_spreadsheetId!),
+        'budgets',
+      );
+      if (budgets == null) allSucceeded = false;
+
+      people = await _pullWithRetry(
+        () => _sheetsService.getAllPeople(_spreadsheetId!),
+        'people',
+      );
+      if (people == null) allSucceeded = false;
+
+      loans = await _pullWithRetry(
+        () => _sheetsService.getAllLoans(_spreadsheetId!),
+        'loans',
+      );
+      if (loans == null) allSucceeded = false;
+
+      // Now clear + insert only for entities that pulled successfully
+      if (transactions != null) {
+        await _transactionDao.deleteAll();
+        if (transactions.isNotEmpty) await _transactionDao.insertBatch(transactions);
+      }
+      if (categories != null) {
+        await _categoryDao.deleteAll();
+        if (categories.isNotEmpty) await _categoryDao.insertBatch(categories);
+      }
+      if (accounts != null) {
+        await _accountDao.deleteAll();
+        if (accounts.isNotEmpty) await _accountDao.insertBatch(accounts);
+      }
+      if (budgets != null) {
+        await _budgetDao.deleteAll();
+        if (budgets.isNotEmpty) await _budgetDao.insertBatch(budgets);
+      }
+      if (people != null) {
+        await _personDao.deleteAll();
+        if (people.isNotEmpty) await _personDao.insertBatch(people);
+      }
+      if (loans != null) {
+        await _loanDao.deleteAll();
+        if (loans.isNotEmpty) await _loanDao.insertBatch(loans);
+      }
+
+      // Clear sync queue regardless
       await _syncQueueDao.deleteAll();
 
-      // Pull all data from Sheets
-      await _pullRemoteChanges();
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('last_sync_at', DateTime.now().toIso8601String());
+      // Only set last_sync_at if ALL pulls succeeded — so next startup retries
+      if (allSucceeded) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
+      }
 
       _updateStatus(SyncStatus.synced);
     } catch (e) {
@@ -159,15 +266,41 @@ class SyncEngine {
     }
   }
 
+  /// Retries a pull operation once on failure with a 2-second delay.
+  /// Returns null if both attempts fail.
+  Future<List<T>?> _pullWithRetry<T>(
+    Future<List<T>> Function() pullFn,
+    String entityName,
+  ) async {
+    try {
+      return await pullFn();
+    } catch (e) {
+      debugPrint('Pull $entityName failed, retrying in 2s: $e');
+      await Future.delayed(const Duration(seconds: 2));
+      try {
+        return await pullFn();
+      } catch (e2, st) {
+        debugPrint('Pull $entityName retry failed: $e2');
+        debugPrint('$st');
+        return null;
+      }
+    }
+  }
+
   Future<void> _pushPendingChanges() async {
     final pendingItems = await _syncQueueDao.getPending();
+    if (pendingItems.isEmpty) return;
+
+    debugPrint('SyncEngine: pushing ${pendingItems.length} pending items');
 
     for (final item in pendingItems) {
       try {
         await _processSyncItem(item);
         await _syncQueueDao.delete(item.id);
+        debugPrint('SyncEngine: synced ${item.entityType} ${item.operation} (${item.entityId})');
       } catch (e) {
-        debugPrint('Failed to sync item ${item.id}: $e');
+        debugPrint('SyncEngine: failed to sync ${item.entityType} ${item.operation} '
+            '(${item.entityId}, retry ${item.retryCount + 1}/3): $e');
         await _syncQueueDao.incrementRetryCount(
           item.id,
           errorMessage: e.toString(),
@@ -331,36 +464,83 @@ class SyncEngine {
     }
   }
 
-  Future<void> _pullRemoteChanges() async {
+  /// Pulls remote changes incrementally. Returns true if ALL pulls succeeded.
+  Future<bool> _pullRemoteChanges() async {
+    bool allSucceeded = true;
+
     // Pull transactions
-    try {
-      final remoteTransactions = await _sheetsService.getAllTransactions(_spreadsheetId!);
-      if (remoteTransactions.isNotEmpty) {
-        await _transactionDao.insertBatch(remoteTransactions);
-      }
-    } catch (e) {
-      debugPrint('Pull transactions failed (may be empty): $e');
+    final transactions = await _pullWithRetry(
+      () => _sheetsService.getAllTransactions(_spreadsheetId!),
+      'transactions',
+    );
+    if (transactions != null && transactions.isNotEmpty) {
+      await _transactionDao.insertBatch(transactions);
+      debugPrint('Pulled ${transactions.length} transactions from sheet');
+    } else if (transactions == null) {
+      allSucceeded = false;
     }
 
     // Pull categories
-    try {
-      final remoteCategories = await _sheetsService.getAllCategories(_spreadsheetId!);
-      if (remoteCategories.isNotEmpty) {
-        await _categoryDao.insertBatch(remoteCategories);
-      }
-    } catch (e) {
-      debugPrint('Pull categories failed (may be empty): $e');
+    final categories = await _pullWithRetry(
+      () => _sheetsService.getAllCategories(_spreadsheetId!),
+      'categories',
+    );
+    if (categories != null && categories.isNotEmpty) {
+      await _categoryDao.insertBatch(categories);
+      debugPrint('Pulled ${categories.length} categories from sheet');
+    } else if (categories == null) {
+      allSucceeded = false;
     }
 
     // Pull accounts
-    try {
-      final remoteAccounts = await _sheetsService.getAllAccounts(_spreadsheetId!);
-      if (remoteAccounts.isNotEmpty) {
-        await _accountDao.insertBatch(remoteAccounts);
-      }
-    } catch (e) {
-      debugPrint('Pull accounts failed (may be empty): $e');
+    final accounts = await _pullWithRetry(
+      () => _sheetsService.getAllAccounts(_spreadsheetId!),
+      'accounts',
+    );
+    if (accounts != null && accounts.isNotEmpty) {
+      await _accountDao.insertBatch(accounts);
+      debugPrint('Pulled ${accounts.length} accounts from sheet');
+    } else if (accounts == null) {
+      allSucceeded = false;
     }
+
+    // Pull budgets
+    final budgets = await _pullWithRetry(
+      () => _sheetsService.getAllBudgets(_spreadsheetId!),
+      'budgets',
+    );
+    if (budgets != null && budgets.isNotEmpty) {
+      await _budgetDao.insertBatch(budgets);
+      debugPrint('Pulled ${budgets.length} budgets from sheet');
+    } else if (budgets == null) {
+      allSucceeded = false;
+    }
+
+    // Pull people
+    final people = await _pullWithRetry(
+      () => _sheetsService.getAllPeople(_spreadsheetId!),
+      'people',
+    );
+    if (people != null && people.isNotEmpty) {
+      await _personDao.insertBatch(people);
+      debugPrint('Pulled ${people.length} people from sheet');
+    } else if (people == null) {
+      allSucceeded = false;
+    }
+
+    // Pull loans
+    final loans = await _pullWithRetry(
+      () => _sheetsService.getAllLoans(_spreadsheetId!),
+      'loans',
+    );
+    if (loans != null && loans.isNotEmpty) {
+      await _loanDao.insertBatch(loans);
+      debugPrint('Pulled ${loans.length} loans from sheet');
+    } else if (loans == null) {
+      allSucceeded = false;
+    }
+
+    return allSucceeded;
   }
 
   // Queue operations for batch processing
@@ -391,7 +571,7 @@ class SyncEngine {
 
   Future<DateTime?> getLastSyncTime() async {
     final prefs = await SharedPreferences.getInstance();
-    final lastSync = prefs.getString('last_sync_at');
+    final lastSync = prefs.getString(_lastSyncKey);
     return lastSync != null ? DateTime.parse(lastSync) : null;
   }
 
