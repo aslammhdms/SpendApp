@@ -20,10 +20,9 @@ class SheetsService {
   SheetsService(this._authService);
 
   Future<sheets.SheetsApi> get _api async {
-    if (_sheetsApi == null) {
-      final client = await _authService.getAuthClient();
-      _sheetsApi = sheets.SheetsApi(client);
-    }
+    // Always get a fresh auth client to avoid stale token issues
+    final client = await _authService.getAuthClient();
+    _sheetsApi = sheets.SheetsApi(client);
     return _sheetsApi!;
   }
 
@@ -43,6 +42,8 @@ class SheetsService {
           _createSheet(SheetConstants.recurringSheet, 4),
           _createSheet(SheetConstants.settingsSheet, 5),
           _createSheet(SheetConstants.metaSheet, 6),
+          _createSheet(SheetConstants.peopleSheet, 7),
+          _createSheet(SheetConstants.loansSheet, 8),
         ],
       );
 
@@ -84,6 +85,8 @@ class SheetsService {
       _createHeaderRequest(SheetConstants.recurringSheet, SheetConstants.recurringHeaders),
       _createHeaderRequest(SheetConstants.settingsSheet, SheetConstants.settingsHeaders),
       _createHeaderRequest(SheetConstants.metaSheet, SheetConstants.metaHeaders),
+      _createHeaderRequest(SheetConstants.peopleSheet, SheetConstants.personHeaders),
+      _createHeaderRequest(SheetConstants.loansSheet, SheetConstants.loanHeaders),
     ];
 
     // Use batchUpdate for efficiency
@@ -115,6 +118,14 @@ class SheetsService {
       sheets.ValueRange(
         range: '${SheetConstants.metaSheet}!A1',
         values: [SheetConstants.metaHeaders],
+      ),
+      sheets.ValueRange(
+        range: '${SheetConstants.peopleSheet}!A1',
+        values: [SheetConstants.personHeaders],
+      ),
+      sheets.ValueRange(
+        range: '${SheetConstants.loansSheet}!A1',
+        values: [SheetConstants.loanHeaders],
       ),
     ];
 

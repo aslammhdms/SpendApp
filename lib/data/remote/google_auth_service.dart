@@ -82,14 +82,11 @@ class GoogleAuthService {
   }
 
   Future<auth.AuthClient> getAuthClient() async {
-    if (_authClient != null) {
-      return _authClient!;
-    }
-
     if (_currentUser == null) {
       throw AuthException.notAuthenticated();
     }
 
+    // Always recreate the auth client to ensure a fresh token
     await _createAuthClient();
     return _authClient!;
   }
