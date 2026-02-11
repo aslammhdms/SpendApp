@@ -1,13 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/person.dart';
 import '../../../data/models/loan.dart';
-import '../../../data/local/local_person_dao.dart';
 import '../../../data/repositories/person_repository.dart';
 import '../../../data/repositories/loan_repository.dart';
 import '../../home/providers/dashboard_provider.dart';
-
-// DAO providers
-final localPersonDaoProvider = Provider((ref) => LocalPersonDao());
 
 // Repository providers
 final personRepositoryProvider = Provider((ref) => PersonRepository(

@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../data/models/account.dart';
+import '../../../data/remote/sync_engine.dart';
 import '../providers/accounts_provider.dart';
+import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 
 class AccountsScreen extends ConsumerStatefulWidget {
@@ -15,12 +18,25 @@ class AccountsScreen extends ConsumerStatefulWidget {
 }
 
 class _AccountsScreenState extends ConsumerState<AccountsScreen> {
+  StreamSubscription<SyncStatus>? _syncSubscription;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(accountsProvider.notifier).loadAccounts();
+      _syncSubscription = ref.read(syncEngineProvider).statusStream.listen((status) {
+        if (status == SyncStatus.synced && mounted) {
+          ref.read(accountsProvider.notifier).loadAccounts();
+        }
+      });
     });
+  }
+
+  @override
+  void dispose() {
+    _syncSubscription?.cancel();
+    super.dispose();
   }
 
   @override

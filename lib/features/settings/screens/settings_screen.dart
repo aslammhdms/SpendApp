@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency_utils.dart';
+import '../../../core/services/biometric_service.dart';
 import '../../../data/remote/sync_engine.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/sync_status_tile.dart';
@@ -120,7 +121,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: const Text('App Lock'),
             subtitle: const Text('Require biometric authentication'),
             value: settings.biometricLockEnabled,
-            onChanged: (value) {
+            onChanged: (value) async {
+              if (value) {
+                final biometricService =
+                    ref.read(biometricServiceProvider);
+                final canAuth = await biometricService.canAuthenticate();
+                if (!canAuth) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Biometric authentication is not available on this device',
+                        ),
+                      ),
+                    );
+                  }
+                  return;
+                }
+                final authenticated = await biometricService.authenticate(
+                  'Verify to enable App Lock',
+                );
+                if (!authenticated) return;
+              }
               settingsNotifier.setBiometricLockEnabled(value);
             },
           ),
@@ -203,9 +225,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             trailing: currentCurrency == currency.code
                 ? const Icon(Icons.check, color: AppColors.primary)
                 : null,
-            onTap: () {
-              ref.read(settingsProvider.notifier).setCurrency(currency.code);
-              Navigator.pop(context);
+            onTap: () async {
+              await ref.read(settingsProvider.notifier).setCurrency(currency.code);
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
             },
           );
         }).toList(),

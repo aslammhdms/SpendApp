@@ -101,7 +101,9 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
       }
 
       if (mounted) {
-        context.pop();
+        await ref.read(budgetsProvider.notifier).loadBudgets();
+        await ref.read(dashboardProvider.notifier).refresh();
+        if (mounted) context.pop();
       }
     } catch (e) {
       if (mounted) {

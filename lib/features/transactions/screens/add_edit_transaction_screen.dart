@@ -190,8 +190,8 @@ class _AddEditTransactionScreenState
         );
 
         if (mounted) {
-          ref.read(dashboardProvider.notifier).refresh();
-          context.pop();
+          await ref.read(dashboardProvider.notifier).refresh();
+          if (mounted) context.pop();
         }
       } else {
         // Save as transaction
@@ -226,9 +226,9 @@ class _AddEditTransactionScreenState
         }
 
         if (mounted) {
-          ref.read(dashboardProvider.notifier).refresh();
-          ref.read(transactionsProvider.notifier).loadTransactions(refresh: true);
-          context.pop();
+          await ref.read(dashboardProvider.notifier).refresh();
+          await ref.read(transactionsProvider.notifier).loadTransactions(refresh: true);
+          if (mounted) context.pop();
         }
       }
     } catch (e) {

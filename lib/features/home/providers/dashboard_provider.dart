@@ -6,6 +6,8 @@ import '../../../data/repositories/account_repository.dart';
 import '../../../data/repositories/budget_repository.dart';
 import '../../../data/repositories/loan_repository.dart';
 import '../../../data/local/local_loan_dao.dart';
+import '../../../data/local/local_person_dao.dart';
+import '../../../data/local/local_budget_dao.dart';
 import '../../../data/local/local_transaction_dao.dart';
 import '../../../data/local/local_account_dao.dart';
 import '../../../data/local/local_category_dao.dart';
@@ -145,12 +147,19 @@ final syncQueueDaoProvider = Provider<SyncQueueDao>((ref) {
   return SyncQueueDao();
 });
 
+final localBudgetDaoProvider = Provider((ref) {
+  return LocalBudgetDao();
+});
+
 final syncEngineProvider = Provider<SyncEngine>((ref) {
   return SyncEngine(
     sheetsService: ref.watch(sheetsServiceProvider),
     transactionDao: ref.watch(localTransactionDaoProvider),
     categoryDao: ref.watch(localCategoryDaoProvider),
     accountDao: ref.watch(localAccountDaoProvider),
+    budgetDao: ref.watch(localBudgetDaoProvider),
+    personDao: ref.watch(localPersonDaoProvider),
+    loanDao: ref.watch(localLoanDaoProvider),
     syncQueueDao: ref.watch(syncQueueDaoProvider),
   );
 });
@@ -189,6 +198,10 @@ final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
     syncQueueDao: ref.watch(syncQueueDaoProvider),
     syncEngine: ref.watch(syncEngineProvider),
   );
+});
+
+final localPersonDaoProvider = Provider((ref) {
+  return LocalPersonDao();
 });
 
 final localLoanDaoProvider = Provider((ref) {

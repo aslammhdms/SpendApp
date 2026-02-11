@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/category.dart';
+import '../../../data/remote/sync_engine.dart';
 import '../providers/budgets_provider.dart';
 import '../widgets/budget_card.dart';
+import '../../home/providers/dashboard_provider.dart';
 import '../../transactions/providers/transactions_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 
@@ -16,12 +19,25 @@ class BudgetsScreen extends ConsumerStatefulWidget {
 }
 
 class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
+  StreamSubscription<SyncStatus>? _syncSubscription;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(budgetsProvider.notifier).loadBudgets();
+      _syncSubscription = ref.read(syncEngineProvider).statusStream.listen((status) {
+        if (status == SyncStatus.synced && mounted) {
+          ref.read(budgetsProvider.notifier).loadBudgets();
+        }
+      });
     });
+  }
+
+  @override
+  void dispose() {
+    _syncSubscription?.cancel();
+    super.dispose();
   }
 
   @override
