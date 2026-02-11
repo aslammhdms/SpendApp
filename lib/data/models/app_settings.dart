@@ -12,7 +12,7 @@ class AppSettings with _$AppSettings {
     @Default('system') String themeMode,
     @Default(true) bool notificationsEnabled,
     @Default(true) bool budgetAlertsEnabled,
-    @Default(true) bool biometricLockEnabled,
+    @Default(false) bool biometricLockEnabled,
     String? spreadsheetId,
     String? spreadsheetUrl,
     DateTime? lastSyncAt,

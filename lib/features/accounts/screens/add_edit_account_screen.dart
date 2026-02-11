@@ -111,7 +111,9 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
       }
 
       if (mounted) {
-        context.pop();
+        await ref.read(accountsProvider.notifier).loadAccounts();
+        await ref.read(dashboardProvider.notifier).refresh();
+        if (mounted) context.pop();
       }
     } catch (e) {
       if (mounted) {

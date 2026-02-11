@@ -6,6 +6,7 @@ import '../../../data/models/loan.dart';
 import '../../../data/models/person.dart';
 import '../providers/loans_provider.dart';
 import '../../settings/providers/settings_provider.dart';
+import '../../home/providers/dashboard_provider.dart';
 
 class AddLoanScreen extends ConsumerStatefulWidget {
   final String? personId;
@@ -110,7 +111,8 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
       }
 
       if (mounted) {
-        Navigator.pop(context);
+        await ref.read(dashboardProvider.notifier).refresh();
+        if (mounted) Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {

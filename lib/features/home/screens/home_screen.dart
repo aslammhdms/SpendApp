@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../data/remote/sync_engine.dart';
 import '../../../shared/widgets/sync_indicator.dart';
 import '../providers/dashboard_provider.dart';
 import '../widgets/monthly_summary_card.dart';
@@ -19,13 +21,30 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  StreamSubscription<SyncStatus>? _syncSubscription;
+
   @override
   void initState() {
     super.initState();
     // Load dashboard data on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(dashboardProvider.notifier).refresh();
+      _listenToSync();
     });
+  }
+
+  void _listenToSync() {
+    _syncSubscription = ref.read(syncEngineProvider).statusStream.listen((status) {
+      if (status == SyncStatus.synced && mounted) {
+        ref.read(dashboardProvider.notifier).refresh();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _syncSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _handleRefresh() async {

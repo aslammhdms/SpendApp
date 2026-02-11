@@ -4,7 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/category_defaults.dart';
 import '../../../data/models/category.dart';
 import '../providers/categories_provider.dart';
-import '../../transactions/providers/transactions_provider.dart';
+import '../../transactions/providers/transactions_provider.dart' show expenseCategoriesProvider, incomeCategoriesProvider;
 
 class CategoriesManagerScreen extends ConsumerStatefulWidget {
   const CategoriesManagerScreen({super.key});
@@ -158,6 +158,8 @@ class _CategoriesManagerScreenState
                 icon: icon,
                 color: color,
               );
+          ref.invalidate(expenseCategoriesProvider);
+          ref.invalidate(incomeCategoriesProvider);
           if (mounted) Navigator.pop(context);
         },
       ),
@@ -175,6 +177,8 @@ class _CategoriesManagerScreenState
           await ref.read(categoriesManagerProvider.notifier).updateCategory(
                 category.copyWith(name: name, icon: icon, color: color),
               );
+          ref.invalidate(expenseCategoriesProvider);
+          ref.invalidate(incomeCategoriesProvider);
           if (mounted) Navigator.pop(context);
         },
       ),
@@ -194,11 +198,13 @@ class _CategoriesManagerScreenState
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              ref
+            onPressed: () async {
+              await ref
                   .read(categoriesManagerProvider.notifier)
                   .deleteCategory(category.id);
-              Navigator.pop(context);
+              ref.invalidate(expenseCategoriesProvider);
+              ref.invalidate(incomeCategoriesProvider);
+              if (context.mounted) Navigator.pop(context);
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Delete'),

@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/account.dart';
+import '../../../data/remote/sync_engine.dart';
 import '../providers/transactions_provider.dart';
 import '../widgets/transaction_tile.dart';
 import '../widgets/filter_sheet.dart';
@@ -23,6 +25,7 @@ class _TransactionsListScreenState
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   bool _showSearch = false;
+  StreamSubscription<SyncStatus>? _syncSubscription;
 
   @override
   void initState() {
@@ -30,11 +33,17 @@ class _TransactionsListScreenState
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(transactionsProvider.notifier).loadTransactions(refresh: true);
+      _syncSubscription = ref.read(syncEngineProvider).statusStream.listen((status) {
+        if (status == SyncStatus.synced && mounted) {
+          ref.read(transactionsProvider.notifier).loadTransactions(refresh: true);
+        }
+      });
     });
   }
 
   @override
   void dispose() {
+    _syncSubscription?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
     super.dispose();

@@ -71,7 +71,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     try {
       final settings = ref.read(settingsProvider);
       if (settings.spreadsheetId != null) {
-        await ref.read(syncEngineProvider).initialize(settings.spreadsheetId!);
+        final syncEngine = ref.read(syncEngineProvider);
+        await syncEngine.initialize(settings.spreadsheetId!);
+        // Full sync if never synced or last sync >24h stale
+        final lastSync = await syncEngine.getLastSyncTime();
+        final isStale = lastSync != null &&
+            DateTime.now().difference(lastSync).inHours >= 24;
+        if (lastSync == null) {
+          debugPrint('No previous sync found — running initial fullSync');
+          await syncEngine.fullSync();
+        } else if (isStale) {
+          debugPrint('Last sync >24h ago — running fullSync to refresh');
+          await syncEngine.fullSync();
+        }
       }
     } catch (e) {
       debugPrint('Sync engine init error: $e');

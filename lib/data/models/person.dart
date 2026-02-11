@@ -38,6 +38,8 @@ class Person with _$Person {
   }
 
   static Person fromSheetRow(List<dynamic> row) {
+    // Pad row — Sheets API strips trailing empty cells
+    while (row.length < 7) row.add('');
     return Person(
       id: row[0]?.toString() ?? '',
       name: row[1]?.toString() ?? '',

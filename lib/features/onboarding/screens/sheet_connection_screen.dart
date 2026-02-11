@@ -14,6 +14,8 @@ class SheetConnectionScreen extends ConsumerStatefulWidget {
 }
 
 class _SheetConnectionScreenState extends ConsumerState<SheetConnectionScreen> {
+  bool _isSyncing = false;
+
   @override
   void initState() {
     super.initState();
@@ -30,22 +32,32 @@ class _SheetConnectionScreenState extends ConsumerState<SheetConnectionScreen> {
       if (setupData.spreadsheetId != null) {
         await ref.read(syncEngineProvider).initialize(setupData.spreadsheetId!);
       }
-      context.go('/home');
+      if (mounted) context.go('/home');
     }
   }
 
   Future<void> _connectToSheet(String spreadsheetId) async {
     final success = await ref.read(sheetSetupProvider.notifier).connectToSheet(spreadsheetId);
     if (success && mounted) {
-      await ref.read(syncEngineProvider).initialize(spreadsheetId);
-      context.go('/home');
+      setState(() => _isSyncing = true);
+      try {
+        await ref.read(syncEngineProvider).initialize(spreadsheetId);
+        await ref.read(syncEngineProvider).fullSync();
+      } catch (e) {
+        debugPrint('Full sync failed during connect: $e');
+        // Still navigate to home — sync will retry on next launch
+      }
+      if (mounted) {
+        context.go('/home');
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final setupData = ref.watch(sheetSetupProvider);
-    final isLoading = setupData.state == SheetSetupState.loading ||
+    final isLoading = _isSyncing ||
+        setupData.state == SheetSetupState.loading ||
         setupData.state == SheetSetupState.creating ||
         setupData.state == SheetSetupState.connecting ||
         setupData.state == SheetSetupState.searchingExisting;
@@ -108,7 +120,8 @@ class _SheetConnectionScreenState extends ConsumerState<SheetConnectionScreen> {
                         onTap: isLoading
                             ? null
                             : () => _connectToSheet(sheet.id),
-                        isLoading: setupData.state == SheetSetupState.connecting,
+                        isLoading: setupData.state == SheetSetupState.connecting || _isSyncing,
+                        statusText: _isSyncing ? 'Syncing data...' : null,
                       );
                     },
                   ),
@@ -243,12 +256,14 @@ class _ExistingSheetCard extends StatelessWidget {
   final DateTime? modifiedTime;
   final VoidCallback? onTap;
   final bool isLoading;
+  final String? statusText;
 
   const _ExistingSheetCard({
     required this.name,
     this.modifiedTime,
     this.onTap,
     this.isLoading = false,
+    this.statusText,
   });
 
   @override
@@ -290,7 +305,15 @@ class _ExistingSheetCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (modifiedTime != null) ...[
+                    if (statusText != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        statusText!,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: AppColors.primary,
+                            ),
+                      ),
+                    ] else if (modifiedTime != null) ...[
                       const SizedBox(height: 2),
                       Text(
                         'Modified ${_formatDate(modifiedTime!)}',

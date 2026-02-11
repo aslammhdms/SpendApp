@@ -67,6 +67,8 @@ class Account with _$Account {
   }
 
   static Account fromSheetRow(List<dynamic> row) {
+    // Pad row — Sheets API strips trailing empty cells
+    while (row.length < 11) row.add('');
     return Account(
       id: row[0]?.toString() ?? '',
       name: row[1]?.toString() ?? '',
