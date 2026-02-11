@@ -116,8 +116,9 @@ class SyncEngine {
       await prefs.setString('last_sync_at', DateTime.now().toIso8601String());
 
       _updateStatus(SyncStatus.synced);
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Sync failed: $e');
+      debugPrint('Sync stack trace: $stackTrace');
       _updateStatus(SyncStatus.error);
     } finally {
       _isSyncing = false;
@@ -332,16 +333,34 @@ class SyncEngine {
 
   Future<void> _pullRemoteChanges() async {
     // Pull transactions
-    final remoteTransactions = await _sheetsService.getAllTransactions(_spreadsheetId!);
-    await _transactionDao.insertBatch(remoteTransactions);
+    try {
+      final remoteTransactions = await _sheetsService.getAllTransactions(_spreadsheetId!);
+      if (remoteTransactions.isNotEmpty) {
+        await _transactionDao.insertBatch(remoteTransactions);
+      }
+    } catch (e) {
+      debugPrint('Pull transactions failed (may be empty): $e');
+    }
 
     // Pull categories
-    final remoteCategories = await _sheetsService.getAllCategories(_spreadsheetId!);
-    await _categoryDao.insertBatch(remoteCategories);
+    try {
+      final remoteCategories = await _sheetsService.getAllCategories(_spreadsheetId!);
+      if (remoteCategories.isNotEmpty) {
+        await _categoryDao.insertBatch(remoteCategories);
+      }
+    } catch (e) {
+      debugPrint('Pull categories failed (may be empty): $e');
+    }
 
     // Pull accounts
-    final remoteAccounts = await _sheetsService.getAllAccounts(_spreadsheetId!);
-    await _accountDao.insertBatch(remoteAccounts);
+    try {
+      final remoteAccounts = await _sheetsService.getAllAccounts(_spreadsheetId!);
+      if (remoteAccounts.isNotEmpty) {
+        await _accountDao.insertBatch(remoteAccounts);
+      }
+    } catch (e) {
+      debugPrint('Pull accounts failed (may be empty): $e');
+    }
   }
 
   // Queue operations for batch processing
