@@ -130,7 +130,11 @@ class SyncEngine {
   static const String _lastSyncKey = 'settings_last_sync_at';
 
   Future<void> sync() async {
-    if (_isSyncing || _spreadsheetId == null) return;
+    if (_spreadsheetId == null) return;
+    if (_isSyncing) {
+      _scheduleBatchSync(); // retry in 5 seconds
+      return;
+    }
 
     final online = await isOnline();
     if (!online) {
@@ -468,9 +472,27 @@ class SyncEngine {
     }
   }
 
+  /// Filters out items whose IDs are in the pending sync queue,
+  /// so that a remote pull does not overwrite local changes (e.g. soft-deletes).
+  List<T> _excludePending<T>(
+      List<T> items, Set<String>? pendingIds, String Function(T) getId) {
+    if (pendingIds == null || pendingIds.isEmpty) return items;
+    return items.where((item) => !pendingIds.contains(getId(item))).toList();
+  }
+
   /// Pulls remote changes incrementally. Returns true if ALL pulls succeeded.
   Future<bool> _pullRemoteChanges() async {
     bool allSucceeded = true;
+
+    // Collect IDs of entities with pending local changes so we don't
+    // overwrite them with stale remote data (e.g. un-deleting soft-deleted items).
+    final pendingItems = await _syncQueueDao.getPending(limit: 10000);
+    final pendingIdsByType = <String, Set<String>>{};
+    for (final item in pendingItems) {
+      pendingIdsByType
+          .putIfAbsent(item.entityType, () => <String>{})
+          .add(item.entityId);
+    }
 
     // Pull transactions
     final transactions = await _pullWithRetry(
@@ -478,8 +500,11 @@ class SyncEngine {
       'transactions',
     );
     if (transactions != null && transactions.isNotEmpty) {
-      await _transactionDao.insertBatch(transactions);
-      debugPrint('Pulled ${transactions.length} transactions from sheet');
+      final safe = _excludePending(
+          transactions, pendingIdsByType['transaction'], (t) => t.id);
+      if (safe.isNotEmpty) await _transactionDao.insertBatch(safe);
+      debugPrint('Pulled ${safe.length} transactions from sheet'
+          ' (${transactions.length - safe.length} skipped pending)');
     } else if (transactions == null) {
       allSucceeded = false;
     }
@@ -490,8 +515,11 @@ class SyncEngine {
       'categories',
     );
     if (categories != null && categories.isNotEmpty) {
-      await _categoryDao.insertBatch(categories);
-      debugPrint('Pulled ${categories.length} categories from sheet');
+      final safe = _excludePending(
+          categories, pendingIdsByType['category'], (c) => c.id);
+      if (safe.isNotEmpty) await _categoryDao.insertBatch(safe);
+      debugPrint('Pulled ${safe.length} categories from sheet'
+          ' (${categories.length - safe.length} skipped pending)');
     } else if (categories == null) {
       allSucceeded = false;
     }
@@ -502,8 +530,11 @@ class SyncEngine {
       'accounts',
     );
     if (accounts != null && accounts.isNotEmpty) {
-      await _accountDao.insertBatch(accounts);
-      debugPrint('Pulled ${accounts.length} accounts from sheet');
+      final safe = _excludePending(
+          accounts, pendingIdsByType['account'], (a) => a.id);
+      if (safe.isNotEmpty) await _accountDao.insertBatch(safe);
+      debugPrint('Pulled ${safe.length} accounts from sheet'
+          ' (${accounts.length - safe.length} skipped pending)');
     } else if (accounts == null) {
       allSucceeded = false;
     }
@@ -514,8 +545,11 @@ class SyncEngine {
       'budgets',
     );
     if (budgets != null && budgets.isNotEmpty) {
-      await _budgetDao.insertBatch(budgets);
-      debugPrint('Pulled ${budgets.length} budgets from sheet');
+      final safe = _excludePending(
+          budgets, pendingIdsByType['budget'], (b) => b.id);
+      if (safe.isNotEmpty) await _budgetDao.insertBatch(safe);
+      debugPrint('Pulled ${safe.length} budgets from sheet'
+          ' (${budgets.length - safe.length} skipped pending)');
     } else if (budgets == null) {
       allSucceeded = false;
     }
@@ -526,8 +560,11 @@ class SyncEngine {
       'people',
     );
     if (people != null && people.isNotEmpty) {
-      await _personDao.insertBatch(people);
-      debugPrint('Pulled ${people.length} people from sheet');
+      final safe = _excludePending(
+          people, pendingIdsByType['person'], (p) => p.id);
+      if (safe.isNotEmpty) await _personDao.insertBatch(safe);
+      debugPrint('Pulled ${safe.length} people from sheet'
+          ' (${people.length - safe.length} skipped pending)');
     } else if (people == null) {
       allSucceeded = false;
     }
@@ -538,8 +575,11 @@ class SyncEngine {
       'loans',
     );
     if (loans != null && loans.isNotEmpty) {
-      await _loanDao.insertBatch(loans);
-      debugPrint('Pulled ${loans.length} loans from sheet');
+      final safe = _excludePending(
+          loans, pendingIdsByType['loan'], (l) => l.id);
+      if (safe.isNotEmpty) await _loanDao.insertBatch(safe);
+      debugPrint('Pulled ${safe.length} loans from sheet'
+          ' (${loans.length - safe.length} skipped pending)');
     } else if (loans == null) {
       allSucceeded = false;
     }
