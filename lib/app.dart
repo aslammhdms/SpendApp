@@ -328,11 +328,13 @@ class _BiometricLockGuardState extends State<_BiometricLockGuard>
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        widget.child,
-        if (_isLocked)
-          MaterialApp(
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Stack(
+        children: [
+          widget.child,
+          if (_isLocked)
+            MaterialApp(
             debugShowCheckedModeBanner: false,
             home: Scaffold(
               body: Container(
@@ -367,7 +369,8 @@ class _BiometricLockGuardState extends State<_BiometricLockGuard>
               ),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -438,6 +438,8 @@ class SyncEngine {
         );
         if (rowIndex > 0) {
           await _sheetsService.updatePerson(_spreadsheetId!, person, rowIndex);
+        } else {
+          throw Exception('Row not found for person ${person.id} in sheet');
         }
         break;
     }
@@ -459,6 +461,8 @@ class SyncEngine {
         );
         if (rowIndex > 0) {
           await _sheetsService.updateLoan(_spreadsheetId!, loan, rowIndex);
+        } else {
+          throw Exception('Row not found for loan ${loan.id} in sheet');
         }
         break;
     }

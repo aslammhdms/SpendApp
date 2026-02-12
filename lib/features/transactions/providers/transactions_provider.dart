@@ -1,9 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/transaction.dart';
 import '../../../data/models/category.dart';
+import '../../../data/models/loan.dart';
 import '../../../data/repositories/transaction_repository.dart';
 import '../../../data/repositories/category_repository.dart';
+import '../../../data/repositories/loan_repository.dart';
+import '../../../data/repositories/person_repository.dart';
 import '../../home/providers/dashboard_provider.dart';
+import '../../loans/providers/loans_provider.dart';
 
 class TransactionFilter {
   final DateTime? startDate;
@@ -14,6 +18,7 @@ class TransactionFilter {
   final double? minAmount;
   final double? maxAmount;
   final String? searchQuery;
+  final bool showLoansOnly;
 
   const TransactionFilter({
     this.startDate,
@@ -24,6 +29,7 @@ class TransactionFilter {
     this.minAmount,
     this.maxAmount,
     this.searchQuery,
+    this.showLoansOnly = false,
   });
 
   TransactionFilter copyWith({
@@ -35,6 +41,7 @@ class TransactionFilter {
     double? minAmount,
     double? maxAmount,
     String? searchQuery,
+    bool? showLoansOnly,
   }) {
     return TransactionFilter(
       startDate: startDate ?? this.startDate,
@@ -45,6 +52,7 @@ class TransactionFilter {
       minAmount: minAmount ?? this.minAmount,
       maxAmount: maxAmount ?? this.maxAmount,
       searchQuery: searchQuery ?? this.searchQuery,
+      showLoansOnly: showLoansOnly ?? this.showLoansOnly,
     );
   }
 
@@ -59,6 +67,7 @@ class TransactionFilter {
           minAmount: minAmount,
           maxAmount: maxAmount,
           searchQuery: searchQuery,
+          showLoansOnly: showLoansOnly,
         );
       case 'endDate':
         return TransactionFilter(
@@ -69,6 +78,7 @@ class TransactionFilter {
           minAmount: minAmount,
           maxAmount: maxAmount,
           searchQuery: searchQuery,
+          showLoansOnly: showLoansOnly,
         );
       case 'categoryId':
         return TransactionFilter(
@@ -79,6 +89,7 @@ class TransactionFilter {
           minAmount: minAmount,
           maxAmount: maxAmount,
           searchQuery: searchQuery,
+          showLoansOnly: showLoansOnly,
         );
       case 'accountId':
         return TransactionFilter(
@@ -89,6 +100,7 @@ class TransactionFilter {
           minAmount: minAmount,
           maxAmount: maxAmount,
           searchQuery: searchQuery,
+          showLoansOnly: showLoansOnly,
         );
       case 'type':
         return TransactionFilter(
@@ -99,6 +111,19 @@ class TransactionFilter {
           minAmount: minAmount,
           maxAmount: maxAmount,
           searchQuery: searchQuery,
+          showLoansOnly: showLoansOnly,
+        );
+      case 'showLoansOnly':
+        return TransactionFilter(
+          startDate: startDate,
+          endDate: endDate,
+          categoryId: categoryId,
+          accountId: accountId,
+          type: type,
+          minAmount: minAmount,
+          maxAmount: maxAmount,
+          searchQuery: searchQuery,
+          showLoansOnly: false,
         );
       default:
         return this;
@@ -113,6 +138,7 @@ class TransactionFilter {
       type != null ||
       minAmount != null ||
       maxAmount != null ||
+      showLoansOnly ||
       (searchQuery?.isNotEmpty ?? false);
 
   TransactionFilter clear() => const TransactionFilter();
@@ -120,6 +146,8 @@ class TransactionFilter {
 
 class TransactionsState {
   final List<Transaction> transactions;
+  final List<Loan> loans;
+  final Map<String, String> loanPersonNames;
   final TransactionFilter filter;
   final bool isLoading;
   final String? error;
@@ -128,6 +156,8 @@ class TransactionsState {
 
   const TransactionsState({
     this.transactions = const [],
+    this.loans = const [],
+    this.loanPersonNames = const {},
     this.filter = const TransactionFilter(),
     this.isLoading = false,
     this.error,
@@ -137,6 +167,8 @@ class TransactionsState {
 
   TransactionsState copyWith({
     List<Transaction>? transactions,
+    List<Loan>? loans,
+    Map<String, String>? loanPersonNames,
     TransactionFilter? filter,
     bool? isLoading,
     String? error,
@@ -145,6 +177,8 @@ class TransactionsState {
   }) {
     return TransactionsState(
       transactions: transactions ?? this.transactions,
+      loans: loans ?? this.loans,
+      loanPersonNames: loanPersonNames ?? this.loanPersonNames,
       filter: filter ?? this.filter,
       isLoading: isLoading ?? this.isLoading,
       error: error,
@@ -153,20 +187,46 @@ class TransactionsState {
     );
   }
 
-  Map<String, List<Transaction>> get groupedByDate {
-    final grouped = <String, List<Transaction>>{};
-    for (final transaction in transactions) {
-      final dateKey = _getDateKey(transaction.date);
-      grouped.putIfAbsent(dateKey, () => []).add(transaction);
+  /// Returns items grouped by date. Each item is either a [Transaction] or [Loan].
+  Map<String, List<Object>> get groupedByDate {
+    final grouped = <String, List<Object>>{};
+
+    // When showLoansOnly: only include loans
+    // When type filter is set (expense/income/transfer): only include transactions
+    // Otherwise: include both
+    if (!filter.showLoansOnly) {
+      for (final transaction in transactions) {
+        final dateKey = _getDateKey(transaction.date);
+        grouped.putIfAbsent(dateKey, () => []).add(transaction);
+      }
     }
+
+    if (filter.showLoansOnly || filter.type == null) {
+      for (final loan in loans) {
+        final dateKey = _getDateKey(loan.date);
+        grouped.putIfAbsent(dateKey, () => []).add(loan);
+      }
+    }
+
+    // Sort items within each group by date descending
+    for (final items in grouped.values) {
+      items.sort((a, b) {
+        final dateA = a is Transaction ? a.date : (a as Loan).date;
+        final dateB = b is Transaction ? b.date : (b as Loan).date;
+        return dateB.compareTo(dateA);
+      });
+    }
+
     return grouped;
   }
+
+  bool get isEmpty => transactions.isEmpty && loans.isEmpty;
 
   String _getDateKey(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final transactionDate = DateTime(date.year, date.month, date.day);
-    final difference = today.difference(transactionDate).inDays;
+    final itemDate = DateTime(date.year, date.month, date.day);
+    final difference = today.difference(itemDate).inDays;
 
     if (difference == 0) return 'Today';
     if (difference == 1) return 'Yesterday';
@@ -178,9 +238,17 @@ class TransactionsState {
 
 class TransactionsNotifier extends StateNotifier<TransactionsState> {
   final TransactionRepository _repository;
+  final LoanRepository _loanRepo;
+  final PersonRepository _personRepo;
   static const int _pageSize = 50;
 
-  TransactionsNotifier(this._repository) : super(const TransactionsState());
+  TransactionsNotifier(
+    this._repository, {
+    required LoanRepository loanRepo,
+    required PersonRepository personRepo,
+  })  : _loanRepo = loanRepo,
+        _personRepo = personRepo,
+        super(const TransactionsState());
 
   Future<void> loadTransactions({bool refresh = false}) async {
     if (state.isLoading) return;
@@ -190,32 +258,43 @@ class TransactionsNotifier extends StateNotifier<TransactionsState> {
       error: null,
       currentPage: refresh ? 0 : state.currentPage,
       transactions: refresh ? [] : state.transactions,
+      loans: refresh ? [] : state.loans,
     );
 
     try {
-      List<Transaction> transactions;
+      List<Transaction> transactions = [];
 
-      if (state.filter.hasFilters) {
-        transactions = await _loadFilteredTransactions();
-      } else {
-        final offset = refresh ? 0 : state.currentPage * _pageSize;
-        transactions = await _repository.getPaginated(offset, _pageSize);
-      }
+      // Skip loading transactions when showing loans only
+      if (!state.filter.showLoansOnly) {
+        if (state.filter.hasFilters && !state.filter.showLoansOnly) {
+          transactions = await _loadFilteredTransactions();
+        } else {
+          final offset = refresh ? 0 : state.currentPage * _pageSize;
+          transactions = await _repository.getPaginated(offset, _pageSize);
+        }
 
-      // Apply search filter if present
-      if (state.filter.searchQuery?.isNotEmpty ?? false) {
-        final query = state.filter.searchQuery!.toLowerCase();
-        transactions = transactions.where((t) {
-          return t.note?.toLowerCase().contains(query) ?? false;
-        }).toList();
+        // Apply search filter if present
+        if (state.filter.searchQuery?.isNotEmpty ?? false) {
+          final query = state.filter.searchQuery!.toLowerCase();
+          transactions = transactions.where((t) {
+            return t.note?.toLowerCase().contains(query) ?? false;
+          }).toList();
+        }
       }
 
       final hasMore = transactions.length >= _pageSize;
+
+      // Load loans and person names
+      final allLoans = await _loanRepo.getAll();
+      final people = await _personRepo.getAll();
+      final personNames = {for (final p in people) p.id: p.name};
 
       state = state.copyWith(
         transactions: refresh
             ? transactions
             : [...state.transactions, ...transactions],
+        loans: allLoans,
+        loanPersonNames: personNames,
         isLoading: false,
         currentPage: refresh ? 1 : state.currentPage + 1,
         hasMore: hasMore,
@@ -298,6 +377,17 @@ class TransactionsNotifier extends StateNotifier<TransactionsState> {
     }
   }
 
+  Future<void> deleteLoan(String id) async {
+    try {
+      await _loanRepo.delete(id);
+      state = state.copyWith(
+        loans: state.loans.where((l) => l.id != id).toList(),
+      );
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to delete loan: $e');
+    }
+  }
+
   void loadMore() {
     if (!state.isLoading && state.hasMore) {
       loadTransactions();
@@ -308,7 +398,13 @@ class TransactionsNotifier extends StateNotifier<TransactionsState> {
 final transactionsProvider =
     StateNotifierProvider<TransactionsNotifier, TransactionsState>((ref) {
   final repository = ref.watch(transactionRepositoryProvider);
-  return TransactionsNotifier(repository);
+  final loanRepo = ref.watch(loanRepositoryProvider);
+  final personRepo = ref.watch(personRepositoryProvider);
+  return TransactionsNotifier(
+    repository,
+    loanRepo: loanRepo,
+    personRepo: personRepo,
+  );
 });
 
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
