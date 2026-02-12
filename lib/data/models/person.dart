@@ -45,12 +45,10 @@ class Person with _$Person {
       name: row[1]?.toString() ?? '',
       phone: row[2]?.toString().isNotEmpty == true ? row[2].toString() : null,
       note: row[3]?.toString().isNotEmpty == true ? row[3].toString() : null,
-      createdAt: DateTime.parse(
-          row[4]?.toString() ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(
-          row[5]?.toString() ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.tryParse(row[4]?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(row[5]?.toString() ?? '') ?? DateTime.now(),
       deletedAt: row[6]?.toString().isNotEmpty == true
-          ? DateTime.parse(row[6].toString())
+          ? DateTime.tryParse(row[6].toString())
           : null,
     );
   }

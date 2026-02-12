@@ -65,10 +65,10 @@ class Category with _$Category {
       icon: row[3]?.toString() ?? '',
       color: int.tryParse(row[4]?.toString() ?? '0') ?? 0xFF808080,
       sortOrder: int.tryParse(row[5]?.toString() ?? '0') ?? 0,
-      createdAt: DateTime.parse(row[6]?.toString() ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(row[7]?.toString() ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.tryParse(row[6]?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(row[7]?.toString() ?? '') ?? DateTime.now(),
       deletedAt: row[8]?.toString().isNotEmpty == true
-          ? DateTime.parse(row[8].toString())
+          ? DateTime.tryParse(row[8].toString())
           : null,
     );
   }

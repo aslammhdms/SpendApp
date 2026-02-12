@@ -178,9 +178,12 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              ref.read(budgetsProvider.notifier).deleteBudget(budgetId);
+            onPressed: () async {
               Navigator.pop(context);
+              await ref.read(budgetsProvider.notifier).deleteBudget(budgetId);
+              if (mounted) {
+                ref.read(dashboardProvider.notifier).refresh();
+              }
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Delete'),

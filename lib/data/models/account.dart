@@ -81,10 +81,10 @@ class Account with _$Account {
       icon: row[5]?.toString() ?? '',
       color: int.tryParse(row[6]?.toString() ?? '0') ?? 0xFF808080,
       sortOrder: int.tryParse(row[7]?.toString() ?? '0') ?? 0,
-      createdAt: DateTime.parse(row[8]?.toString() ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(row[9]?.toString() ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.tryParse(row[8]?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(row[9]?.toString() ?? '') ?? DateTime.now(),
       deletedAt: row[10]?.toString().isNotEmpty == true
-          ? DateTime.parse(row[10].toString())
+          ? DateTime.tryParse(row[10].toString())
           : null,
     );
   }
