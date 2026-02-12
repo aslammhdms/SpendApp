@@ -189,10 +189,13 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              ref.read(loansProvider.notifier).deletePerson(widget.personId);
+            onPressed: () async {
               Navigator.pop(context);
-              this.context.pop();
+              await ref.read(loansProvider.notifier).deletePerson(widget.personId);
+              if (mounted) {
+                await ref.read(dashboardProvider.notifier).refresh();
+                if (mounted) this.context.pop();
+              }
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Delete'),

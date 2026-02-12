@@ -485,7 +485,8 @@ class _AddEditTransactionScreenState
                   .read(transactionsProvider.notifier)
                   .deleteTransaction(widget.transactionId!);
               if (mounted) {
-                context.pop();
+                await ref.read(dashboardProvider.notifier).refresh();
+                if (mounted) context.pop();
               }
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),

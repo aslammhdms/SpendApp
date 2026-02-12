@@ -68,11 +68,11 @@ class Budget with _$Budget {
         orElse: () => BudgetPeriod.monthly,
       ),
       categoryId: row[4]?.toString().isNotEmpty == true ? row[4].toString() : null,
-      startDate: DateTime.parse(row[5]?.toString() ?? DateTime.now().toIso8601String()),
-      createdAt: DateTime.parse(row[6]?.toString() ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(row[7]?.toString() ?? DateTime.now().toIso8601String()),
+      startDate: DateTime.tryParse(row[5]?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(row[6]?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(row[7]?.toString() ?? '') ?? DateTime.now(),
       deletedAt: row[8]?.toString().isNotEmpty == true
-          ? DateTime.parse(row[8].toString())
+          ? DateTime.tryParse(row[8].toString())
           : null,
     );
   }

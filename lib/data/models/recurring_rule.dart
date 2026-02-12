@@ -51,16 +51,22 @@ class RecurringRule with _$RecurringRule {
       case RecurringFrequency.weekly:
         return nextDueDate.add(Duration(days: 7 * interval));
       case RecurringFrequency.monthly:
+        final targetMonth = nextDueDate.month + interval;
+        final targetYear = nextDueDate.year + (targetMonth - 1) ~/ 12;
+        final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+        final maxDayMonthly = DateTime(targetYear, normalizedMonth + 1, 0).day;
         return DateTime(
-          nextDueDate.year,
-          nextDueDate.month + interval,
-          nextDueDate.day,
+          targetYear,
+          normalizedMonth,
+          nextDueDate.day.clamp(1, maxDayMonthly),
         );
       case RecurringFrequency.yearly:
+        final yearlyTargetYear = nextDueDate.year + interval;
+        final maxDayYearly = DateTime(yearlyTargetYear, nextDueDate.month + 1, 0).day;
         return DateTime(
-          nextDueDate.year + interval,
+          yearlyTargetYear,
           nextDueDate.month,
-          nextDueDate.day,
+          nextDueDate.day.clamp(1, maxDayYearly),
         );
     }
   }
@@ -105,16 +111,16 @@ class RecurringRule with _$RecurringRule {
         orElse: () => RecurringFrequency.monthly,
       ),
       interval: int.tryParse(row[7]?.toString() ?? '1') ?? 1,
-      nextDueDate: DateTime.parse(row[8]?.toString() ?? DateTime.now().toIso8601String()),
+      nextDueDate: DateTime.tryParse(row[8]?.toString() ?? '') ?? DateTime.now(),
       endDate: row[9]?.toString().isNotEmpty == true
-          ? DateTime.parse(row[9].toString())
+          ? DateTime.tryParse(row[9].toString())
           : null,
       note: row[10]?.toString().isNotEmpty == true ? row[10].toString() : null,
       isActive: row[11]?.toString() == '1',
-      createdAt: DateTime.parse(row[12]?.toString() ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(row[13]?.toString() ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.tryParse(row[12]?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(row[13]?.toString() ?? '') ?? DateTime.now(),
       deletedAt: row[14]?.toString().isNotEmpty == true
-          ? DateTime.parse(row[14].toString())
+          ? DateTime.tryParse(row[14].toString())
           : null,
     );
   }

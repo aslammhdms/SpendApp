@@ -285,9 +285,10 @@ class _TransactionsListScreenState
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              ref.read(transactionsProvider.notifier).deleteTransaction(transactionId);
+            onPressed: () async {
+              await ref.read(transactionsProvider.notifier).deleteTransaction(transactionId);
               Navigator.pop(context);
+              ref.read(dashboardProvider.notifier).refresh();
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Delete'),

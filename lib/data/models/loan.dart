@@ -62,15 +62,12 @@ class Loan with _$Loan {
       ),
       amount: double.tryParse(row[3]?.toString() ?? '0') ?? 0,
       note: row[4]?.toString().isNotEmpty == true ? row[4].toString() : null,
-      date: DateTime.parse(
-          row[5]?.toString() ?? DateTime.now().toIso8601String()),
+      date: DateTime.tryParse(row[5]?.toString() ?? '') ?? DateTime.now(),
       isSettlement: row[6]?.toString() == '1',
-      createdAt: DateTime.parse(
-          row[7]?.toString() ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(
-          row[8]?.toString() ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.tryParse(row[7]?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(row[8]?.toString() ?? '') ?? DateTime.now(),
       deletedAt: row[9]?.toString().isNotEmpty == true
-          ? DateTime.parse(row[9].toString())
+          ? DateTime.tryParse(row[9].toString())
           : null,
     );
   }

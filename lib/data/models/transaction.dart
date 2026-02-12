@@ -76,7 +76,7 @@ class Transaction with _$Transaction {
     while (row.length < 13) row.add('');
     return Transaction(
       id: row[0]?.toString() ?? '',
-      date: DateTime.parse(row[1]?.toString() ?? DateTime.now().toIso8601String()),
+      date: DateTime.tryParse(row[1]?.toString() ?? '') ?? DateTime.now(),
       amount: double.tryParse(row[2]?.toString() ?? '0') ?? 0,
       type: TransactionType.values.firstWhere(
         (e) => e.name == row[3]?.toString(),
@@ -88,10 +88,10 @@ class Transaction with _$Transaction {
       note: row[7]?.toString().isNotEmpty == true ? row[7].toString() : null,
       receiptUrl: row[8]?.toString().isNotEmpty == true ? row[8].toString() : null,
       recurringId: row[9]?.toString().isNotEmpty == true ? row[9].toString() : null,
-      createdAt: DateTime.parse(row[10]?.toString() ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(row[11]?.toString() ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.tryParse(row[10]?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(row[11]?.toString() ?? '') ?? DateTime.now(),
       deletedAt: row[12]?.toString().isNotEmpty == true
-          ? DateTime.parse(row[12].toString())
+          ? DateTime.tryParse(row[12].toString())
           : null,
     );
   }

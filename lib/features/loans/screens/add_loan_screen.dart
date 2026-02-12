@@ -52,6 +52,18 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
       setState(() {
         _people = people;
       });
+
+      // Pre-fill settlement amount with outstanding balance
+      if (widget.isSettlement && widget.personId != null) {
+        final loanRepo = ref.read(loanRepositoryProvider);
+        final balance = await loanRepo.getPersonBalance(widget.personId!);
+        if (mounted && balance != 0) {
+          final absBalance = balance.abs();
+          _amountController.text = absBalance == absBalance.roundToDouble()
+              ? absBalance.toInt().toString()
+              : absBalance.toStringAsFixed(2);
+        }
+      }
     }
   }
 
