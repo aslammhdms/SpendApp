@@ -86,6 +86,7 @@ class _FilterSheetState extends State<FilterSheet> {
               _buildTypeChip(TransactionType.expense, 'Expense'),
               _buildTypeChip(TransactionType.income, 'Income'),
               _buildTypeChip(TransactionType.transfer, 'Transfer'),
+              _buildLoanChip(),
             ],
           ),
           const SizedBox(height: 20),
@@ -201,17 +202,32 @@ class _FilterSheetState extends State<FilterSheet> {
   }
 
   Widget _buildTypeChip(TransactionType? type, String label) {
-    final isSelected = _filter.type == type;
+    final isSelected = type == null
+        ? _filter.type == null && !_filter.showLoansOnly
+        : _filter.type == type && !_filter.showLoansOnly;
     return FilterChip(
       label: Text(label),
       selected: isSelected,
       onSelected: (_) {
         setState(() {
           if (type == null) {
-            _filter = _filter.clearField('type');
+            _filter = _filter.clearField('type').clearField('showLoansOnly');
           } else {
-            _filter = _filter.copyWith(type: type);
+            _filter = _filter.copyWith(type: type, showLoansOnly: false);
           }
+        });
+      },
+    );
+  }
+
+  Widget _buildLoanChip() {
+    final isSelected = _filter.showLoansOnly;
+    return FilterChip(
+      label: const Text('Loan'),
+      selected: isSelected,
+      onSelected: (_) {
+        setState(() {
+          _filter = _filter.clearField('type').copyWith(showLoansOnly: true);
         });
       },
     );

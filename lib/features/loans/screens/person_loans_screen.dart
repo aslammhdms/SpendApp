@@ -60,20 +60,6 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
               },
               child: const Text('Settle Up'),
             ),
-          if (person != null)
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'delete') {
-                  _confirmDeletePerson();
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text('Delete Person'),
-                ),
-              ],
-            ),
         ],
       ),
       body: state.isLoading
@@ -132,9 +118,22 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
                         ),
                       ),
                     const SizedBox(height: 24),
-                    Text(
-                      'History',
-                      style: Theme.of(context).textTheme.titleMedium,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'History',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        if (state.currentPersonLoans.isNotEmpty)
+                          Text(
+                            'Swipe left to delete',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: AppColors.textTertiary),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     if (state.currentPersonLoans.isEmpty)
@@ -152,16 +151,13 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
                         ),
                       )
                     else
-                      Card(
-                        child: Column(
-                          children: state.currentPersonLoans
-                              .map((loan) => LoanTile(
-                                    loan: loan,
-                                    currency: currency,
-                                  ))
-                              .toList(),
-                        ),
-                      ),
+                      ...state.currentPersonLoans
+                          .map((loan) => LoanTile(
+                                loan: loan,
+                                currency: currency,
+                                onDelete: () => _confirmDeleteLoan(loan.id),
+                              ))
+                          .toList(),
                     const SizedBox(height: 80),
                   ],
                 ),
@@ -195,6 +191,35 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
               if (mounted) {
                 await ref.read(dashboardProvider.notifier).refresh();
                 if (mounted) this.context.pop();
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteLoan(String loanId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Loan'),
+        content: const Text('Are you sure you want to delete this loan?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await ref.read(loansProvider.notifier).deleteLoan(loanId);
+              if (mounted) {
+                ref.read(syncEngineProvider).sync();
+                await ref.read(dashboardProvider.notifier).refresh();
+                await _loadData();
               }
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),

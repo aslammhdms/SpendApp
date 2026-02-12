@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency_utils.dart';
+import '../../../data/models/person.dart';
 import '../providers/loans_provider.dart';
 import '../widgets/person_balance_card.dart';
+import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 
 class LoansScreen extends ConsumerStatefulWidget {
@@ -103,9 +105,22 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Text(
-                        'People',
-                        style: Theme.of(context).textTheme.titleMedium,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'People',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          if (state.people.isNotEmpty)
+                            Text(
+                              'Swipe left to delete',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: AppColors.textTertiary),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 12),
                       if (state.people.isEmpty)
@@ -137,8 +152,14 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                               child: PersonBalanceCard(
                                 person: person,
                                 currency: currency,
-                                onTap: () => context
-                                    .push('/loans/person/${person.id}'),
+                                onTap: () async {
+                                  await context
+                                      .push('/loans/person/${person.id}');
+                                  if (mounted) {
+                                    ref.read(loansProvider.notifier).loadPeople();
+                                  }
+                                },
+                                onDelete: () => _confirmDeletePerson(person),
                               ),
                             )),
                       const SizedBox(height: 80),
@@ -154,6 +175,35 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
         },
         icon: const Icon(Icons.add),
         label: const Text('Add Loan'),
+      ),
+    );
+  }
+
+  void _confirmDeletePerson(Person person) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Person'),
+        content: Text(
+            'Are you sure? This will hide ${person.name} and their loan history.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await ref.read(loansProvider.notifier).deletePerson(person.id);
+              if (mounted) {
+                ref.read(syncEngineProvider).sync();
+                await ref.read(dashboardProvider.notifier).refresh();
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }

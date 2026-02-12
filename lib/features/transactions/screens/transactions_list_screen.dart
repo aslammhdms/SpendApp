@@ -1,10 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/currency_utils.dart';
+import '../../../core/utils/date_utils.dart';
 import '../../../data/models/category.dart';
-import '../../../data/models/account.dart';
+import '../../../data/models/transaction.dart';
+import '../../../data/models/loan.dart';
 import '../../../data/remote/sync_engine.dart';
 import '../providers/transactions_provider.dart';
 import '../widgets/transaction_tile.dart';
@@ -132,9 +136,9 @@ class _TransactionsListScreenState
           ),
         ],
       ),
-      body: state.isLoading && state.transactions.isEmpty
+      body: state.isLoading && state.isEmpty
           ? const Center(child: CircularProgressIndicator())
-          : state.error != null && state.transactions.isEmpty
+          : state.error != null && state.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -154,7 +158,7 @@ class _TransactionsListScreenState
                     ],
                   ),
                 )
-              : state.transactions.isEmpty
+              : state.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -188,7 +192,7 @@ class _TransactionsListScreenState
                   : RefreshIndicator(
                       onRefresh: _handleRefresh,
                       child: categoriesAsync.when(
-                        data: (categories) => _buildTransactionsList(
+                        data: (categories) => _buildList(
                           state,
                           categories,
                           currency: currency,
@@ -196,7 +200,7 @@ class _TransactionsListScreenState
                         loading: () => const Center(
                           child: CircularProgressIndicator(),
                         ),
-                        error: (_, __) => _buildTransactionsList(state, [], currency: currency),
+                        error: (_, __) => _buildList(state, [], currency: currency),
                       ),
                     ),
       floatingActionButton: FloatingActionButton.extended(
@@ -207,7 +211,7 @@ class _TransactionsListScreenState
     );
   }
 
-  Widget _buildTransactionsList(
+  Widget _buildList(
     TransactionsState state,
     List<Category> categories, {
     String currency = 'USD',
@@ -228,7 +232,7 @@ class _TransactionsListScreenState
         }
 
         final dateKey = dateKeys[index];
-        final transactions = grouped[dateKey]!;
+        final items = grouped[dateKey]!;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,29 +247,13 @@ class _TransactionsListScreenState
                     ),
               ),
             ),
-            ...transactions.map((transaction) {
-              final category = categories.firstWhere(
-                (c) => c.id == transaction.categoryId,
-                orElse: () => Category(
-                  id: '',
-                  name: 'Unknown',
-                  type: CategoryType.expense,
-                  icon: '?',
-                  color: 0xFF808080,
-                  sortOrder: 0,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                ),
-              );
-
-              return TransactionTile(
-                transaction: transaction,
-                category: category.id.isNotEmpty ? category : null,
-                currency: currency,
-                onTap: () => context.push('/transactions/edit/${transaction.id}'),
-                onEdit: () => context.push('/transactions/edit/${transaction.id}'),
-                onDelete: () => _confirmDelete(transaction.id),
-              );
+            ...items.map((item) {
+              if (item is Transaction) {
+                return _buildTransactionItem(item, categories, currency);
+              } else if (item is Loan) {
+                return _buildLoanItem(item, state, currency);
+              }
+              return const SizedBox.shrink();
             }),
           ],
         );
@@ -273,7 +261,159 @@ class _TransactionsListScreenState
     );
   }
 
-  void _confirmDelete(String transactionId) {
+  Widget _buildTransactionItem(
+    Transaction transaction,
+    List<Category> categories,
+    String currency,
+  ) {
+    final category = categories.firstWhere(
+      (c) => c.id == transaction.categoryId,
+      orElse: () => Category(
+        id: '',
+        name: 'Unknown',
+        type: CategoryType.expense,
+        icon: '?',
+        color: 0xFF808080,
+        sortOrder: 0,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+    );
+
+    return TransactionTile(
+      transaction: transaction,
+      category: category.id.isNotEmpty ? category : null,
+      currency: currency,
+      onTap: () => context.push('/transactions/edit/${transaction.id}'),
+      onEdit: () => context.push('/transactions/edit/${transaction.id}'),
+      onDelete: () => _confirmDeleteTransaction(transaction.id),
+    );
+  }
+
+  Widget _buildLoanItem(Loan loan, TransactionsState state, String currency) {
+    final personName = state.loanPersonNames[loan.personId] ?? 'Unknown';
+
+    String subtitle;
+    Color iconColor;
+    IconData icon;
+    String prefix;
+
+    if (loan.isSettlement) {
+      subtitle = 'Settlement';
+      iconColor = AppColors.primary;
+      icon = Icons.check_circle_outline;
+      prefix = '';
+    } else if (loan.isLent) {
+      subtitle = 'Lent';
+      iconColor = AppColors.loan;
+      icon = Icons.arrow_upward;
+      prefix = '-';
+    } else {
+      subtitle = 'Borrowed';
+      iconColor = AppColors.loan;
+      icon = Icons.arrow_downward;
+      prefix = '+';
+    }
+
+    final formattedAmount = CurrencyUtils.format(loan.amount, currencyCode: currency);
+
+    return Slidable(
+      endActionPane: ActionPane(
+        motion: const ScrollMotion(),
+        children: [
+          SlidableAction(
+            onPressed: (_) => _confirmDeleteLoan(loan.id),
+            backgroundColor: AppColors.error,
+            foregroundColor: Colors.white,
+            icon: Icons.delete,
+            label: 'Delete',
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () => context.push('/loans/person/${loan.personId}'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      personName,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Text(
+                          subtitle,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.textTertiary,
+                              ),
+                        ),
+                        if (loan.note?.isNotEmpty ?? false) ...[
+                          const Text(
+                            ' • ',
+                            style: TextStyle(color: AppColors.textTertiary),
+                          ),
+                          Flexible(
+                            child: Text(
+                              loan.note!,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppColors.textTertiary,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                        const Text(
+                          ' • ',
+                          style: TextStyle(color: AppColors.textTertiary),
+                        ),
+                        Text(
+                          AppDateUtils.formatDisplayTime(loan.date),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.textTertiary,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '$prefix$formattedAmount',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: iconColor,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteTransaction(String transactionId) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -288,6 +428,32 @@ class _TransactionsListScreenState
             onPressed: () async {
               await ref.read(transactionsProvider.notifier).deleteTransaction(transactionId);
               Navigator.pop(context);
+              ref.read(dashboardProvider.notifier).refresh();
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteLoan(String loanId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Loan'),
+        content: const Text('Are you sure you want to delete this loan?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await ref.read(transactionsProvider.notifier).deleteLoan(loanId);
+              Navigator.pop(context);
+              ref.read(syncEngineProvider).sync();
               ref.read(dashboardProvider.notifier).refresh();
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
