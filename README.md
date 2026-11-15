@@ -2,6 +2,23 @@
 
 A Flutter expense tracking app for Android with Google Sheets as the backend database.
 
+<table>
+  <tr>
+    <td><img src="docs/screenshots/light-home.png" width="200" alt="Home: this month's net savings, income and expense, spending trend and budget status" /></td>
+    <td><img src="docs/screenshots/light-transactions.png" width="200" alt="Transactions grouped by day, with category icons and amounts" /></td>
+    <td><img src="docs/screenshots/light-analytics.png" width="200" alt="Analytics: income, expense and net for the month, and spending by category" /></td>
+    <td><img src="docs/screenshots/light-budgets.png" width="200" alt="Budgets: monthly budgets with progress bars and amount left" /></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/light-loans.png" width="200" alt="Loans and debts: owed to you, you owe, and balances per person" /></td>
+    <td><img src="docs/screenshots/light-add.png" width="200" alt="Add transaction: expense, income, transfer or loan, with a number pad and categories" /></td>
+    <td><img src="docs/screenshots/dark-home.png" width="200" alt="Home screen in the dark theme" /></td>
+    <td><img src="docs/screenshots/dark-analytics.png" width="200" alt="Analytics screen in the dark theme" /></td>
+  </tr>
+</table>
+
+<sub>Screenshots use sample data.</sub>
+
 ## Features
 
 - **Track Expenses & Income**: Log your daily transactions with categories
@@ -101,4 +118,4 @@ flutter build apk --release
 
 ## License
 
-MIT License
+MIT License. See [LICENSE](LICENSE).
