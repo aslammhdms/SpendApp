@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Brand indigo, slightly deeper toward the bottom right. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="#4CAF50"/>
+    <gradient
+        android:angle="315"
+        android:startColor="#6366F1"
+        android:endColor="#4648D4" />
 </shape>
