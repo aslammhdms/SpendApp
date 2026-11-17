@@ -203,7 +203,11 @@ class _MainShellState extends ConsumerState<_MainShell> {
     final newIndex = _getSelectedIndex();
     if (newIndex != _currentIndex) {
       _currentIndex = newIndex;
-      _refreshTab(newIndex);
+      // Refreshing updates providers, which Riverpod rejects while the
+      // widget tree is building, so wait for the frame to finish.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _refreshTab(newIndex);
+      });
     }
   }
 
