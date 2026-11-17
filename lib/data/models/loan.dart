@@ -11,7 +11,7 @@ enum LoanType {
 }
 
 @freezed
-class Loan with _$Loan {
+abstract class Loan with _$Loan {
   const Loan._();
 
   const factory Loan({

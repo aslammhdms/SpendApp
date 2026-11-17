@@ -13,7 +13,7 @@ enum BudgetPeriod {
 }
 
 @freezed
-class Budget with _$Budget {
+abstract class Budget with _$Budget {
   const Budget._();
 
   const factory Budget({

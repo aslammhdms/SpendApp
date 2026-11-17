@@ -12,7 +12,7 @@ enum CategoryType {
 }
 
 @freezed
-class Category with _$Category {
+abstract class Category with _$Category {
   const Category._();
 
   const factory Category({

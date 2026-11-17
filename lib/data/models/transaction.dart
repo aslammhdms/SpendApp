@@ -13,7 +13,7 @@ enum TransactionType {
 }
 
 @freezed
-class Transaction with _$Transaction {
+abstract class Transaction with _$Transaction {
   const Transaction._();
 
   const factory Transaction({

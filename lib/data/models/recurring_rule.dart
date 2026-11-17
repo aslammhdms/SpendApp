@@ -16,7 +16,7 @@ enum RecurringFrequency {
 }
 
 @freezed
-class RecurringRule with _$RecurringRule {
+abstract class RecurringRule with _$RecurringRule {
   const RecurringRule._();
 
   const factory RecurringRule({

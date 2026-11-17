@@ -22,7 +22,7 @@ enum AccountType {
 }
 
 @freezed
-class Account with _$Account {
+abstract class Account with _$Account {
   const Account._();
 
   const factory Account({

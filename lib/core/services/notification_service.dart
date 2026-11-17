@@ -29,7 +29,7 @@ class NotificationService {
 
   Future<void> _ensureInitialized() {
     return _initialized ??= _plugin.initialize(
-      const InitializationSettings(
+      settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
         linux: LinuxInitializationSettings(defaultActionName: 'Open'),
       ),
@@ -58,6 +58,11 @@ class NotificationService {
     required String body,
   }) async {
     await _ensureInitialized();
-    await _plugin.show(id, title, body, _budgetDetails);
+    await _plugin.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: _budgetDetails,
+    );
   }
 }
