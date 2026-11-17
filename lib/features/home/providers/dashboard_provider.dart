@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/transaction.dart';
 import '../../../data/models/budget.dart';
@@ -15,6 +16,7 @@ import '../../../data/local/sync_queue_dao.dart';
 import '../../../data/repositories/category_repository.dart';
 import '../../../data/remote/sync_engine.dart';
 import '../../../core/utils/date_utils.dart';
+import '../../budgets/services/budget_alert_service.dart';
 import '../../onboarding/providers/sheet_setup_provider.dart';
 
 class DashboardData {
@@ -76,16 +78,19 @@ class DashboardNotifier extends StateNotifier<DashboardData> {
   final AccountRepository _accountRepo;
   final BudgetRepository _budgetRepo;
   final LoanRepository _loanRepo;
+  final BudgetAlertService? _budgetAlerts;
 
   DashboardNotifier({
     required TransactionRepository transactionRepo,
     required AccountRepository accountRepo,
     required BudgetRepository budgetRepo,
     required LoanRepository loanRepo,
+    BudgetAlertService? budgetAlerts,
   })  : _transactionRepo = transactionRepo,
         _accountRepo = accountRepo,
         _budgetRepo = budgetRepo,
         _loanRepo = loanRepo,
+        _budgetAlerts = budgetAlerts,
         super(const DashboardData());
 
   Future<void> refresh() async {
@@ -125,11 +130,25 @@ class DashboardNotifier extends StateNotifier<DashboardData> {
         totalYouOwe: totalYouOwe,
         isLoading: false,
       );
+
+      // Budget progress is fresh here: after every saved expense, when Home
+      // opens, and after the start-up sync.
+      await _checkBudgetAlerts(budgets);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to load dashboard data: $e',
       );
+    }
+  }
+
+  Future<void> _checkBudgetAlerts(List<Budget> budgets) async {
+    final alerts = _budgetAlerts;
+    if (alerts == null) return;
+    try {
+      await alerts.check(budgets);
+    } catch (e) {
+      debugPrint('Budget alert check failed: $e');
     }
   }
 }
@@ -223,5 +242,6 @@ final dashboardProvider =
     accountRepo: ref.watch(accountRepositoryProvider),
     budgetRepo: ref.watch(budgetRepositoryProvider),
     loanRepo: ref.watch(loanRepositoryProvider),
+    budgetAlerts: ref.watch(budgetAlertServiceProvider),
   );
 });

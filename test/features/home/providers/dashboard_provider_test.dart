@@ -6,12 +6,14 @@ import 'package:spendsheet/data/repositories/transaction_repository.dart';
 import 'package:spendsheet/data/repositories/account_repository.dart';
 import 'package:spendsheet/data/repositories/budget_repository.dart';
 import 'package:spendsheet/data/repositories/loan_repository.dart';
+import 'package:spendsheet/features/budgets/services/budget_alert_service.dart';
 import 'package:spendsheet/features/home/providers/dashboard_provider.dart';
 
 class MockTransactionRepository extends Mock implements TransactionRepository {}
 class MockAccountRepository extends Mock implements AccountRepository {}
 class MockBudgetRepository extends Mock implements BudgetRepository {}
 class MockLoanRepository extends Mock implements LoanRepository {}
+class MockBudgetAlertService extends Mock implements BudgetAlertService {}
 
 void main() {
   late MockTransactionRepository mockTxnRepo;
@@ -165,6 +167,52 @@ void main() {
 
       // copyWith uses error directly, so null is valid
       expect(updated.error, isNull);
+    });
+  });
+
+  group('DashboardNotifier budget alerts', () {
+    late MockBudgetAlertService alerts;
+
+    final groceries = Budget(
+      id: 'b1',
+      name: 'Groceries',
+      amount: 500,
+      period: BudgetPeriod.monthly,
+      startDate: DateTime(2026, 1, 1),
+      createdAt: DateTime(2026, 1, 1),
+      updatedAt: DateTime(2026, 1, 1),
+      spentAmount: 450,
+    );
+
+    setUp(() {
+      alerts = MockBudgetAlertService();
+      notifier = DashboardNotifier(
+        transactionRepo: mockTxnRepo,
+        accountRepo: mockAccRepo,
+        budgetRepo: mockBudgetRepo,
+        loanRepo: mockLoanRepo,
+        budgetAlerts: alerts,
+      );
+    });
+
+    test('refresh checks the freshly loaded budgets for alerts', () async {
+      _stubAllRepos(budgets: [groceries]);
+      when(() => alerts.check(any())).thenAnswer((_) async {});
+
+      await notifier.refresh();
+
+      verify(() => alerts.check([groceries])).called(1);
+    });
+
+    test('a failing alert check does not break the dashboard', () async {
+      _stubAllRepos(budgets: [groceries], expense: 450);
+      when(() => alerts.check(any())).thenThrow(Exception('no notifications'));
+
+      await notifier.refresh();
+
+      expect(notifier.state.error, isNull);
+      expect(notifier.state.isLoading, isFalse);
+      expect(notifier.state.monthlyExpense, 450);
     });
   });
 }

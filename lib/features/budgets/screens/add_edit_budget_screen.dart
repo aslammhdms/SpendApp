@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/budget.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../data/models/category.dart';
 import '../providers/budgets_provider.dart';
 import '../../transactions/providers/transactions_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
+import '../../settings/providers/settings_provider.dart';
 
 class AddEditBudgetScreen extends ConsumerStatefulWidget {
   final String? budgetId;
@@ -66,6 +68,15 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
     super.dispose();
   }
 
+  /// Budget alerts need notification permission on Android 13 and later,
+  /// so ask for it when a budget is created.
+  Future<void> _requestAlertPermission() async {
+    final settings = ref.read(settingsProvider);
+    if (settings.notificationsEnabled && settings.budgetAlertsEnabled) {
+      await ref.read(notificationServiceProvider).requestPermission();
+    }
+  }
+
   Future<void> _saveBudget() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -98,6 +109,7 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
           period: _period,
           categoryId: _categoryId,
         );
+        await _requestAlertPermission();
       }
 
       if (mounted) {

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../core/services/biometric_service.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../data/remote/sync_engine.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/sync_status_tile.dart';
@@ -103,6 +104,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             value: settings.notificationsEnabled,
             onChanged: (value) {
               settingsNotifier.setNotificationsEnabled(value);
+              if (value) _requestNotificationPermission();
             },
           ),
 
@@ -113,6 +115,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             value: settings.budgetAlertsEnabled,
             onChanged: (value) {
               settingsNotifier.setBudgetAlertsEnabled(value);
+              if (value) _requestNotificationPermission();
             },
           ),
 
@@ -289,6 +292,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return 'Dark';
       default:
         return 'System';
+    }
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    final allowed =
+        await ref.read(notificationServiceProvider).requestPermission();
+    if (!allowed && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              "Notifications are blocked for SpendSheet. Allow them in your phone's settings to get budget alerts."),
+        ),
+      );
     }
   }
 
