@@ -39,7 +39,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         }
       } else {
         setState(() {
-          _errorMessage = 'Sign in was cancelled or failed. Please try again.';
+          _errorMessage = ref.read(authProvider.notifier).signInError ??
+              'Sign in failed. Please try again.';
         });
       }
     } catch (e) {

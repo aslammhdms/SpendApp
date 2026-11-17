@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../data/remote/google_auth_service.dart';
+import '../../../core/errors/app_exceptions.dart';
+import '../services/sign_in_error.dart';
 
 enum AuthState {
   initial,
@@ -14,6 +17,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final GoogleAuthService _authService;
 
   AuthNotifier(this._authService) : super(AuthState.initial);
+
+  /// Why the last [signIn] did not succeed, worded for the person using the
+  /// app. Null after a successful sign-in.
+  String? get signInError => _signInError;
+  String? _signInError;
 
   GoogleSignInAccount? get currentUser => _authService.currentUser;
   bool get isSignedIn => _authService.isSignedIn;
@@ -35,16 +43,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<bool> signIn() async {
     state = AuthState.loading;
+    _signInError = null;
     try {
       final user = await _authService.signIn();
       if (user != null) {
         state = AuthState.authenticated;
         return true;
       } else {
+        // Google returns no account when the picker is dismissed.
+        _signInError = signInCancelledMessage;
         state = AuthState.unauthenticated;
         return false;
       }
     } catch (e) {
+      final cause = e is AppException ? e.originalError : e;
+      debugPrint('Google sign-in failed: $cause');
+      _signInError = signInErrorMessage(e);
       state = AuthState.error;
       return false;
     }
