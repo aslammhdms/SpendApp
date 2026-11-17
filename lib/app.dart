@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'core/theme/app_theme.dart';
-import 'core/theme/dark_theme.dart';
+import 'core/theme/tokens.dart';
 import 'core/services/biometric_service.dart';
 import 'features/auth/screens/splash_screen.dart';
 import 'features/auth/screens/welcome_screen.dart';
@@ -263,13 +264,23 @@ class SpendSheetApp extends ConsumerWidget {
     return _BiometricLockGuard(
       biometricService: ref.watch(biometricServiceProvider),
       isLockEnabled: settings.biometricLockEnabled,
+      themeMode: themeMode,
       child: MaterialApp.router(
         title: 'SpendSheet',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        darkTheme: DarkTheme.dark,
+        darkTheme: AppTheme.dark,
         themeMode: themeMode,
         routerConfig: router,
+        builder: (context, child) {
+          // System bars follow the active theme on every screen, including
+          // those without an app bar.
+          final theme = Theme.of(context);
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: theme.appBarTheme.systemOverlayStyle!,
+            child: child!,
+          );
+        },
       ),
     );
   }
@@ -279,11 +290,13 @@ class _BiometricLockGuard extends StatefulWidget {
   final Widget child;
   final BiometricService biometricService;
   final bool isLockEnabled;
+  final ThemeMode themeMode;
 
   const _BiometricLockGuard({
     required this.child,
     required this.biometricService,
     required this.isLockEnabled,
+    required this.themeMode,
   });
 
   @override
@@ -339,40 +352,46 @@ class _BiometricLockGuardState extends State<_BiometricLockGuard>
           widget.child,
           if (_isLocked)
             MaterialApp(
-            debugShowCheckedModeBanner: false,
-            home: Scaffold(
-              body: Container(
-                color: Colors.black,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.lock,
-                        size: 64,
-                        color: Colors.white70,
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'SpendSheet is Locked',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.light,
+              darkTheme: AppTheme.dark,
+              themeMode: widget.themeMode,
+              home: Builder(builder: (context) {
+                final scheme = Theme.of(context).colorScheme;
+                final text = Theme.of(context).textTheme;
+                return Scaffold(
+                  backgroundColor: scheme.surface,
+                  body: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 88,
+                          height: 88,
+                          decoration: BoxDecoration(
+                            color: scheme.primaryContainer,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.lock_outline_rounded,
+                            size: 40,
+                            color: scheme.onPrimaryContainer,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 32),
-                      ElevatedButton.icon(
-                        onPressed: _authenticate,
-                        icon: const Icon(Icons.fingerprint),
-                        label: const Text('Tap to Unlock'),
-                      ),
-                    ],
+                        const SizedBox(height: Space.xl),
+                        Text('SpendSheet is Locked', style: text.titleLarge),
+                        const SizedBox(height: Space.xxl),
+                        FilledButton.icon(
+                          onPressed: _authenticate,
+                          icon: const Icon(Icons.fingerprint),
+                          label: const Text('Tap to Unlock'),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              }),
             ),
-          ),
         ],
       ),
     );
