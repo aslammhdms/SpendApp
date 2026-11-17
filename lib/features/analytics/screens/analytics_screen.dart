@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/tokens.dart';
 import '../../../core/utils/currency_utils.dart';
+import '../../../shared/widgets/money_text.dart';
+import '../../../shared/widgets/signal_stat.dart';
 import '../providers/analytics_provider.dart';
 import '../widgets/category_pie_chart.dart';
 import '../widgets/income_expense_bar_chart.dart';
@@ -44,29 +47,30 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen>
       appBar: AppBar(
         title: const Text('Analytics'),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
+          preferredSize: const Size.fromHeight(56),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                _PeriodChip(
-                  label: 'Week',
-                  isSelected: notifier.period == AnalyticsPeriod.week,
-                  onTap: () => notifier.setPeriod(AnalyticsPeriod.week),
-                ),
-                const SizedBox(width: 8),
-                _PeriodChip(
-                  label: 'Month',
-                  isSelected: notifier.period == AnalyticsPeriod.month,
-                  onTap: () => notifier.setPeriod(AnalyticsPeriod.month),
-                ),
-                const SizedBox(width: 8),
-                _PeriodChip(
-                  label: 'Year',
-                  isSelected: notifier.period == AnalyticsPeriod.year,
-                  onTap: () => notifier.setPeriod(AnalyticsPeriod.year),
-                ),
-              ],
+            padding: const EdgeInsets.fromLTRB(
+              Space.lg,
+              0,
+              Space.lg,
+              Space.sm + 2,
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<AnalyticsPeriod>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(
+                      value: AnalyticsPeriod.week, label: Text('Week')),
+                  ButtonSegment(
+                      value: AnalyticsPeriod.month, label: Text('Month')),
+                  ButtonSegment(
+                      value: AnalyticsPeriod.year, label: Text('Year')),
+                ],
+                selected: {notifier.period},
+                onSelectionChanged: (selection) =>
+                    notifier.setPeriod(selection.first),
+              ),
             ),
           ),
         ),
@@ -78,15 +82,15 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline,
                         size: 48,
-                        color: AppColors.error,
+                        color: Theme.of(context).colorScheme.error,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Space.lg),
                       Text(analytics.error!),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
+                      const SizedBox(height: Space.lg),
+                      FilledButton(
                         onPressed: () => notifier.loadData(),
                         child: const Text('Retry'),
                       ),
@@ -96,7 +100,12 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen>
               : RefreshIndicator(
                   onRefresh: () => notifier.loadData(),
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(
+                      Space.lg,
+                      Space.sm,
+                      Space.lg,
+                      Space.xxl,
+                    ),
                     children: [
                       // Summary Card
                       _SummaryCard(
@@ -104,7 +113,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen>
                         totalExpense: analytics.totalExpense,
                         currency: currency,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Space.lg),
 
                       // Category Breakdown
                       CategoryPieChart(
@@ -112,14 +121,14 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen>
                         totalAmount: analytics.totalExpense,
                         currency: currency,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Space.lg),
 
                       // Daily Spending Trend
                       SpendingLineChart(
                         dailySpending: analytics.dailyExpenses,
                         currency: currency,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Space.lg),
 
                       // Monthly Income vs Expense (for year view)
                       if (notifier.period == AnalyticsPeriod.year) ...[
@@ -128,46 +137,11 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen>
                           monthlyIncome: analytics.monthlyIncome,
                           currency: currency,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: Space.lg),
                       ],
-
-                      const SizedBox(height: 80),
                     ],
                   ),
                 ),
-    );
-  }
-}
-
-class _PeriodChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _PeriodChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.textSecondary,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -185,105 +159,54 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
     final balance = totalIncome - totalExpense;
+    final net = CurrencyUtils.formatWithSign(balance, currencyCode: currency);
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(Space.xl),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              'Net',
+              style: text.labelMedium?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+            Semantics(
+              label: 'Net, $net',
+              excludeSemantics: true,
+              child: Text(
+                net,
+                style: text.headlineMedium?.tabular,
+              ),
+            ),
+            const SizedBox(height: Space.lg),
             Row(
               children: [
                 Expanded(
-                  child: _SummaryItem(
+                  child: SignalStat(
                     label: 'Income',
                     amount: totalIncome,
-                    color: AppColors.income,
-                    icon: Icons.arrow_downward,
+                    kind: MoneyKind.income,
                     currency: currency,
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 50,
-                  color: AppColors.divider,
-                ),
+                const SizedBox(width: Space.lg),
                 Expanded(
-                  child: _SummaryItem(
+                  child: SignalStat(
                     label: 'Expense',
                     amount: totalExpense,
-                    color: AppColors.expense,
-                    icon: Icons.arrow_upward,
+                    kind: MoneyKind.expense,
                     currency: currency,
                   ),
-                ),
-              ],
-            ),
-            const Divider(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Net: ',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                Text(
-                  CurrencyUtils.formatWithSign(balance, currencyCode: currency),
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: balance >= 0 ? AppColors.income : AppColors.expense,
-                        fontWeight: FontWeight.bold,
-                      ),
                 ),
               ],
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SummaryItem extends StatelessWidget {
-  final String label;
-  final double amount;
-  final Color color;
-  final IconData icon;
-  final String currency;
-
-  const _SummaryItem({
-    required this.label,
-    required this.amount,
-    required this.color,
-    required this.icon,
-    this.currency = 'USD',
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 16),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          CurrencyUtils.format(amount, currencyCode: currency),
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-      ],
     );
   }
 }

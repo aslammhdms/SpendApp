@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../shared/widgets/money_text.dart';
+import '../../../shared/widgets/signal_stat.dart';
 
 /// Hero card on Home: this month's net savings, with income and expense.
 ///
@@ -89,25 +90,19 @@ class MonthlySummaryCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _SummaryItem(
-                  icon: Icons.south_west_rounded,
+                child: SignalStat(
                   label: 'Income',
                   amount: income,
                   kind: MoneyKind.income,
-                  iconColor: palette.income,
-                  iconBackground: palette.incomeContainer,
                   currency: currency,
                 ),
               ),
               const SizedBox(width: Space.lg),
               Expanded(
-                child: _SummaryItem(
-                  icon: Icons.north_east_rounded,
+                child: SignalStat(
                   label: 'Expense',
                   amount: expense,
                   kind: MoneyKind.expense,
-                  iconColor: palette.expense,
-                  iconBackground: palette.expenseContainer,
                   currency: currency,
                 ),
               ),
@@ -135,63 +130,5 @@ class MonthlySummaryCard extends StatelessWidget {
     ];
     final now = DateTime.now();
     return '${months[now.month - 1]} ${now.year}';
-  }
-}
-
-class _SummaryItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final double amount;
-  final MoneyKind kind;
-  final Color iconColor;
-  final Color iconBackground;
-  final String currency;
-
-  const _SummaryItem({
-    required this.icon,
-    required this.label,
-    required this.amount,
-    required this.kind,
-    required this.iconColor,
-    required this.iconBackground,
-    required this.currency,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-    return Row(
-      children: [
-        Container(
-          width: Sizes.iconCircleSmall + 4,
-          height: Sizes.iconCircleSmall + 4,
-          decoration: BoxDecoration(
-            color: iconBackground,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 18, color: iconColor),
-        ),
-        const SizedBox(width: Space.sm + 2),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style:
-                    text.labelMedium?.copyWith(color: scheme.onSurfaceVariant),
-              ),
-              MoneyText(
-                amount,
-                currency: currency,
-                kind: kind,
-                style: text.titleSmall,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
   }
 }

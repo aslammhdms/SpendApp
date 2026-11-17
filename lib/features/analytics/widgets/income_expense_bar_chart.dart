@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/tokens.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../core/utils/currency_utils.dart';
 
 class IncomeExpenseBarChart extends StatelessWidget {
@@ -17,25 +20,20 @@ class IncomeExpenseBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
+    final text = Theme.of(context).textTheme;
+    final axisStyle = text.labelSmall!.tabular.copyWith(
+      color: scheme.onSurfaceVariant,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0,
+    );
+
     if (monthlyExpenses.isEmpty && monthlyIncome.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: Column(
-            children: [
-              Icon(
-                Icons.bar_chart,
-                size: 64,
-                color: AppColors.textTertiary,
-              ),
-              SizedBox(height: 16),
-              Text(
-                'No data for this period',
-                style: TextStyle(color: AppColors.textTertiary),
-              ),
-            ],
-          ),
-        ),
+      return const EmptyState(
+        icon: Icons.bar_chart,
+        title: 'No data for this period',
+        compact: true,
       );
     }
 
@@ -47,7 +45,7 @@ class IncomeExpenseBarChart extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Space.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -56,20 +54,18 @@ class IncomeExpenseBarChart extends StatelessWidget {
               children: [
                 Text(
                   'Income vs Expense',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: text.titleMedium,
                 ),
                 Row(
                   children: [
-                    _buildLegendItem(AppColors.income, 'Income'),
+                    _buildLegendItem(context, palette.income, 'Income'),
                     const SizedBox(width: 16),
-                    _buildLegendItem(AppColors.expense, 'Expense'),
+                    _buildLegendItem(context, palette.expense, 'Expense'),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: Space.xl),
             SizedBox(
               height: 200,
               child: BarChart(
@@ -80,8 +76,12 @@ class IncomeExpenseBarChart extends StatelessWidget {
                   barTouchData: BarTouchData(
                     enabled: true,
                     touchTooltipData: BarTouchTooltipData(
-                      tooltipBgColor: AppColors.textPrimary,
-                      tooltipPadding: const EdgeInsets.all(8),
+                      tooltipBgColor: scheme.inverseSurface,
+                      tooltipRoundedRadius: Radii.sm,
+                      tooltipPadding: const EdgeInsets.symmetric(
+                        horizontal: Space.md,
+                        vertical: Space.sm,
+                      ),
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
                         final month = months[group.x.toInt()];
                         final isIncome = rodIndex == 0;
@@ -90,20 +90,14 @@ class IncomeExpenseBarChart extends StatelessWidget {
                             : monthlyExpenses[month] ?? 0;
                         return BarTooltipItem(
                           '${_getMonthName(month)}\n',
-                          const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
+                          text.labelMedium!
+                              .copyWith(color: scheme.onInverseSurface),
                           children: [
                             TextSpan(
                               text:
                                   '${isIncome ? 'Income' : 'Expense'}: ${CurrencyUtils.format(value, currencyCode: currency)}',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                                fontWeight: FontWeight.normal,
-                              ),
+                              style: text.titleSmall!.tabular
+                                  .copyWith(color: scheme.onInverseSurface),
                             ),
                           ],
                         );
@@ -125,10 +119,7 @@ class IncomeExpenseBarChart extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
                               _getShortMonthName(month),
-                              style: const TextStyle(
-                                color: AppColors.textTertiary,
-                                fontSize: 10,
-                              ),
+                              style: axisStyle,
                             ),
                           );
                         },
@@ -138,16 +129,17 @@ class IncomeExpenseBarChart extends StatelessWidget {
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 50,
+                        interval: maxValue > 0 ? maxValue / 4 : 25,
                         getTitlesWidget: (value, meta) {
+                          // Skip the chart's own max, which isn't on the grid
+                          // and would collide with the label below it.
+                          if (value == meta.max) return const SizedBox();
                           return Text(
                             CurrencyUtils.formatCompact(
                               value,
                               currencyCode: currency,
                             ),
-                            style: const TextStyle(
-                              color: AppColors.textTertiary,
-                              fontSize: 10,
-                            ),
+                            style: axisStyle,
                           );
                         },
                       ),
@@ -165,8 +157,9 @@ class IncomeExpenseBarChart extends StatelessWidget {
                     drawVerticalLine: false,
                     horizontalInterval: maxValue > 0 ? maxValue / 4 : 25,
                     getDrawingHorizontalLine: (value) => FlLine(
-                      color: AppColors.divider,
+                      color: scheme.outlineVariant.withValues(alpha: 0.6),
                       strokeWidth: 1,
+                      dashArray: [4, 4],
                     ),
                   ),
                   barGroups: List.generate(months.length, (index) {
@@ -176,16 +169,16 @@ class IncomeExpenseBarChart extends StatelessWidget {
                       barRods: [
                         BarChartRodData(
                           toY: monthlyIncome[month] ?? 0,
-                          color: AppColors.income,
-                          width: 12,
+                          color: palette.income,
+                          width: 10,
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(4),
                           ),
                         ),
                         BarChartRodData(
                           toY: monthlyExpenses[month] ?? 0,
-                          color: AppColors.expense,
-                          width: 12,
+                          color: palette.expense,
+                          width: 10,
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(4),
                           ),
@@ -202,24 +195,20 @@ class IncomeExpenseBarChart extends StatelessWidget {
     );
   }
 
-  Widget _buildLegendItem(Color color, String label) {
+  Widget _buildLegendItem(BuildContext context, Color color, String label) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: Space.xs + 2),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
+          style: theme.textTheme.labelMedium
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
       ],
     );
@@ -227,16 +216,36 @@ class IncomeExpenseBarChart extends StatelessWidget {
 
   String _getMonthName(DateTime date) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
     ];
     return months[date.month - 1];
   }
 
   String _getShortMonthName(DateTime date) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return months[date.month - 1];
   }
