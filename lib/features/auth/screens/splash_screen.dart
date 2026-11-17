@@ -44,7 +44,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
 
     _animationController.forward();
-    _initializeApp();
+    // Start after the first frame: initialization updates providers, and
+    // Riverpod rejects that while the widget tree is still building.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initializeApp());
   }
 
   Future<void> _initializeApp() async {
