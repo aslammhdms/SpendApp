@@ -22,6 +22,8 @@ import 'features/loans/screens/loans_screen.dart';
 import 'features/loans/screens/person_loans_screen.dart';
 import 'features/loans/screens/add_loan_screen.dart';
 import 'features/settings/screens/settings_screen.dart';
+import 'features/wallet_capture/providers/wallet_capture_provider.dart';
+import 'features/wallet_capture/screens/wallet_capture_screen.dart';
 import 'features/settings/providers/settings_provider.dart';
 import 'features/home/providers/dashboard_provider.dart';
 import 'features/transactions/providers/transactions_provider.dart';
@@ -148,6 +150,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
+        path: '/wallet-capture',
+        builder: (context, state) => const WalletCaptureScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/loans',
         builder: (context, state) => const LoansScreen(),
       ),
@@ -192,8 +199,23 @@ class _MainShell extends ConsumerStatefulWidget {
   ConsumerState<_MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends ConsumerState<_MainShell> {
+class _MainShellState extends ConsumerState<_MainShell>
+    with WidgetsBindingObserver {
   int _currentIndex = 0;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Payments made while the app was in the background show up on return.
+    if (state == AppLifecycleState.resumed) {
+      ref.read(walletCaptureProvider.notifier).refresh();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   int _getSelectedIndex() {
     if (widget.location.startsWith('/home')) return 0;
@@ -207,6 +229,7 @@ class _MainShellState extends ConsumerState<_MainShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentIndex = _getSelectedIndex();
   }
 

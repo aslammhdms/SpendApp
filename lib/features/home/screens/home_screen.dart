@@ -13,6 +13,8 @@ import '../widgets/recent_transactions_list.dart';
 import '../widgets/budget_progress_bars.dart';
 import '../widgets/loans_summary_card.dart';
 import '../../settings/providers/settings_provider.dart';
+import '../../wallet_capture/providers/wallet_capture_provider.dart';
+import '../../wallet_capture/widgets/pending_captures_banner.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -31,6 +33,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Load dashboard data on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(dashboardProvider.notifier).refresh();
+      ref.read(walletCaptureProvider.notifier).refresh();
       _listenToSync();
     });
   }
@@ -105,6 +108,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Space.fabClearance,
                       ),
                       children: [
+                        const PendingCapturesBanner(),
                         MonthlySummaryCard(
                           income: dashboardData.monthlyIncome,
                           expense: dashboardData.monthlyExpense,

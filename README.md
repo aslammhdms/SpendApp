@@ -29,6 +29,8 @@ A Flutter expense tracking app for Android with Google Sheets as the backend dat
 - **Analytics**: Visualize spending with charts
 - **Categories**: Customizable expense/income categories
 - **Transfer Support**: Track money transfers between accounts
+- **Google Wallet Capture** (Android, optional): Turns Google Wallet payment
+  notifications into expenses you confirm with one tap
 
 ## Getting Started
 
@@ -88,6 +90,7 @@ lib/
 │   ├── budgets/           # Budget management
 │   ├── accounts/          # Account management
 │   ├── categories/        # Category management
+│   ├── wallet_capture/    # Google Wallet payment capture (Android)
 │   └── settings/          # App settings
 └── shared/                # Shared widgets and providers
 ```
@@ -110,6 +113,26 @@ The app uses an offline-first approach:
 3. Background sync runs every 15 minutes
 4. Pull-to-refresh triggers immediate sync
 5. Conflicts resolved with last-write-wins
+
+## Google Wallet Payment Capture
+
+Optional and Android only. Turn it on in **Settings → Google Wallet
+payments**, then allow notification access for SpendSheet.
+
+1. A notification listener (`WalletNotificationListener.kt`) keeps the title
+   and text of notifications posted by the Google Wallet app. Notifications
+   from every other app are ignored.
+2. When the app opens, the notifications are read on the device to find the
+   amount, merchant and card (`WalletNotificationParser`). Nothing is sent
+   anywhere.
+3. Each payment waits in a review list. Confirming one creates a normal
+   expense, which then syncs like any other. The app remembers the category
+   you pick for a merchant and the account you pick for a card.
+
+Captured notifications stay on the device and are not written to the
+spreadsheet. If you install the app from an APK instead of the Play Store,
+Android 13 and later hides notification access until you choose **Allow
+restricted settings** on the app's App info page.
 
 ## Building for Production
 

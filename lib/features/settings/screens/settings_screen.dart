@@ -181,6 +181,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const Divider(),
 
+          // Google Wallet capture
+          ListTile(
+            leading: const Icon(Icons.contactless_outlined),
+            title: const Text('Google Wallet payments'),
+            subtitle: const Text('Add tap-to-pay purchases as expenses'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/wallet-capture'),
+          ),
+          const Divider(),
+
           // Full Sync
           ListTile(
             leading: const Icon(Icons.sync),

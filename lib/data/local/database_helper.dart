@@ -6,7 +6,7 @@ import '../../core/constants/category_defaults.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'spendsheet.db';
-  static const int _databaseVersion = 3;
+  static const int _databaseVersion = 4;
 
   static Database? _database;
 
@@ -175,6 +175,8 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_loans_person ON loans(person_id)');
     await db.execute('CREATE INDEX idx_loans_type ON loans(type)');
 
+    await _createCapturedPaymentsTable(db);
+
     // Insert default categories and accounts
     await _insertDefaultCategories(db);
     await _insertDefaultAccounts(db);
@@ -224,6 +226,31 @@ class DatabaseHelper {
       await db.execute('CREATE INDEX idx_loans_person ON loans(person_id)');
       await db.execute('CREATE INDEX idx_loans_type ON loans(type)');
     }
+
+    if (oldVersion < 4) {
+      await _createCapturedPaymentsTable(db);
+    }
+  }
+
+  /// Payments read from Google Wallet notifications, kept on this device
+  /// until the user adds or dismisses them. Not synced to the spreadsheet.
+  Future<void> _createCapturedPaymentsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE captured_payments (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        amount REAL NOT NULL,
+        currency TEXT,
+        merchant TEXT,
+        card_last4 TEXT,
+        posted_at TEXT NOT NULL,
+        status TEXT NOT NULL,
+        transaction_id TEXT
+      )
+    ''');
+    await db.execute(
+        'CREATE INDEX idx_captured_payments_status ON captured_payments(status)');
   }
 
   Future<void> _insertDefaultCategories(Database db) async {
@@ -318,5 +345,6 @@ class DatabaseHelper {
     await db.delete('settings');
     await db.delete('people');
     await db.delete('loans');
+    await db.delete('captured_payments');
   }
 }
