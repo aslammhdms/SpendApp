@@ -148,6 +148,7 @@ class _TransactionItem extends StatelessWidget {
                 currency: currency,
                 kind: kind,
                 prefix: prefix,
+                color: isExpense ? scheme.onSurface : fg,
                 style: text.titleSmall,
               ),
             ],

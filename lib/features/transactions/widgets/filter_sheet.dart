@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/tokens.dart';
+import '../../../shared/widgets/category_icon.dart';
 import '../../../data/models/transaction.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/account.dart';
@@ -34,30 +35,20 @@ class _FilterSheetState extends State<FilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // The bottom sheet theme draws the drag handle.
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(Space.xl, 0, Space.xl, Space.xl),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.divider,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Filter Transactions',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
               ),
               if (_filter.hasFilters)
@@ -187,7 +178,7 @@ class _FilterSheetState extends State<FilterSheet> {
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
+            child: FilledButton(
               onPressed: () {
                 widget.onApply(_filter);
                 Navigator.pop(context);
@@ -233,10 +224,19 @@ class _FilterSheetState extends State<FilterSheet> {
     );
   }
 
+  Widget? _avatar(BuildContext context, String? emoji) {
+    if (emoji == null) return null;
+    final icon = iconForEmoji(emoji);
+    return icon != null
+        ? Icon(icon,
+            size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant)
+        : Text(emoji);
+  }
+
   Widget _buildCategoryChip(String? categoryId, String label, String? icon) {
     final isSelected = _filter.categoryId == categoryId;
     return FilterChip(
-      avatar: icon != null ? Text(icon) : null,
+      avatar: _avatar(context, icon),
       label: Text(label),
       selected: isSelected,
       onSelected: (_) {
@@ -254,7 +254,7 @@ class _FilterSheetState extends State<FilterSheet> {
   Widget _buildAccountChip(String? accountId, String label, String? icon) {
     final isSelected = _filter.accountId == accountId;
     return FilterChip(
-      avatar: icon != null ? Text(icon) : null,
+      avatar: _avatar(context, icon),
       label: Text(label),
       selected: isSelected,
       onSelected: (_) {
@@ -302,13 +302,11 @@ class _DatePickerButton extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            date != null
-                ? '${date!.day}/${date!.month}/${date!.year}'
-                : label,
+            date != null ? '${date!.day}/${date!.month}/${date!.year}' : label,
             style: TextStyle(
               color: date != null
-                  ? AppColors.textPrimary
-                  : AppColors.textTertiary,
+                  ? Theme.of(context).colorScheme.onSurface
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const Icon(Icons.calendar_today, size: 18),

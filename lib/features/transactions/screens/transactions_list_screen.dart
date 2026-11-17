@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/currency_utils.dart';
+import '../../../core/theme/app_palette.dart';
+import '../../../core/theme/tokens.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/transaction.dart';
@@ -13,6 +13,10 @@ import '../../../data/remote/sync_engine.dart';
 import '../providers/transactions_provider.dart';
 import '../widgets/transaction_tile.dart';
 import '../widgets/filter_sheet.dart';
+import '../../../shared/widgets/auto_hide_fab.dart';
+import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/money_text.dart';
+import '../../../shared/widgets/section_header.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 
@@ -30,6 +34,7 @@ class _TransactionsListScreenState
   final TextEditingController _searchController = TextEditingController();
   bool _showSearch = false;
   StreamSubscription<SyncStatus>? _syncSubscription;
+  final _fabVisibility = FabVisibility();
 
   @override
   void initState() {
@@ -37,9 +42,12 @@ class _TransactionsListScreenState
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(transactionsProvider.notifier).loadTransactions(refresh: true);
-      _syncSubscription = ref.read(syncEngineProvider).statusStream.listen((status) {
+      _syncSubscription =
+          ref.read(syncEngineProvider).statusStream.listen((status) {
         if (status == SyncStatus.synced && mounted) {
-          ref.read(transactionsProvider.notifier).loadTransactions(refresh: true);
+          ref
+              .read(transactionsProvider.notifier)
+              .loadTransactions(refresh: true);
         }
       });
     });
@@ -50,6 +58,7 @@ class _TransactionsListScreenState
     _syncSubscription?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
+    _fabVisibility.dispose();
     super.dispose();
   }
 
@@ -61,7 +70,9 @@ class _TransactionsListScreenState
   }
 
   Future<void> _handleRefresh() async {
-    await ref.read(transactionsProvider.notifier).loadTransactions(refresh: true);
+    await ref
+        .read(transactionsProvider.notifier)
+        .loadTransactions(refresh: true);
   }
 
   void _showFilterSheet() async {
@@ -117,6 +128,7 @@ class _TransactionsListScreenState
         actions: [
           IconButton(
             icon: Icon(_showSearch ? Icons.close : Icons.search),
+            tooltip: _showSearch ? 'Close search' : 'Search',
             onPressed: () {
               setState(() {
                 _showSearch = !_showSearch;
@@ -132,8 +144,10 @@ class _TransactionsListScreenState
               isLabelVisible: state.filter.hasFilters,
               child: const Icon(Icons.filter_list),
             ),
+            tooltip: 'Filter',
             onPressed: _showFilterSheet,
           ),
+          const SizedBox(width: Space.xs),
         ],
       ),
       body: state.isLoading && state.isEmpty
@@ -143,15 +157,15 @@ class _TransactionsListScreenState
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline,
                         size: 48,
-                        color: AppColors.error,
+                        color: Theme.of(context).colorScheme.error,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Space.lg),
                       Text(state.error!),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
+                      const SizedBox(height: Space.lg),
+                      FilledButton(
                         onPressed: _handleRefresh,
                         child: const Text('Retry'),
                       ),
@@ -159,54 +173,48 @@ class _TransactionsListScreenState
                   ),
                 )
               : state.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.receipt_long,
-                            size: 64,
-                            color: AppColors.textTertiary,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            state.filter.hasFilters
-                                ? 'No transactions match your filters'
-                                : 'No transactions yet',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                          ),
-                          if (state.filter.hasFilters) ...[
-                            const SizedBox(height: 16),
-                            TextButton(
+                  ? EmptyState(
+                      icon: Icons.receipt_long_outlined,
+                      title: state.filter.hasFilters
+                          ? 'No transactions match your filters'
+                          : 'No transactions yet',
+                      action: state.filter.hasFilters
+                          ? TextButton(
                               onPressed: () {
-                                ref.read(transactionsProvider.notifier).clearFilter();
+                                ref
+                                    .read(transactionsProvider.notifier)
+                                    .clearFilter();
                               },
                               child: const Text('Clear Filters'),
-                            ),
-                          ],
-                        ],
-                      ),
+                            )
+                          : null,
                     )
-                  : RefreshIndicator(
-                      onRefresh: _handleRefresh,
-                      child: categoriesAsync.when(
-                        data: (categories) => _buildList(
-                          state,
-                          categories,
-                          currency: currency,
+                  : NotificationListener<UserScrollNotification>(
+                      onNotification: _fabVisibility.onScroll,
+                      child: RefreshIndicator(
+                        onRefresh: _handleRefresh,
+                        child: categoriesAsync.when(
+                          data: (categories) => _buildList(
+                            state,
+                            categories,
+                            currency: currency,
+                          ),
+                          loading: () => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          error: (_, __) =>
+                              _buildList(state, [], currency: currency),
                         ),
-                        loading: () => const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                        error: (_, __) => _buildList(state, [], currency: currency),
                       ),
                     ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/transactions/add'),
-        icon: const Icon(Icons.add),
-        label: const Text('Add'),
+      floatingActionButton: AutoHideFab(
+        visibility: _fabVisibility,
+        child: FloatingActionButton.extended(
+          onPressed: () => context.push('/transactions/add'),
+          tooltip: 'Add transaction',
+          icon: const Icon(Icons.add),
+          label: const Text('Add'),
+        ),
       ),
     );
   }
@@ -221,7 +229,12 @@ class _TransactionsListScreenState
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.only(bottom: 80),
+      padding: const EdgeInsets.fromLTRB(
+        Space.lg,
+        0,
+        Space.lg,
+        Space.fabClearance,
+      ),
       itemCount: dateKeys.length + (state.isLoading ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == dateKeys.length) {
@@ -235,26 +248,29 @@ class _TransactionsListScreenState
         final items = grouped[dateKey]!;
 
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                dateKey,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
+            OverlineHeader(dateKey),
+            Card(
+              margin: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: Space.xs),
+                child: Column(
+                  children: [
+                    ...items.map((item) {
+                      if (item is Transaction) {
+                        return _buildTransactionItem(
+                            item, categories, currency);
+                      } else if (item is Loan) {
+                        return _buildLoanItem(item, state, currency);
+                      }
+                      return const SizedBox.shrink();
+                    }),
+                  ],
+                ),
               ),
             ),
-            ...items.map((item) {
-              if (item is Transaction) {
-                return _buildTransactionItem(item, categories, currency);
-              } else if (item is Loan) {
-                return _buildLoanItem(item, state, currency);
-              }
-              return const SizedBox.shrink();
-            }),
           ],
         );
       },
@@ -293,29 +309,17 @@ class _TransactionsListScreenState
   Widget _buildLoanItem(Loan loan, TransactionsState state, String currency) {
     final personName = state.loanPersonNames[loan.personId] ?? 'Unknown';
 
-    String subtitle;
-    Color iconColor;
-    IconData icon;
-    String prefix;
+    final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
+    final text = Theme.of(context).textTheme;
 
-    if (loan.isSettlement) {
-      subtitle = 'Settlement';
-      iconColor = AppColors.primary;
-      icon = Icons.check_circle_outline;
-      prefix = '';
-    } else if (loan.isLent) {
-      subtitle = 'Lent';
-      iconColor = AppColors.loan;
-      icon = Icons.arrow_upward;
-      prefix = '-';
-    } else {
-      subtitle = 'Borrowed';
-      iconColor = AppColors.loan;
-      icon = Icons.arrow_downward;
-      prefix = '+';
-    }
-
-    final formattedAmount = CurrencyUtils.format(loan.amount, currencyCode: currency);
+    final (String subtitle, IconData icon, String prefix, Color amountColor) =
+        loan.isSettlement
+            ? ('Settlement', Icons.check_circle_outline, '', scheme.onSurface)
+            : loan.isLent
+                ? ('Lent', Icons.north_east_rounded, '-', scheme.onSurface)
+                : ('Borrowed', Icons.south_west_rounded, '+', palette.loan);
+    final secondary = text.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
 
     return Slidable(
       endActionPane: ActionPane(
@@ -323,90 +327,82 @@ class _TransactionsListScreenState
         children: [
           SlidableAction(
             onPressed: (_) => _confirmDeleteLoan(loan.id),
-            backgroundColor: AppColors.error,
-            foregroundColor: Colors.white,
-            icon: Icons.delete,
+            backgroundColor: scheme.error,
+            foregroundColor: scheme.onError,
+            icon: Icons.delete_outline,
             label: 'Delete',
           ),
         ],
       ),
       child: InkWell(
         onTap: () => context.push('/loans/person/${loan.personId}'),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 64),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Space.lg,
+              vertical: Space.sm + 2,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: Sizes.iconCircle,
+                  height: Sizes.iconCircle,
+                  decoration: BoxDecoration(
+                    color: palette.loanContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon,
+                      color: palette.onLoanContainer, size: Sizes.icon),
                 ),
-                child: Icon(icon, color: iconColor, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      personName,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Text(
-                          subtitle,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.textTertiary,
+                const SizedBox(width: Space.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        personName,
+                        style: text.titleSmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(subtitle, style: secondary),
+                          if (loan.note?.isNotEmpty ?? false) ...[
+                            Text(' • ', style: secondary),
+                            Flexible(
+                              child: Text(
+                                loan.note!,
+                                style: secondary,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                        ),
-                        if (loan.note?.isNotEmpty ?? false) ...[
-                          const Text(
-                            ' • ',
-                            style: TextStyle(color: AppColors.textTertiary),
-                          ),
-                          Flexible(
-                            child: Text(
-                              loan.note!,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textTertiary,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
+                          ],
+                          Text(' • ', style: secondary),
+                          Text(
+                            AppDateUtils.formatDisplayTime(loan.date),
+                            style: secondary,
                           ),
                         ],
-                        const Text(
-                          ' • ',
-                          style: TextStyle(color: AppColors.textTertiary),
-                        ),
-                        Text(
-                          AppDateUtils.formatDisplayTime(loan.date),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.textTertiary,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '$prefix$formattedAmount',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: iconColor,
-                    ),
-              ),
-            ],
+                const SizedBox(width: Space.md),
+                MoneyText(
+                  loan.amount,
+                  currency: currency,
+                  kind: MoneyKind.loan,
+                  prefix: prefix,
+                  semanticLabel: subtitle,
+                  color: amountColor,
+                  style: text.titleSmall,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -418,7 +414,8 @@ class _TransactionsListScreenState
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Transaction'),
-        content: const Text('Are you sure you want to delete this transaction?'),
+        content:
+            const Text('Are you sure you want to delete this transaction?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -426,11 +423,15 @@ class _TransactionsListScreenState
           ),
           TextButton(
             onPressed: () async {
-              await ref.read(transactionsProvider.notifier).deleteTransaction(transactionId);
+              await ref
+                  .read(transactionsProvider.notifier)
+                  .deleteTransaction(transactionId);
               Navigator.pop(context);
               ref.read(dashboardProvider.notifier).refresh();
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -456,7 +457,9 @@ class _TransactionsListScreenState
               ref.read(syncEngineProvider).sync();
               ref.read(dashboardProvider.notifier).refresh();
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Delete'),
           ),
         ],

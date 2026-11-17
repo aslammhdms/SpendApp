@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/currency_utils.dart';
+import '../../../core/theme/app_palette.dart';
+import '../../../core/theme/tokens.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../data/models/transaction.dart';
 import '../../../data/models/category.dart';
+import '../../../shared/widgets/category_icon.dart';
+import '../../../shared/widgets/money_text.dart';
 
+/// One transaction in a list: category icon, name, note and time, amount.
+///
+/// In lists, expenses are shown in the neutral text color with a minus
+/// sign and income in green, so a long list doesn't turn red; screen
+/// readers still hear "Expense" or "Income".
 class TransactionTile extends StatelessWidget {
   final Transaction transaction;
   final Category? category;
@@ -26,27 +33,30 @@ class TransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
+    final text = Theme.of(context).textTheme;
     final isExpense = transaction.type == TransactionType.expense;
     final isIncome = transaction.type == TransactionType.income;
     final isTransfer = transaction.type == TransactionType.transfer;
 
-    Color amountColor;
-    String prefix;
-    IconData defaultIcon;
+    final (
+      MoneyKind kind,
+      String prefix,
+      IconData icon,
+      Color amountColor
+    ) = isExpense
+        ? (MoneyKind.expense, '-', Icons.north_east_rounded, scheme.onSurface)
+        : isIncome
+            ? (MoneyKind.income, '+', Icons.south_west_rounded, palette.income)
+            : (
+                MoneyKind.transfer,
+                '',
+                Icons.swap_horiz_rounded,
+                palette.transfer
+              );
 
-    if (isExpense) {
-      amountColor = AppColors.expense;
-      prefix = '-';
-      defaultIcon = Icons.arrow_upward;
-    } else if (isIncome) {
-      amountColor = AppColors.income;
-      prefix = '+';
-      defaultIcon = Icons.arrow_downward;
-    } else {
-      amountColor = AppColors.transfer;
-      prefix = '';
-      defaultIcon = Icons.swap_horiz;
-    }
+    final secondary = text.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
 
     return Slidable(
       endActionPane: ActionPane(
@@ -55,111 +65,106 @@ class TransactionTile extends StatelessWidget {
           if (onEdit != null)
             SlidableAction(
               onPressed: (_) => onEdit!(),
-              backgroundColor: AppColors.info,
-              foregroundColor: Colors.white,
-              icon: Icons.edit,
+              backgroundColor: scheme.secondaryContainer,
+              foregroundColor: scheme.onSecondaryContainer,
+              icon: Icons.edit_outlined,
               label: 'Edit',
             ),
           if (onDelete != null)
             SlidableAction(
               onPressed: (_) => onDelete!(),
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              icon: Icons.delete,
+              backgroundColor: scheme.error,
+              foregroundColor: scheme.onError,
+              icon: Icons.delete_outline,
               label: 'Delete',
             ),
         ],
       ),
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: category != null
-                      ? Color(category!.color).withValues(alpha: 0.15)
-                      : amountColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: category != null
-                      ? Text(
-                          category!.icon,
-                          style: const TextStyle(fontSize: 20),
-                        )
-                      : Icon(defaultIcon, color: amountColor, size: 22),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      category?.name ??
-                          (isTransfer ? 'Transfer' : 'Transaction'),
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        if (transaction.note?.isNotEmpty ?? false) ...[
-                          Flexible(
-                            child: Text(
-                              transaction.note!,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textTertiary,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 64),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Space.lg,
+              vertical: Space.sm + 2,
+            ),
+            child: Row(
+              children: [
+                category != null
+                    ? CategoryIcon(
+                        emoji: category!.icon,
+                        color: Color(category!.color),
+                      )
+                    : Container(
+                        width: Sizes.iconCircle,
+                        height: Sizes.iconCircle,
+                        decoration: BoxDecoration(
+                          color: scheme.surfaceContainerHigh,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(icon, color: amountColor, size: Sizes.icon),
+                      ),
+                const SizedBox(width: Space.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        category?.name ??
+                            (isTransfer ? 'Transfer' : 'Transaction'),
+                        style: text.titleSmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          if (transaction.note?.isNotEmpty ?? false) ...[
+                            Flexible(
+                              child: Text(
+                                transaction.note!,
+                                style: secondary,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                          const Text(
-                            ' • ',
-                            style: TextStyle(color: AppColors.textTertiary),
+                            Text(' • ', style: secondary),
+                          ],
+                          Text(
+                            AppDateUtils.formatDisplayTime(transaction.date),
+                            style: secondary,
                           ),
                         ],
-                        Text(
-                          AppDateUtils.formatDisplayTime(transaction.date),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.textTertiary,
-                              ),
-                        ),
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: Space.md),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    MoneyText(
+                      transaction.amount,
+                      currency: currency,
+                      kind: kind,
+                      prefix: prefix,
+                      color: amountColor,
+                      style: text.titleSmall,
                     ),
+                    if (transaction.receiptUrl != null) ...[
+                      const SizedBox(height: 2),
+                      Icon(
+                        Icons.receipt_outlined,
+                        size: 14,
+                        color: scheme.onSurfaceVariant,
+                        semanticLabel: 'Has receipt',
+                      ),
+                    ],
                   ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '$prefix${CurrencyUtils.format(transaction.amount, currencyCode: currency)}',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: amountColor,
-                        ),
-                  ),
-                  if (transaction.receiptUrl != null) ...[
-                    const SizedBox(height: 2),
-                    Icon(
-                      Icons.receipt,
-                      size: 14,
-                      color: AppColors.textTertiary,
-                    ),
-                  ],
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
