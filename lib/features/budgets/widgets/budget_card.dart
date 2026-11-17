@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/tokens.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../data/models/budget.dart';
+import '../../../shared/widgets/category_icon.dart';
 
 class BudgetCard extends StatelessWidget {
   final Budget budget;
@@ -23,59 +26,56 @@ class BudgetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
+    final text = Theme.of(context).textTheme;
     final percentUsed = budget.percentUsed.clamp(0.0, 1.5);
-    final progressColor = _getProgressColor(percentUsed);
+    final progressColor = palette.budgetColor(percentUsed);
     final remaining = budget.remaining;
+    final percentLabel = '${(percentUsed * 100).toStringAsFixed(0)}%';
+    final spent =
+        CurrencyUtils.format(budget.spentAmount, currencyCode: currency);
+    final limit = CurrencyUtils.format(budget.amount, currencyCode: currency);
+    final remainingLabel = remaining >= 0
+        ? '${CurrencyUtils.format(remaining, currencyCode: currency)} left'
+        : '${CurrencyUtils.format(remaining.abs(), currencyCode: currency)} over';
 
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(
+            Space.xl,
+            Space.lg,
+            Space.sm,
+            Space.xl,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   if (categoryIcon != null) ...[
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: progressColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Center(
-                        child: Text(
-                          categoryIcon!,
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
+                    CategoryIcon(emoji: categoryIcon!, color: progressColor),
+                    const SizedBox(width: Space.md),
                   ],
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          budget.name,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
+                        Text(budget.name, style: text.titleMedium),
                         const SizedBox(height: 2),
                         Text(
                           _getPeriodLabel(budget.period),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.textTertiary,
-                              ),
+                          style: text.bodySmall
+                              ?.copyWith(color: scheme.onSurfaceVariant),
                         ),
                       ],
                     ),
                   ),
                   PopupMenuButton<String>(
+                    tooltip: 'Budget options',
                     onSelected: (value) {
                       if (value == 'edit') onEdit?.call();
                       if (value == 'delete') onDelete?.call();
@@ -85,19 +85,21 @@ class BudgetCard extends StatelessWidget {
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.edit, size: 20),
-                            SizedBox(width: 8),
+                            Icon(Icons.edit_outlined, size: 20),
+                            SizedBox(width: Space.md),
                             Text('Edit'),
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete, size: 20, color: AppColors.error),
-                            SizedBox(width: 8),
-                            Text('Delete', style: TextStyle(color: AppColors.error)),
+                            Icon(Icons.delete_outline,
+                                size: 20, color: scheme.error),
+                            const SizedBox(width: Space.md),
+                            Text('Delete',
+                                style: TextStyle(color: scheme.error)),
                           ],
                         ),
                       ),
@@ -105,84 +107,83 @@ class BudgetCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    CurrencyUtils.format(budget.spentAmount, currencyCode: currency),
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  Text(
-                    'of ${CurrencyUtils.format(budget.amount, currencyCode: currency)}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: percentUsed.clamp(0.0, 1.0),
-                  minHeight: 10,
-                  backgroundColor: AppColors.surfaceVariant,
-                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: progressColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${(percentUsed * 100).toStringAsFixed(0)}%',
-                      style: TextStyle(
-                        color: progressColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
+              const SizedBox(height: Space.lg),
+              Padding(
+                padding: const EdgeInsets.only(right: Space.lg - Space.sm),
+                child: Semantics(
+                  label:
+                      '$percentLabel used, $spent of $limit, $remainingLabel',
+                  excludeSemantics: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(spent, style: text.titleLarge?.tabular),
+                          const SizedBox(width: Space.xs),
+                          Expanded(
+                            child: Text(
+                              'of $limit',
+                              style: text.bodySmall?.tabular
+                                  .copyWith(color: scheme.onSurfaceVariant),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                  Text(
-                    remaining >= 0
-                        ? '${CurrencyUtils.format(remaining, currencyCode: currency)} left'
-                        : '${CurrencyUtils.format(remaining.abs(), currencyCode: currency)} over',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: remaining >= 0
-                              ? AppColors.textSecondary
-                              : AppColors.error,
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(height: Space.sm),
+                      TweenAnimationBuilder<double>(
+                        tween:
+                            Tween(begin: 0, end: percentUsed.clamp(0.0, 1.0)),
+                        duration: Motion.slow,
+                        curve: Motion.standard,
+                        builder: (context, value, _) => LinearProgressIndicator(
+                          value: value,
+                          color: progressColor,
                         ),
+                      ),
+                      const SizedBox(height: Space.md),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Space.sm,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: progressColor.withValues(alpha: 0.14),
+                              borderRadius: Radii.smAll,
+                            ),
+                            child: Text(
+                              percentLabel,
+                              style: text.labelMedium?.tabular.copyWith(
+                                color: progressColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            remainingLabel,
+                            style: text.bodySmall?.tabular.copyWith(
+                              color: remaining >= 0
+                                  ? scheme.onSurfaceVariant
+                                  : palette.budgetDanger,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Color _getProgressColor(double percent) {
-    if (percent >= 1.0) {
-      return AppColors.budgetDanger;
-    } else if (percent >= 0.8) {
-      return AppColors.budgetWarning;
-    } else {
-      return AppColors.budgetSafe;
-    }
   }
 
   String _getPeriodLabel(BudgetPeriod period) {

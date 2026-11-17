@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/tokens.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../data/models/person.dart';
 import '../providers/loans_provider.dart';
@@ -81,7 +83,10 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodySmall
-                                    ?.copyWith(color: AppColors.textTertiary),
+                                    ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant),
                               ),
                               const SizedBox(height: 8),
                               Text(
@@ -92,13 +97,15 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
                                 style: Theme.of(context)
                                     .textTheme
                                     .headlineMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
+                                    ?.tabular
+                                    .copyWith(
                                       color: person.netBalance > 0
-                                          ? AppColors.income
+                                          ? context.palette.income
                                           : person.netBalance < 0
-                                              ? AppColors.expense
-                                              : AppColors.textTertiary,
+                                              ? context.palette.expense
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
                                     ),
                               ),
                               const SizedBox(height: 4),
@@ -111,7 +118,10 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium
-                                    ?.copyWith(color: AppColors.textSecondary),
+                                    ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant),
                               ),
                             ],
                           ),
@@ -131,7 +141,10 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
-                                ?.copyWith(color: AppColors.textTertiary),
+                                ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant),
                           ),
                       ],
                     ),
@@ -143,7 +156,10 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
                           child: Column(
                             children: [
                               Icon(Icons.receipt_long_outlined,
-                                  size: 48, color: AppColors.textTertiary),
+                                  size: 48,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant),
                               const SizedBox(height: 12),
                               const Text('No loans yet'),
                             ],
@@ -158,7 +174,7 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
                                 onDelete: () => _confirmDeleteLoan(loan.id),
                               ))
                           .toList(),
-                    const SizedBox(height: 80),
+                    const SizedBox(height: Space.fabClearance - Space.lg),
                   ],
                 ),
       floatingActionButton: FloatingActionButton.extended(
@@ -187,13 +203,16 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await ref.read(loansProvider.notifier).deletePerson(widget.personId);
+              await ref
+                  .read(loansProvider.notifier)
+                  .deletePerson(widget.personId);
               if (mounted) {
                 await ref.read(dashboardProvider.notifier).refresh();
                 if (mounted) this.context.pop();
               }
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Delete'),
           ),
         ],
@@ -222,7 +241,8 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
                 await _loadData();
               }
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Delete'),
           ),
         ],

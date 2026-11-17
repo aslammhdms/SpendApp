@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/tokens.dart';
+import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/money_text.dart';
+import '../../../shared/widgets/section_header.dart';
+import '../../../shared/widgets/signal_stat.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../data/models/person.dart';
 import '../providers/loans_provider.dart';
@@ -41,12 +47,12 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline,
-                          size: 48, color: AppColors.error),
+                      Icon(Icons.error_outline,
+                          size: 48, color: Theme.of(context).colorScheme.error),
                       const SizedBox(height: 16),
                       Text(state.error!),
                       const SizedBox(height: 16),
-                      ElevatedButton(
+                      FilledButton(
                         onPressed: () =>
                             ref.read(loansProvider.notifier).loadPeople(),
                         child: const Text('Retry'),
@@ -59,96 +65,47 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                     await ref.read(loansProvider.notifier).loadPeople();
                   },
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(
+                      Space.lg,
+                      Space.sm,
+                      Space.lg,
+                      Space.fabClearance,
+                    ),
                     children: [
-                      // Summary header
-                      Card(
-                        color: AppColors.primary,
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  _SummaryColumn(
-                                    label: 'Owed to you',
-                                    amount: state.totalOwedToYou,
-                                    currency: currency,
-                                  ),
-                                  Container(
-                                    width: 1,
-                                    height: 40,
-                                    color: Colors.white24,
-                                  ),
-                                  _SummaryColumn(
-                                    label: 'You owe',
-                                    amount: state.totalYouOwe,
-                                    currency: currency,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              const Divider(color: Colors.white24, height: 1),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Net: ${CurrencyUtils.format(state.totalOwedToYou - state.totalYouOwe, currencyCode: currency)}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      _LoansSummary(
+                        owedToYou: state.totalOwedToYou,
+                        youOwe: state.totalYouOwe,
+                        currency: currency,
                       ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'People',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          if (state.people.isNotEmpty)
-                            Text(
-                              'Swipe left to delete',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: AppColors.textTertiary),
-                            ),
-                        ],
+                      OverlineHeader(
+                        'People',
+                        trailing: state.people.isNotEmpty
+                            ? Text(
+                                'Swipe left to delete',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                              )
+                            : null,
                       ),
-                      const SizedBox(height: 12),
                       if (state.people.isEmpty)
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(32),
-                            child: Column(
-                              children: [
-                                Icon(Icons.people_outline,
-                                    size: 48, color: AppColors.textTertiary),
-                                const SizedBox(height: 12),
-                                const Text('No people yet'),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Add a loan to get started',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                          color: AppColors.textTertiary),
-                                ),
-                              ],
-                            ),
+                        const Card(
+                          margin: EdgeInsets.zero,
+                          child: EmptyState(
+                            icon: Icons.people_outline,
+                            title: 'No people yet',
+                            subtitle: 'Add a loan to get started',
+                            compact: true,
                           ),
                         )
                       else
                         ...state.people.map((person) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.only(bottom: Space.sm),
                               child: PersonBalanceCard(
                                 person: person,
                                 currency: currency,
@@ -156,13 +113,14 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                                   await context
                                       .push('/loans/person/${person.id}');
                                   if (mounted) {
-                                    ref.read(loansProvider.notifier).loadPeople();
+                                    ref
+                                        .read(loansProvider.notifier)
+                                        .loadPeople();
                                   }
                                 },
                                 onDelete: () => _confirmDeletePerson(person),
                               ),
                             )),
-                      const SizedBox(height: 80),
                     ],
                   ),
                 ),
@@ -200,7 +158,9 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                 await ref.read(dashboardProvider.notifier).refresh();
               }
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -209,38 +169,75 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
   }
 }
 
-class _SummaryColumn extends StatelessWidget {
-  final String label;
-  final double amount;
+class _LoansSummary extends StatelessWidget {
+  final double owedToYou;
+  final double youOwe;
   final String currency;
 
-  const _SummaryColumn({
-    required this.label,
-    required this.amount,
+  const _LoansSummary({
+    required this.owedToYou,
+    required this.youOwe,
     required this.currency,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
+    final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
+    final text = Theme.of(context).textTheme;
+    final net = owedToYou - youOwe;
+    final netText = CurrencyUtils.format(net, currencyCode: currency);
+
+    return Container(
+      padding: const EdgeInsets.all(Space.xl),
+      decoration: BoxDecoration(
+        color: palette.raisedSurface,
+        borderRadius: Radii.xlAll,
+        boxShadow: [
+          BoxShadow(
+            color: palette.cardShadow,
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          CurrencyUtils.format(amount, currencyCode: currency),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Net balance',
+            style: text.titleSmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
-        ),
-      ],
+          const SizedBox(height: Space.xs),
+          Semantics(
+            label: 'Net: $netText',
+            excludeSemantics: true,
+            child: Text(netText, style: text.headlineMedium?.tabular),
+          ),
+          const SizedBox(height: Space.lg),
+          Row(
+            children: [
+              Expanded(
+                child: SignalStat(
+                  label: 'Owed to you',
+                  amount: owedToYou,
+                  kind: MoneyKind.income,
+                  currency: currency,
+                ),
+              ),
+              const SizedBox(width: Space.lg),
+              Expanded(
+                child: SignalStat(
+                  label: 'You owe',
+                  amount: youOwe,
+                  kind: MoneyKind.expense,
+                  currency: currency,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

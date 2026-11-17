@@ -2,7 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/tokens.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../data/models/category.dart';
 import '../../../data/remote/sync_engine.dart';
 import '../providers/budgets_provider.dart';
@@ -57,15 +58,15 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline,
                         size: 48,
-                        color: AppColors.error,
+                        color: Theme.of(context).colorScheme.error,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Space.lg),
                       Text(state.error!),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
+                      const SizedBox(height: Space.lg),
+                      FilledButton(
                         onPressed: () {
                           ref.read(budgetsProvider.notifier).loadBudgets();
                         },
@@ -75,37 +76,14 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                   ),
                 )
               : state.budgets.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.account_balance_wallet_outlined,
-                            size: 64,
-                            color: AppColors.textTertiary,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No budgets yet',
-                            style:
-                                Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Create a budget to track your spending',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: AppColors.textTertiary,
-                                ),
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton.icon(
-                            onPressed: () => context.push('/budgets/add'),
-                            icon: const Icon(Icons.add),
-                            label: const Text('Create Budget'),
-                          ),
-                        ],
+                  ? EmptyState(
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: 'No budgets yet',
+                      subtitle: 'Create a budget to track your spending',
+                      action: FilledButton.icon(
+                        onPressed: () => context.push('/budgets/add'),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Create Budget'),
                       ),
                     )
                   : RefreshIndicator(
@@ -127,6 +105,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
       floatingActionButton: state.budgets.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: () => context.push('/budgets/add'),
+              tooltip: 'Add budget',
               icon: const Icon(Icons.add),
               label: const Text('Add'),
             )
@@ -136,9 +115,14 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
 
   Widget _buildBudgetsList(BudgetsState state, List<Category> categories, {String currency = 'USD'}) {
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(
+        Space.lg,
+        Space.sm,
+        Space.lg,
+        Space.fabClearance,
+      ),
       itemCount: state.budgets.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, __) => const SizedBox(height: Space.md),
       itemBuilder: (context, index) {
         final budget = state.budgets[index];
         final category = categories.firstWhere(
@@ -185,7 +169,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                 ref.read(dashboardProvider.notifier).refresh();
               }
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Delete'),
           ),
         ],

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/tokens.dart';
+import '../../../shared/widgets/category_icon.dart';
 import '../../../data/models/budget.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../data/models/category.dart';
@@ -150,7 +151,7 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
           : Form(
               key: _formKey,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(Space.lg),
                 children: [
                   // Name Field
                   TextFormField(
@@ -223,7 +224,7 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
                   Text(
                     'Leave empty for an overall budget',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textTertiary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                   ),
                   const SizedBox(height: 12),
@@ -242,15 +243,16 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
                         ),
                         ...categories.map((category) {
                           final isSelected = category.id == _categoryId;
+                          final icon = iconForEmoji(category.icon);
                           return FilterChip(
-                            avatar: Text(category.icon),
+                            avatar: icon != null
+                                ? Icon(icon, size: 18)
+                                : Text(category.icon),
                             label: Text(category.name),
                             selected: isSelected,
                             onSelected: (_) {
                               setState(() => _categoryId = category.id);
                             },
-                            selectedColor:
-                                Color(category.color).withValues(alpha: 0.2),
                           );
                         }),
                       ],
@@ -263,7 +265,7 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
                   // Save Button
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
+                    child: FilledButton(
                       onPressed: _isLoading ? null : _saveBudget,
                       child: _isLoading
                           ? const SizedBox(
@@ -312,7 +314,9 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
                 context.pop();
               }
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Delete'),
           ),
         ],

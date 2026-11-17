@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../data/models/loan.dart';
 import '../../../data/models/person.dart';
 import '../providers/loans_provider.dart';
@@ -257,7 +257,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                           setState(() => _selectedType = LoanType.lent);
                         }
                       },
-                      selectedColor: AppColors.income.withValues(alpha: 0.2),
+                      selectedColor: context.palette.incomeContainer,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -270,7 +270,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                           setState(() => _selectedType = LoanType.borrowed);
                         }
                       },
-                      selectedColor: AppColors.expense.withValues(alpha: 0.2),
+                      selectedColor: context.palette.expenseContainer,
                     ),
                   ),
                 ],
@@ -349,7 +349,9 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Text(widget.isSettlement ? 'Record Settlement' : 'Save Loan'),
+                    : Text(widget.isSettlement
+                        ? 'Record Settlement'
+                        : 'Save Loan'),
               ),
             ),
           ],

@@ -104,7 +104,17 @@ void main() {
         categoryIcon: '🍔',
       ));
 
-      expect(find.text('🍔'), findsOneWidget);
+      // The stored emoji is shown as its matching Material icon.
+      expect(find.byIcon(Icons.restaurant_outlined), findsOneWidget);
+    });
+
+    testWidgets('unmapped category emoji is shown as is', (tester) async {
+      await tester.pumpWidget(buildTestWidget(
+        budget: _makeBudget(),
+        categoryIcon: '🦄',
+      ));
+
+      expect(find.text('🦄'), findsOneWidget);
     });
 
     testWidgets('popup menu has Edit and Delete options', (tester) async {
