@@ -99,6 +99,7 @@ lib/
 - **Local Database**: SQLite (sqflite)
 - **Remote Storage**: Google Sheets API
 - **Code Generation**: Freezed + json_serializable
+- **Design system**: Material 3 with tokens in `lib/core/theme` (see [docs/DESIGN.md](docs/DESIGN.md))
 
 ## Sync Architecture
 
