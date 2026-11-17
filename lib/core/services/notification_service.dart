@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_constants.dart';
+import '../theme/app_color_schemes.dart';
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService();
@@ -16,6 +17,11 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin;
   Future<void>? _initialized;
 
+  /// The status-bar icon (`res/drawable/ic_stat_spendsheet.xml`). Android
+  /// draws a notification's small icon as a one-color silhouette, so the
+  /// launcher icon would show as a blank square.
+  static const _smallIcon = 'ic_stat_spendsheet';
+
   static const _budgetDetails = NotificationDetails(
     android: AndroidNotificationDetails(
       AppConstants.budgetNotificationChannel,
@@ -23,6 +29,9 @@ class NotificationService {
       channelDescription: 'Alerts when spending nears or passes a budget',
       importance: Importance.high,
       priority: Priority.high,
+      icon: _smallIcon,
+      // Tints the icon in the notification shade.
+      color: AppColorSchemes.seed,
     ),
     linux: LinuxNotificationDetails(),
   );
@@ -30,7 +39,7 @@ class NotificationService {
   Future<void> _ensureInitialized() {
     return _initialized ??= _plugin.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings(_smallIcon),
         linux: LinuxInitializationSettings(defaultActionName: 'Open'),
       ),
     );
