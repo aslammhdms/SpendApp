@@ -298,7 +298,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Full Sync'),
         content: const Text(
-            'This will re-download all data from your Google Sheet. Local changes that haven\'t been synced will be lost.'),
+            'This will upload changes waiting to sync, then re-download all data from your Google Sheet. Anything that still can\'t be uploaded stays on this device and syncs later.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
