@@ -238,9 +238,31 @@ class LocalTransactionDao {
     return results.length;
   }
 
-  Future<int> deleteAll() async {
+  /// IDs of the categories that live transactions use.
+  Future<Set<String>> getUsedCategoryIds() async {
     final db = await _db;
-    return await db.delete('transactions');
+    final rows = await db.rawQuery(
+      'SELECT DISTINCT category_id FROM transactions WHERE deleted_at IS NULL',
+    );
+    return rows.map((row) => row['category_id'] as String).toSet();
+  }
+
+  /// IDs of the accounts that live transactions use, as source or target.
+  Future<Set<String>> getUsedAccountIds() async {
+    final db = await _db;
+    final rows = await db.rawQuery('''
+      SELECT account_id AS id FROM transactions WHERE deleted_at IS NULL
+      UNION
+      SELECT to_account_id AS id FROM transactions
+      WHERE deleted_at IS NULL AND to_account_id IS NOT NULL
+    ''');
+    return rows.map((row) => row['id'] as String).toSet();
+  }
+
+  /// Deletes every row, except those whose ID is in [except].
+  Future<int> deleteAll({Set<String> except = const {}}) async {
+    final db = await _db;
+    return DatabaseHelper.deleteAllExcept(db, 'transactions', except);
   }
 
   Map<String, dynamic> _toMap(Transaction transaction) {

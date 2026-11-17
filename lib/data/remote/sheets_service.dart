@@ -2,7 +2,6 @@ import 'package:googleapis/sheets/v4.dart' as sheets;
 import 'package:flutter/foundation.dart' hide Category;
 import '../../core/constants/sheet_constants.dart';
 import '../../core/constants/category_defaults.dart';
-import '../../core/utils/id_generator.dart';
 import '../../core/errors/app_exceptions.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
@@ -151,7 +150,7 @@ class SheetsService {
     int sortOrder = 0;
     for (final cat in CategoryDefaults.expenseCategories) {
       categories.add([
-        IdGenerator.generate(),
+        cat.id,
         cat.name,
         'expense',
         cat.icon,
@@ -167,7 +166,7 @@ class SheetsService {
     sortOrder = 0;
     for (final cat in CategoryDefaults.incomeCategories) {
       categories.add([
-        IdGenerator.generate(),
+        cat.id,
         cat.name,
         'income',
         cat.icon,
@@ -195,7 +194,7 @@ class SheetsService {
     int sortOrder = 0;
     for (final acc in CategoryDefaults.defaultAccounts) {
       accounts.add([
-        IdGenerator.generate(),
+        acc.id,
         acc.name,
         acc.type,
         0.0, // initial balance
@@ -547,7 +546,9 @@ class SheetsService {
       }
       return -1;
     } catch (e) {
-      return -1;
+      // Report the failure instead of "not found": callers append a row
+      // when it is missing, so a network error here must not look like one.
+      throw SheetsException.readFailed(e);
     }
   }
 

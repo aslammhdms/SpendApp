@@ -138,9 +138,10 @@ class LocalCategoryDao {
     return results.length;
   }
 
-  Future<int> deleteAll() async {
+  /// Deletes every row, except those whose ID is in [except].
+  Future<int> deleteAll({Set<String> except = const {}}) async {
     final db = await _db;
-    return await db.delete('categories');
+    return DatabaseHelper.deleteAllExcept(db, 'categories', except);
   }
 
   Map<String, dynamic> _toMap(Category category) {

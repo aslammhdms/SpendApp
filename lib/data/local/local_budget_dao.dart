@@ -21,9 +21,20 @@ class LocalBudgetDao {
     return results.length;
   }
 
-  Future<int> deleteAll() async {
+  /// IDs of the categories that live budgets track.
+  Future<Set<String>> getUsedCategoryIds() async {
     final db = await _db;
-    return await db.delete('budgets');
+    final rows = await db.rawQuery(
+      'SELECT DISTINCT category_id FROM budgets '
+      'WHERE deleted_at IS NULL AND category_id IS NOT NULL',
+    );
+    return rows.map((row) => row['category_id'] as String).toSet();
+  }
+
+  /// Deletes every row, except those whose ID is in [except].
+  Future<int> deleteAll({Set<String> except = const {}}) async {
+    final db = await _db;
+    return DatabaseHelper.deleteAllExcept(db, 'budgets', except);
   }
 
   Map<String, dynamic> _toMap(Budget budget) {
