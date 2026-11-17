@@ -32,38 +32,138 @@ A Flutter expense tracking app for Android with Google Sheets as the backend dat
 - **Google Wallet Capture** (Android, optional): Turns Google Wallet payment
   notifications into expenses you confirm with one tap
 
-## Getting Started
+## Setting It Up for Your Own Use
 
-### Prerequisites
+SpendSheet has no server and no shared Google project. Each person who builds
+it uses their own Google Cloud project, and the data goes into a spreadsheet
+in their own Google Drive. Setting that up takes about 15 minutes.
 
-- Flutter SDK 3.50.0 or higher (stable)
-- Android Studio or VS Code with Flutter extensions
-- A Google Cloud project with Sheets API and Drive API enabled
+### 1. What you need
 
-### Google Cloud Setup
+- Flutter 3.50.0 or later (stable channel)
+- An Android phone running Android 7.0 or later, or an emulator with Google
+  Play services
+- A Google account
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Create a new project or select an existing one
-3. Enable the following APIs:
-   - Google Sheets API
-   - Google Drive API
-4. Configure OAuth consent screen:
-   - Add scopes: `spreadsheets`, `drive.file`
-5. Create OAuth 2.0 Client ID:
-   - Application type: Android
-   - Add your SHA-1 signing certificate fingerprint
+### 2. Get the code and build it once
+
+```bash
+git clone https://github.com/aslammhdms/SpendApp.git
+cd SpendApp
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+```
+
+The last command generates the model files (`*.freezed.dart`, `*.g.dart`).
+They are not stored in the repository, so the app will not compile without
+it.
+
+### 3. Find your signing fingerprint (SHA-1)
+
+Google only lets an Android app sign in if the app's package name and the
+fingerprint of the key that signed it are registered in your Google Cloud
+project. The app builds with your computer's Android debug key (the release
+build uses it too, until you set up your own key), so that is the fingerprint
+to register.
+
+macOS and Linux:
+
+```bash
+keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+```
+
+Windows:
+
+```bash
+keytool -list -v -keystore "%USERPROFILE%\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android
+```
+
+Copy the `SHA1:` line. If the keystore file does not exist yet, run
+`flutter build apk --debug` once to create it.
+
+The fingerprint belongs to the computer, not to the project. An APK built on
+another machine, or by a CI service, is signed with a different key and needs
+its own fingerprint registered (step 4.5) before sign-in will work.
+
+### 4. Set up Google Cloud
+
+1. Open the [Google Cloud Console](https://console.cloud.google.com) and
+   create a project.
+2. Under **APIs & Services → Library**, enable **Google Sheets API** and
+   **Google Drive API**.
+3. Set up the **OAuth consent screen**: user type **External**, and fill in
+   the app name and your email address.
+4. On the consent screen, add the scopes `.../auth/spreadsheets` and
+   `.../auth/drive.file`, and add your own Google account under **Test
+   users**. While the app is in testing, only the accounts listed there can
+   sign in.
+5. Under **APIs & Services → Credentials**, choose **Create credentials →
+   OAuth client ID** with:
+   - Application type: **Android**
    - Package name: `com.spendsheet.spendsheet`
+   - SHA-1 certificate fingerprint: the value from step 3
 
-### Installation
+There is nothing to paste into the app. Android matches the installed app to
+your project by package name and fingerprint. A new client can take a few
+minutes to start working.
 
-1. Clone this repository
-2. Run `flutter pub get`
-3. Run `flutter pub run build_runner build` to generate Freezed files
-4. Run `flutter run`
+### 5. Install it on your phone
 
-### Configuration
+On the phone, turn on **Developer options → USB debugging**, connect it by
+USB, and accept the "Allow USB debugging?" prompt. Then:
 
-Add your OAuth client ID in the Android configuration if needed.
+```bash
+flutter run --release
+```
+
+Or build an APK and install it with `adb`:
+
+```bash
+flutter build apk --release
+adb install -r build/app/outputs/flutter-apk/app-release.apk
+```
+
+Install with `adb` (or `flutter run`) rather than by opening the APK file on
+the phone. Because the app can ask for notification access (for Google Wallet
+capture), Google Play Protect blocks it when it is installed from a browser,
+a chat app or a file manager, with the message "App blocked to protect your
+device".
+
+### 6. First run
+
+1. Tap **Sign in with Google** and choose the account you added as a test
+   user. Google will warn that the app is not verified; that is expected for
+   your own project, so continue.
+2. Choose **Create New SpendSheet**. The app creates the spreadsheet in your
+   Google Drive. On another phone, sign in with the same account and pick
+   the existing spreadsheet instead.
+3. Optional: turn on **Settings → Google Wallet payments** (see
+   [Google Wallet Payment Capture](#google-wallet-payment-capture)).
+
+### If something goes wrong
+
+| What you see | Likely cause | What to do |
+| --- | --- | --- |
+| "Sign in was cancelled or failed" straight after picking an account | The fingerprint or package name is not registered for the key that signed this APK | Repeat steps 3 and 4.5 on the computer that built the APK, wait a few minutes, try again |
+| Google says access is blocked, or the app has not completed verification | Your account is not a test user | Add it under **Test users** on the OAuth consent screen |
+| Signed in, but creating or finding the spreadsheet fails | An API is not enabled | Enable both the Sheets API and the Drive API |
+| "App blocked to protect your device" | Installed by opening the APK on the phone | Install with `adb install` or `flutter run` |
+| `adb devices` shows `unauthorized` | The phone has not approved this computer | Unlock the phone and accept the "Allow USB debugging?" prompt, or pair with **Wireless debugging** instead |
+| `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | A copy signed with a different key is already installed | Uninstall it first. Local data is removed; your spreadsheet is not |
+
+To see the real sign-in error, try to sign in and then run
+`adb logcat -d` and search the output for `ApiException`. Code `10` means the
+fingerprint or package name does not match; `12501` means the sign-in was
+cancelled.
+
+### Sharing the app with other people
+
+People who install your APK do not repeat any of this setup. They only sign
+in. The Google Cloud steps are done once by whoever builds the app, for each
+signing key. To let someone else use your build, add their Google account as
+a test user; each person still gets their own spreadsheet in their own Drive. Opening the
+app to anyone means publishing the OAuth consent screen, and Google reviews
+apps that ask for access to Google Sheets before it allows that.
 
 ## Project Structure
 
@@ -139,6 +239,11 @@ restricted settings** on the app's App info page.
 ```bash
 flutter build apk --release
 ```
+
+The release build is signed with the debug key until you add your own. To
+publish, create a keystore, fill in the commented-out `signingConfigs.release`
+block in `android/app/build.gradle`, and register that key's SHA-1 in Google
+Cloud as well.
 
 ## License
 
