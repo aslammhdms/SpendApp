@@ -101,52 +101,63 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Full screen routes (without bottom nav)
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/transactions/add',
         builder: (context, state) => const AddEditTransactionScreen(),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/transactions/edit/:id',
         builder: (context, state) => AddEditTransactionScreen(
           transactionId: state.pathParameters['id'],
         ),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/budgets/add',
         builder: (context, state) => const AddEditBudgetScreen(),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/budgets/edit/:id',
         builder: (context, state) => AddEditBudgetScreen(
           budgetId: state.pathParameters['id'],
         ),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/accounts',
         builder: (context, state) => const AccountsScreen(),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/accounts/add',
         builder: (context, state) => const AddEditAccountScreen(),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/accounts/edit/:id',
         builder: (context, state) => AddEditAccountScreen(
           accountId: state.pathParameters['id'],
         ),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/categories',
         builder: (context, state) => const CategoriesManagerScreen(),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/loans',
         builder: (context, state) => const LoansScreen(),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/loans/add',
         builder: (context, state) => const AddLoanScreen(),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/loans/add/:personId',
         builder: (context, state) {
           final personId = state.pathParameters['personId']!;
@@ -158,6 +169,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/loans/person/:id',
         builder: (context, state) => PersonLoansScreen(
           personId: state.pathParameters['id']!,

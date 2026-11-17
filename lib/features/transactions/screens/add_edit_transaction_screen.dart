@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import 'package:flutter/services.dart';
+import '../../../core/theme/app_palette.dart';
+import '../../../core/theme/tokens.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../data/models/transaction.dart';
 import '../../../data/models/category.dart';
@@ -10,7 +12,8 @@ import '../../../data/models/loan.dart';
 import '../../../data/models/person.dart';
 import '../providers/transactions_provider.dart';
 import '../widgets/amount_input_pad.dart';
-import '../widgets/category_selector.dart';
+import '../../../shared/widgets/category_icon.dart';
+import '../../../shared/widgets/money_text.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../loans/providers/loans_provider.dart';
@@ -189,6 +192,7 @@ class _AddEditTransactionScreenState
               : _noteController.text.trim(),
         );
 
+        HapticFeedback.mediumImpact();
         if (mounted) {
           await ref.read(dashboardProvider.notifier).refresh();
           if (mounted) context.pop();
@@ -225,9 +229,12 @@ class _AddEditTransactionScreenState
           );
         }
 
+        HapticFeedback.mediumImpact();
         if (mounted) {
           await ref.read(dashboardProvider.notifier).refresh();
-          await ref.read(transactionsProvider.notifier).loadTransactions(refresh: true);
+          await ref
+              .read(transactionsProvider.notifier)
+              .loadTransactions(refresh: true);
           if (mounted) context.pop();
         }
       }
@@ -250,6 +257,9 @@ class _AddEditTransactionScreenState
     final incomeCategoriesAsync = ref.watch(incomeCategoriesProvider);
     final accountsAsync = ref.watch(accountsWithBalanceProvider);
     final currency = ref.watch(settingsProvider).currency;
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final (typeContainer, onTypeContainer) = _typeColors();
 
     return Scaffold(
       appBar: AppBar(
@@ -257,131 +267,82 @@ class _AddEditTransactionScreenState
         actions: [
           if (isEditing)
             IconButton(
-              icon: const Icon(Icons.delete),
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Delete transaction',
               onPressed: _confirmDelete,
             ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            const Tab(text: 'Expense'),
-            const Tab(text: 'Income'),
-            const Tab(text: 'Transfer'),
-            if (!isEditing) const Tab(text: 'Loan'),
-          ],
-          indicatorColor: _getTypeColor(),
-          labelColor: _getTypeColor(),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Space.lg,
+              0,
+              Space.lg,
+              Space.sm + 2,
+            ),
+            child: Container(
+              height: 44,
+              padding: const EdgeInsets.all(Space.xs),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHigh,
+                borderRadius: Radii.mdAll,
+              ),
+              child: TabBar(
+                controller: _tabController,
+                tabs: [
+                  const Tab(text: 'Expense'),
+                  const Tab(text: 'Income'),
+                  const Tab(text: 'Transfer'),
+                  if (!isEditing) const Tab(text: 'Loan'),
+                ],
+                indicator: BoxDecoration(
+                  color: typeContainer,
+                  borderRadius: Radii.smAll,
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerHeight: 0,
+                labelColor: onTypeContainer,
+                unselectedLabelColor: scheme.onSurfaceVariant,
+                labelStyle: text.labelLarge,
+                unselectedLabelStyle: text.labelLarge,
+                splashBorderRadius: Radii.smAll,
+                labelPadding: EdgeInsets.zero,
+              ),
+            ),
+          ),
         ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // Amount Input
-                Expanded(
-                  flex: 3,
-                  child: AmountInputPad(
-                    initialAmount: _amount,
-                    currency: currency,
-                    onAmountChanged: (amount) {
-                      setState(() => _amount = amount);
-                    },
-                  ),
-                ),
-
-                // Form Fields
-                Expanded(
-                  flex: 2,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: _isLoanTab
-                        ? _buildLoanForm()
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Category Selector (not for transfers)
-                              if (_type != TransactionType.transfer) ...[
-                                Text(
-                                  'Category',
-                                  style: Theme.of(context).textTheme.titleSmall,
-                                ),
-                                const SizedBox(height: 8),
-                                _type == TransactionType.expense
-                                    ? expenseCategoriesAsync.when(
-                                        data: (categories) => _buildCategoryChips(categories),
-                                        loading: () => const LinearProgressIndicator(),
-                                        error: (_, __) => const Text('Failed to load'),
-                                      )
-                                    : incomeCategoriesAsync.when(
-                                        data: (categories) => _buildCategoryChips(categories),
-                                        loading: () => const LinearProgressIndicator(),
-                                        error: (_, __) => const Text('Failed to load'),
-                                      ),
-                                const SizedBox(height: 16),
-                              ],
-
-                              // Account Selector
-                              Text(
-                                _type == TransactionType.transfer
-                                    ? 'From Account'
-                                    : 'Account',
-                                style: Theme.of(context).textTheme.titleSmall,
-                              ),
-                              const SizedBox(height: 8),
-                              accountsAsync.when(
-                                data: (accounts) => _buildAccountChips(accounts, false),
-                                loading: () => const LinearProgressIndicator(),
-                                error: (_, __) => const Text('Failed to load'),
-                              ),
-                              const SizedBox(height: 16),
-
-                              // To Account (for transfers)
-                              if (_type == TransactionType.transfer) ...[
-                                Text(
-                                  'To Account',
-                                  style: Theme.of(context).textTheme.titleSmall,
-                                ),
-                                const SizedBox(height: 8),
-                                accountsAsync.when(
-                                  data: (accounts) => _buildAccountChips(accounts, true),
-                                  loading: () => const LinearProgressIndicator(),
-                                  error: (_, __) => const Text('Failed to load'),
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-
-                              // Date Picker
-                              ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: const Icon(Icons.calendar_today),
-                                title: const Text('Date'),
-                                subtitle: Text(AppDateUtils.formatDisplayDate(_date)),
-                                onTap: _pickDate,
-                              ),
-
-                              // Note Field
-                              TextField(
-                                controller: _noteController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Note (optional)',
-                                  prefixIcon: Icon(Icons.notes),
-                                ),
-                                maxLines: 2,
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
-              ],
+          : AmountInputPad(
+              initialAmount: _amount,
+              currency: currency,
+              onAmountChanged: (amount) {
+                setState(() => _amount = amount);
+              },
+              middle: _isLoanTab
+                  ? _buildLoanForm()
+                  : _buildTransactionFields(
+                      _type == TransactionType.expense
+                          ? expenseCategoriesAsync
+                          : incomeCategoriesAsync,
+                      accountsAsync,
+                      currency,
+                    ),
             ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: ElevatedButton(
+          padding: const EdgeInsets.fromLTRB(
+            Space.lg,
+            Space.sm,
+            Space.lg,
+            Space.lg,
+          ),
+          child: FilledButton(
             onPressed: _isLoading ? null : _saveTransaction,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _getTypeColor(),
-              minimumSize: const Size.fromHeight(50),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(Sizes.touchTarget + 4),
             ),
             child: Text(isEditing ? 'Update' : 'Save'),
           ),
@@ -390,55 +351,220 @@ class _AddEditTransactionScreenState
     );
   }
 
-  Widget _buildCategoryChips(List<Category> categories) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: categories.map((category) {
-        final isSelected = category.id == _categoryId;
-        return FilterChip(
-          avatar: Text(category.icon),
-          label: Text(category.name),
-          selected: isSelected,
-          onSelected: (_) {
-            setState(() => _categoryId = category.id);
-          },
-          selectedColor: Color(category.color).withValues(alpha: 0.2),
-        );
-      }).toList(),
+  Widget _buildTransactionFields(
+    AsyncValue<List<Category>> categoriesAsync,
+    AsyncValue<List<Account>> accountsAsync,
+    String currency,
+  ) {
+    final isTransfer = _type == TransactionType.transfer;
+    final accounts = accountsAsync.valueOrNull ?? const <Account>[];
+    String accountName(String? id) {
+      for (final a in accounts) {
+        if (a.id == id) return a.name;
+      }
+      return accountsAsync.isLoading ? '…' : 'Choose';
+    }
+
+    final accountTile = _DetailTile(
+      caption: isTransfer ? 'From Account' : 'Account',
+      value: accountName(_accountId),
+      isPlaceholder: _accountId == null,
+      onTap: () =>
+          _pickAccount(accounts, isToAccount: false, currency: currency),
+    );
+    final toAccountTile = _DetailTile(
+      caption: 'To Account',
+      value: accountName(_toAccountId),
+      isPlaceholder: _toAccountId == null,
+      onTap: () =>
+          _pickAccount(accounts, isToAccount: true, currency: currency),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!isTransfer) ...[
+          const _FieldLabel('Category'),
+          SizedBox(
+            height: Sizes.touchTarget,
+            child: categoriesAsync.when(
+              data: _buildCategoryChips,
+              loading: () => const Center(child: LinearProgressIndicator()),
+              error: (_, __) => const Center(child: Text('Failed to load')),
+            ),
+          ),
+          const SizedBox(height: Space.md),
+        ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Space.lg),
+          child: isTransfer
+              ? Column(
+                  children: [
+                    _DetailsBar(tiles: [accountTile, toAccountTile]),
+                    const SizedBox(height: Space.sm),
+                    _DetailsBar(tiles: [_dateTile(), _noteTile()]),
+                  ],
+                )
+              : _DetailsBar(tiles: [accountTile, _dateTile(), _noteTile()]),
+        ),
+      ],
     );
   }
 
-  Widget _buildAccountChips(List<Account> accounts, bool isToAccount) {
-    final currentSelection = isToAccount ? _toAccountId : _accountId;
+  _DetailTile _dateTile() => _DetailTile(
+        caption: 'Date',
+        value: AppDateUtils.formatDisplayDate(_date),
+        onTap: _pickDate,
+      );
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: accounts.map((account) {
-        // Don't show source account as destination option
-        if (isToAccount && account.id == _accountId) {
-          return const SizedBox.shrink();
-        }
-
-        final isSelected = account.id == currentSelection;
-        return FilterChip(
-          avatar: Text(account.icon),
-          label: Text(account.name),
-          selected: isSelected,
-          onSelected: (_) {
-            setState(() {
-              if (isToAccount) {
-                _toAccountId = account.id;
-              } else {
-                _accountId = account.id;
-              }
-            });
-          },
-          selectedColor: Color(account.color).withValues(alpha: 0.2),
-        );
-      }).toList(),
+  _DetailTile _noteTile() {
+    final note = _noteController.text.trim();
+    return _DetailTile(
+      caption: 'Note (optional)',
+      value: note.isEmpty ? 'Add note' : note,
+      isPlaceholder: note.isEmpty,
+      onTap: _editNote,
     );
+  }
+
+  Widget _buildCategoryChips(List<Category> categories) {
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: Space.lg),
+      itemCount: categories.length,
+      separatorBuilder: (_, __) => const SizedBox(width: Space.sm),
+      itemBuilder: (context, index) {
+        final category = categories[index];
+        return _ChoicePill(
+          label: category.name,
+          leading: CategoryIcon(
+            emoji: category.icon,
+            color: Color(category.color),
+            size: 28,
+          ),
+          selected: category.id == _categoryId,
+          onTap: () => setState(() => _categoryId = category.id),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickAccount(
+    List<Account> accounts, {
+    required bool isToAccount,
+    required String currency,
+  }) async {
+    final choices = isToAccount
+        // Don't show source account as destination option
+        ? accounts.where((a) => a.id != _accountId).toList()
+        : accounts;
+    final current = isToAccount ? _toAccountId : _accountId;
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) {
+        final scheme = Theme.of(context).colorScheme;
+        final text = Theme.of(context).textTheme;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Space.xl,
+                  0,
+                  Space.xl,
+                  Space.sm,
+                ),
+                child: Text(
+                  isToAccount
+                      ? 'To Account'
+                      : (_type == TransactionType.transfer
+                          ? 'From Account'
+                          : 'Account'),
+                  style: text.titleMedium,
+                ),
+              ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.only(bottom: Space.lg),
+                  children: [
+                    for (final account in choices)
+                      ListTile(
+                        leading: CategoryIcon(
+                          emoji: account.icon,
+                          color: Color(account.color),
+                        ),
+                        title: Text(account.name),
+                        subtitle: MoneyText(
+                          account.currentBalance,
+                          currency: currency,
+                          semanticLabel: 'Balance',
+                          style: text.bodyMedium,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                        trailing: account.id == current
+                            ? Icon(Icons.check_rounded, color: scheme.primary)
+                            : null,
+                        selected: account.id == current,
+                        onTap: () => Navigator.pop(context, account.id),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        if (isToAccount) {
+          _toAccountId = picked;
+        } else {
+          _accountId = picked;
+        }
+      });
+    }
+  }
+
+  Future<void> _editNote() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          Space.xl,
+          0,
+          Space.xl,
+          MediaQuery.viewInsetsOf(context).bottom + Space.xl,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _noteController,
+              autofocus: true,
+              maxLines: 3,
+              minLines: 1,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                labelText: 'Note (optional)',
+                prefixIcon: Icon(Icons.notes),
+              ),
+            ),
+            const SizedBox(height: Space.lg),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Done'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
   }
 
   Future<void> _pickDate() async {
@@ -472,7 +598,8 @@ class _AddEditTransactionScreenState
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Transaction'),
-        content: const Text('Are you sure you want to delete this transaction?'),
+        content:
+            const Text('Are you sure you want to delete this transaction?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -489,7 +616,9 @@ class _AddEditTransactionScreenState
                 if (mounted) context.pop();
               }
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -498,132 +627,325 @@ class _AddEditTransactionScreenState
   }
 
   Widget _buildLoanForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Person picker
-        Text(
-          'Person',
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
-        const SizedBox(height: 8),
-        if (!_isCreatingNewPerson) ...[
-          DropdownButtonFormField<String>(
-            value: _selectedPersonId,
-            hint: const Text('Select a person'),
-            items: _people
-                .map((p) => DropdownMenuItem(
-                      value: p.id,
-                      child: Text(p.name),
-                    ))
-                .toList(),
-            onChanged: (value) {
-              setState(() => _selectedPersonId = value);
-            },
-          ),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: () {
-              setState(() {
-                _isCreatingNewPerson = true;
-                _selectedPersonId = null;
-              });
-            },
-            icon: const Icon(Icons.person_add, size: 18),
-            label: const Text('Create New Person'),
-          ),
-        ] else ...[
-          TextField(
-            controller: _newPersonController,
-            decoration: const InputDecoration(
-              labelText: 'Name',
-              hintText: 'Enter person name',
-              prefixIcon: Icon(Icons.person_add),
+    final palette = context.palette;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _FieldLabel('Person',
+              padding: EdgeInsets.only(bottom: Space.sm)),
+          if (!_isCreatingNewPerson)
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedPersonId,
+                    hint: const Text('Select a person'),
+                    items: _people
+                        .map((p) => DropdownMenuItem(
+                              value: p.id,
+                              child: Text(p.name),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() => _selectedPersonId = value);
+                    },
+                  ),
+                ),
+                const SizedBox(width: Space.sm),
+                IconButton.filledTonal(
+                  tooltip: 'Create New Person',
+                  onPressed: () {
+                    setState(() {
+                      _isCreatingNewPerson = true;
+                      _selectedPersonId = null;
+                    });
+                  },
+                  icon: const Icon(Icons.person_add_alt_1_outlined),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _newPersonController,
+                    autofocus: true,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Name',
+                      hintText: 'Enter person name',
+                      prefixIcon: Icon(Icons.person_add),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: Space.sm),
+                IconButton.filledTonal(
+                  tooltip: 'Select Existing Person',
+                  onPressed: () {
+                    setState(() {
+                      _isCreatingNewPerson = false;
+                      _newPersonController.clear();
+                    });
+                  },
+                  icon: const Icon(Icons.list),
+                ),
+              ],
             ),
+          const _FieldLabel(
+            'Direction',
+            padding: EdgeInsets.only(top: Space.md, bottom: Space.sm),
           ),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: () {
-              setState(() {
-                _isCreatingNewPerson = false;
-                _newPersonController.clear();
-              });
-            },
-            icon: const Icon(Icons.list, size: 18),
-            label: const Text('Select Existing Person'),
+          Row(
+            children: [
+              Expanded(
+                child: _ChoicePill(
+                  label: 'I Lent',
+                  leading: Icon(Icons.north_east_rounded,
+                      size: 18, color: palette.income),
+                  selected: _loanType == LoanType.lent,
+                  selectedColor: palette.incomeContainer,
+                  selectedForeground: palette.onIncomeContainer,
+                  expand: true,
+                  onTap: () => setState(() => _loanType = LoanType.lent),
+                ),
+              ),
+              const SizedBox(width: Space.sm),
+              Expanded(
+                child: _ChoicePill(
+                  label: 'I Borrowed',
+                  leading: Icon(Icons.south_west_rounded,
+                      size: 18, color: palette.expense),
+                  selected: _loanType == LoanType.borrowed,
+                  selectedColor: palette.expenseContainer,
+                  selectedForeground: palette.onExpenseContainer,
+                  expand: true,
+                  onTap: () => setState(() => _loanType = LoanType.borrowed),
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: Space.md),
+          _DetailsBar(tiles: [_dateTile(), _noteTile()]),
         ],
-        const SizedBox(height: 16),
-
-        // Lent / Borrowed direction
-        Text(
-          'Direction',
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: ChoiceChip(
-                label: const Text('I Lent'),
-                selected: _loanType == LoanType.lent,
-                onSelected: (selected) {
-                  if (selected) {
-                    setState(() => _loanType = LoanType.lent);
-                  }
-                },
-                selectedColor: AppColors.income.withValues(alpha: 0.2),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ChoiceChip(
-                label: const Text('I Borrowed'),
-                selected: _loanType == LoanType.borrowed,
-                onSelected: (selected) {
-                  if (selected) {
-                    setState(() => _loanType = LoanType.borrowed);
-                  }
-                },
-                selectedColor: AppColors.expense.withValues(alpha: 0.2),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // Date Picker
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.calendar_today),
-          title: const Text('Date'),
-          subtitle: Text(AppDateUtils.formatDisplayDate(_date)),
-          onTap: _pickDate,
-        ),
-
-        // Note Field
-        TextField(
-          controller: _noteController,
-          decoration: const InputDecoration(
-            labelText: 'Note (optional)',
-            prefixIcon: Icon(Icons.notes),
-          ),
-          maxLines: 2,
-        ),
-      ],
+      ),
     );
   }
 
-  Color _getTypeColor() {
-    if (_isLoanTab) return AppColors.loan;
+  /// Background and text color of the selected type tab.
+  (Color, Color) _typeColors() {
+    final palette = context.palette;
+    if (_isLoanTab) return (palette.loanContainer, palette.onLoanContainer);
     switch (_type) {
       case TransactionType.expense:
-        return AppColors.expense;
+        return (palette.expenseContainer, palette.onExpenseContainer);
       case TransactionType.income:
-        return AppColors.income;
+        return (palette.incomeContainer, palette.onIncomeContainer);
       case TransactionType.transfer:
-        return AppColors.transfer;
+        return (palette.transferContainer, palette.onTransferContainer);
     }
+  }
+}
+
+/// Small label above a group of fields.
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(
+    this.text, {
+    this.padding = const EdgeInsets.fromLTRB(Space.lg, 0, Space.lg, Space.sm),
+  });
+
+  final String text;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: padding,
+      child: Text(
+        text,
+        style: theme.textTheme.labelMedium
+            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      ),
+    );
+  }
+}
+
+/// A tonal, selectable pill (categories, loan direction).
+class _ChoicePill extends StatelessWidget {
+  const _ChoicePill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.leading,
+    this.selectedColor,
+    this.selectedForeground,
+    this.expand = false,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget? leading;
+  final Color? selectedColor;
+  final Color? selectedForeground;
+  final bool expand;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final bg = selected
+        ? (selectedColor ?? scheme.secondaryContainer)
+        : scheme.surfaceContainerHigh;
+    final fg = selected
+        ? (selectedForeground ?? scheme.onSecondaryContainer)
+        : scheme.onSurface;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      excludeSemantics: true,
+      child: AnimatedContainer(
+        duration: Motion.fast,
+        curve: Motion.standard,
+        height: Sizes.touchTarget,
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: Radii.mdAll,
+          border: Border.all(
+            color: selected ? fg.withValues(alpha: 0.35) : Colors.transparent,
+          ),
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            borderRadius: Radii.mdAll,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onTap();
+            },
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: leading != null ? Space.sm : Space.lg,
+                right: Space.lg,
+              ),
+              child: Row(
+                mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (leading != null) ...[
+                    leading!,
+                    const SizedBox(width: Space.sm)
+                  ],
+                  Text(label, style: text.labelLarge?.copyWith(color: fg)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One tappable field in a [_DetailsBar]: a caption over its value.
+class _DetailTile {
+  const _DetailTile({
+    required this.caption,
+    required this.value,
+    required this.onTap,
+    this.isPlaceholder = false,
+  });
+
+  final String caption;
+  final String value;
+  final VoidCallback onTap;
+  final bool isPlaceholder;
+}
+
+/// A row of detail fields (account, date, note) in one tonal container.
+class _DetailsBar extends StatelessWidget {
+  const _DetailsBar({required this.tiles});
+
+  final List<_DetailTile> tiles;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: Radii.lgAll,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < tiles.length; i++) ...[
+              if (i > 0)
+                VerticalDivider(
+                  width: 1,
+                  indent: Space.md,
+                  endIndent: Space.md,
+                  color: scheme.outlineVariant,
+                ),
+              Expanded(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    onTap: tiles[i].onTap,
+                    child: Semantics(
+                      button: true,
+                      label: '${tiles[i].caption}: ${tiles[i].value}',
+                      excludeSemantics: true,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 60),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Space.md,
+                            vertical: Space.sm + 2,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                tiles[i].caption,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: text.labelMedium?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                tiles[i].value,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: text.titleSmall?.copyWith(
+                                  color: tiles[i].isPlaceholder
+                                      ? scheme.primary
+                                      : scheme.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 
