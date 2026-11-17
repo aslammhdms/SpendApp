@@ -274,10 +274,12 @@ class _CategoryRow extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: Space.md),
-                      SizedBox(
-                        width: 48,
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(minWidth: 48),
                         child: Text(
                           percentLabel,
+                          maxLines: 1,
+                          softWrap: false,
                           textAlign: TextAlign.right,
                           style: text.labelMedium?.tabular
                               .copyWith(color: scheme.onSurfaceVariant),
