@@ -52,6 +52,10 @@ abstract final class Motion {
   /// Larger moves: sheets, page-level changes, the hero count-up.
   static const Duration slow = Duration(milliseconds: 250);
 
+  /// Count-up of the hero amount on Home. Longer than a transition so the
+  /// number reads as settling, and skipped when animations are disabled.
+  static const Duration countUp = Duration(milliseconds: 700);
+
   static const Curve standard = Curves.easeOutCubic;
   static const Curve emphasized = Curves.easeInOutCubicEmphasized;
 }

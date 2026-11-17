@@ -219,6 +219,14 @@ class AppPalette extends ThemeExtension<AppPalette> {
 }
 
 extension AppPaletteContext on BuildContext {
-  /// The app palette of the current theme.
-  AppPalette get palette => Theme.of(this).extension<AppPalette>()!;
+  /// The app palette of the current theme. Falls back to one built from
+  /// the active color scheme when the theme has no [AppPalette] (for
+  /// example a bare MaterialApp in a widget test).
+  AppPalette get palette {
+    final theme = Theme.of(this);
+    return theme.extension<AppPalette>() ??
+        (theme.brightness == Brightness.dark
+            ? AppPalette.dark(theme.colorScheme)
+            : AppPalette.light(theme.colorScheme));
+  }
 }

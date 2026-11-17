@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/tokens.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../data/models/budget.dart';
+import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/section_header.dart';
 
 class BudgetProgressBars extends StatelessWidget {
   final List<Budget> budgets;
@@ -21,58 +25,38 @@ class BudgetProgressBars extends StatelessWidget {
 
     return Card(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Budget Status',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                if (onViewAll != null && budgets.length > 3)
-                  TextButton(
-                    onPressed: onViewAll,
-                    child: const Text('View All'),
-                  ),
-              ],
-            ),
+          SectionHeader(
+            'Budget Status',
+            actionLabel: 'View All',
+            onAction: budgets.length > 3 ? onViewAll : null,
           ),
           if (budgets.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(32),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.account_balance_wallet_outlined,
-                    size: 48,
-                    color: AppColors.textTertiary,
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    'No budgets set',
-                    style: TextStyle(color: AppColors.textTertiary),
-                  ),
-                ],
-              ),
+            const EmptyState(
+              icon: Icons.account_balance_wallet_outlined,
+              title: 'No budgets set',
+              compact: true,
             )
           else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              itemCount: displayBudgets.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 16),
-              itemBuilder: (context, index) {
-                final budget = displayBudgets[index];
-                return _BudgetProgressItem(
-                  budget: budget,
-                  currency: currency,
-                );
-              },
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Space.xl,
+                Space.sm,
+                Space.xl,
+                Space.xl,
+              ),
+              child: Column(
+                children: [
+                  for (var i = 0; i < displayBudgets.length; i++) ...[
+                    if (i > 0) const SizedBox(height: Space.lg + 4),
+                    _BudgetProgressItem(
+                      budget: displayBudgets[i],
+                      currency: currency,
+                    ),
+                  ],
+                ],
+              ),
             ),
         ],
       ),
@@ -91,72 +75,67 @@ class _BudgetProgressItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
     final percentUsed = budget.percentUsed.clamp(0.0, 1.5);
-    final progressColor = _getProgressColor(percentUsed);
+    final progressColor = context.palette.budgetColor(percentUsed);
+    final percentLabel = '${(percentUsed * 100).toStringAsFixed(0)}%';
+    final spent =
+        CurrencyUtils.format(budget.spentAmount, currencyCode: currency);
+    final limit = CurrencyUtils.format(budget.amount, currencyCode: currency);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                budget.name,
-                style: Theme.of(context).textTheme.titleSmall,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+    return Semantics(
+      label: '${budget.name} budget, $percentLabel used, $spent of $limit',
+      excludeSemantics: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  budget.name,
+                  style: text.titleSmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '${(percentUsed * 100).toStringAsFixed(0)}%',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: progressColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: percentUsed.clamp(0.0, 1.0),
-            minHeight: 8,
-            backgroundColor: AppColors.surfaceVariant,
-            valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+              const SizedBox(width: Space.sm),
+              Text(
+                percentLabel,
+                style: text.labelLarge?.tabular.copyWith(color: progressColor),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${CurrencyUtils.format(budget.spentAmount, currencyCode: currency)} spent',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.textTertiary,
-                  ),
+          const SizedBox(height: Space.sm),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: percentUsed.clamp(0.0, 1.0)),
+            duration: Motion.slow,
+            curve: Motion.standard,
+            builder: (context, value, _) => LinearProgressIndicator(
+              value: value,
+              color: progressColor,
             ),
-            Text(
-              'of ${CurrencyUtils.format(budget.amount, currencyCode: currency)}',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.textTertiary,
-                  ),
-            ),
-          ],
-        ),
-      ],
+          ),
+          const SizedBox(height: Space.sm),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '$spent spent',
+                  style: text.bodySmall?.tabular
+                      .copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ),
+              Text(
+                'of $limit',
+                style: text.bodySmall?.tabular
+                    .copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
-  }
-
-  Color _getProgressColor(double percent) {
-    if (percent >= 1.0) {
-      return AppColors.budgetDanger;
-    } else if (percent >= 0.8) {
-      return AppColors.budgetWarning;
-    } else {
-      return AppColors.budgetSafe;
-    }
   }
 }

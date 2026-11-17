@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/tokens.dart';
 
 class LoadingOverlay extends StatelessWidget {
   final bool isLoading;
@@ -15,22 +15,24 @@ class LoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Stack(
       children: [
         child,
         if (isLoading)
           Container(
-            color: AppColors.overlay,
+            color: scheme.scrim.withValues(alpha: 0.4),
             child: Center(
               child: Card(
+                color: scheme.surfaceContainerHigh,
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(Space.xl),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const CircularProgressIndicator(),
                       if (message != null) ...[
-                        const SizedBox(height: 16),
+                        const SizedBox(height: Space.lg),
                         Text(message!),
                       ],
                     ],

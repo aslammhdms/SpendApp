@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_palette.dart';
 import '../../data/remote/sync_engine.dart';
 import '../providers/sync_status_provider.dart';
 
@@ -12,48 +12,55 @@ class SyncIndicator extends ConsumerWidget {
     final syncStatus = ref.watch(syncStatusProvider);
 
     return syncStatus.when(
-      data: (status) => _buildIndicator(status),
-      loading: () => _buildIndicator(SyncStatus.idle),
-      error: (_, __) => _buildIndicator(SyncStatus.error),
+      data: (status) => _buildIndicator(context, status),
+      loading: () => _buildIndicator(context, SyncStatus.idle),
+      error: (_, __) => _buildIndicator(context, SyncStatus.error),
     );
   }
 
-  Widget _buildIndicator(SyncStatus status) {
-    IconData icon;
-    Color color;
-    bool animate = false;
+  Widget _buildIndicator(BuildContext context, SyncStatus status) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
+    final (IconData icon, Color color, String label) = switch (status) {
+      SyncStatus.synced => (
+          Icons.cloud_done_outlined,
+          palette.income,
+          'Synced'
+        ),
+      SyncStatus.syncing => (Icons.sync, scheme.primary, 'Syncing'),
+      SyncStatus.pending => (
+          Icons.cloud_upload_outlined,
+          palette.budgetWarning,
+          'Changes waiting to sync'
+        ),
+      SyncStatus.error => (
+          Icons.cloud_off_outlined,
+          scheme.error,
+          'Sync failed'
+        ),
+      SyncStatus.idle => (
+          Icons.cloud_queue,
+          scheme.onSurfaceVariant,
+          'Sync idle'
+        ),
+    };
 
-    switch (status) {
-      case SyncStatus.synced:
-        icon = Icons.cloud_done;
-        color = AppColors.success;
-        break;
-      case SyncStatus.syncing:
-        icon = Icons.sync;
-        color = AppColors.info;
-        animate = true;
-        break;
-      case SyncStatus.pending:
-        icon = Icons.cloud_upload;
-        color = AppColors.warning;
-        break;
-      case SyncStatus.error:
-        icon = Icons.cloud_off;
-        color = AppColors.error;
-        break;
-      case SyncStatus.idle:
-      default:
-        icon = Icons.cloud_queue;
-        color = AppColors.textTertiary;
-    }
+    final iconWidget = status == SyncStatus.syncing
+        ? _AnimatedSyncIcon(icon: icon, color: color)
+        : Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Icon(icon, color: color, size: 22),
+          );
 
-    if (animate) {
-      return _AnimatedSyncIcon(icon: icon, color: color);
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Icon(icon, color: color, size: 20),
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        label: label,
+        child: SizedBox(
+          height: 48,
+          child: Center(child: iconWidget),
+        ),
+      ),
     );
   }
 }
@@ -96,7 +103,7 @@ class _AnimatedSyncIconState extends State<_AnimatedSyncIcon>
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: RotationTransition(
         turns: _controller,
-        child: Icon(widget.icon, color: widget.color, size: 20),
+        child: Icon(widget.icon, color: widget.color, size: 22),
       ),
     );
   }

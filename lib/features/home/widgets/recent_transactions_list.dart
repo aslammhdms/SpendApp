@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/currency_utils.dart';
+import '../../../core/theme/app_palette.dart';
+import '../../../core/theme/tokens.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../data/models/transaction.dart';
+import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/money_text.dart';
+import '../../../shared/widgets/section_header.dart';
 
 class RecentTransactionsList extends StatelessWidget {
   final List<Transaction> transactions;
@@ -21,59 +24,34 @@ class RecentTransactionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Recent Transactions',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                if (onViewAll != null)
-                  TextButton(
-                    onPressed: onViewAll,
-                    child: const Text('View All'),
-                  ),
-              ],
-            ),
+          SectionHeader(
+            'Recent Transactions',
+            actionLabel: 'View All',
+            onAction: onViewAll,
           ),
           if (transactions.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(32),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.receipt_long,
-                    size: 48,
-                    color: AppColors.textTertiary,
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    'No transactions yet',
-                    style: TextStyle(color: AppColors.textTertiary),
-                  ),
-                ],
-              ),
+            const EmptyState(
+              icon: Icons.receipt_long_outlined,
+              title: 'No transactions yet',
+              compact: true,
             )
           else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: transactions.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final transaction = transactions[index];
-                return _TransactionItem(
-                  transaction: transaction,
-                  currency: currency,
-                  onTap: onTap != null ? () => onTap!(transaction) : null,
-                );
-              },
+            Padding(
+              padding: const EdgeInsets.only(bottom: Space.sm),
+              child: Column(
+                children: [
+                  for (final transaction in transactions)
+                    _TransactionItem(
+                      transaction: transaction,
+                      currency: currency,
+                      onTap: onTap != null ? () => onTap!(transaction) : null,
+                    ),
+                ],
+              ),
             ),
         ],
       ),
@@ -94,77 +72,86 @@ class _TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
+    final text = Theme.of(context).textTheme;
     final isExpense = transaction.type == TransactionType.expense;
     final isIncome = transaction.type == TransactionType.income;
     final isTransfer = transaction.type == TransactionType.transfer;
 
-    Color amountColor;
-    String prefix;
-
-    if (isExpense) {
-      amountColor = AppColors.expense;
-      prefix = '-';
-    } else if (isIncome) {
-      amountColor = AppColors.income;
-      prefix = '+';
-    } else {
-      amountColor = AppColors.transfer;
-      prefix = '';
-    }
+    final (MoneyKind kind, String prefix, IconData icon, Color fg) = isExpense
+        ? (
+            MoneyKind.expense,
+            '-',
+            Icons.north_east_rounded,
+            palette.expense,
+          )
+        : isIncome
+            ? (
+                MoneyKind.income,
+                '+',
+                Icons.south_west_rounded,
+                palette.income,
+              )
+            : (
+                MoneyKind.transfer,
+                '',
+                Icons.swap_horiz_rounded,
+                palette.transfer,
+              );
 
     return InkWell(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: amountColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 64),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.xl,
+            vertical: Space.sm + 2,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: Sizes.iconCircle,
+                height: Sizes.iconCircle,
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHigh,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: fg, size: Sizes.icon),
               ),
-              child: Icon(
-                isTransfer
-                    ? Icons.swap_horiz
-                    : (isExpense ? Icons.arrow_upward : Icons.arrow_downward),
-                color: amountColor,
-                size: 20,
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      transaction.note?.isNotEmpty == true
+                          ? transaction.note!
+                          : (isTransfer ? 'Transfer' : 'Transaction'),
+                      style: text.titleSmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      AppDateUtils.getRelativeDate(transaction.date),
+                      style: text.bodySmall
+                          ?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    transaction.note?.isNotEmpty == true
-                        ? transaction.note!
-                        : (isTransfer ? 'Transfer' : 'Transaction'),
-                    style: Theme.of(context).textTheme.titleSmall,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    AppDateUtils.getRelativeDate(transaction.date),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                  ),
-                ],
+              const SizedBox(width: Space.sm),
+              MoneyText(
+                transaction.amount,
+                currency: currency,
+                kind: kind,
+                prefix: prefix,
+                style: text.titleSmall,
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '$prefix${CurrencyUtils.format(transaction.amount, currencyCode: currency)}',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: amountColor,
-                  ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
