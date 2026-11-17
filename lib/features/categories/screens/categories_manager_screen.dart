@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/category_icon.dart';
+import '../../../core/theme/tokens.dart';
 import '../../../core/constants/category_defaults.dart';
 import '../../../data/models/category.dart';
 import '../providers/categories_provider.dart';
-import '../../transactions/providers/transactions_provider.dart' show expenseCategoriesProvider, incomeCategoriesProvider;
+import '../../transactions/providers/transactions_provider.dart'
+    show expenseCategoriesProvider, incomeCategoriesProvider;
 
 class CategoriesManagerScreen extends ConsumerStatefulWidget {
   const CategoriesManagerScreen({super.key});
@@ -78,12 +80,13 @@ class _CategoriesManagerScreenState
 
   Widget _buildCategoryList(List<Category> categories, CategoryType type) {
     if (categories.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.category_outlined,
-                size: 64, color: AppColors.textTertiary),
+                size: 64,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
             SizedBox(height: 16),
             Text('No categories yet'),
           ],
@@ -92,7 +95,12 @@ class _CategoriesManagerScreenState
     }
 
     return ReorderableListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(
+        Space.lg,
+        Space.sm,
+        Space.lg,
+        Space.fabClearance,
+      ),
       itemCount: categories.length,
       onReorderItem: (oldIndex, newIndex) {
         final reordered = List<Category>.from(categories);
@@ -106,36 +114,31 @@ class _CategoriesManagerScreenState
         final category = categories[index];
         return Card(
           key: ValueKey(category.id),
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: const EdgeInsets.only(bottom: Space.sm),
           child: ListTile(
-            leading: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: Color(category.color).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Center(
-                child: Text(
-                  category.icon,
-                  style: const TextStyle(fontSize: 22),
-                ),
-              ),
+            leading: CategoryIcon(
+              emoji: category.icon,
+              color: Color(category.color),
             ),
             title: Text(category.name),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.edit, size: 20),
+                  icon: const Icon(Icons.edit_outlined, size: 20),
+                  tooltip: 'Edit ${category.name}',
                   onPressed: () => _showEditCategoryDialog(category),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete, size: 20),
-                  color: AppColors.error,
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  tooltip: 'Delete ${category.name}',
                   onPressed: () => _confirmDelete(category),
                 ),
-                const Icon(Icons.drag_handle),
+                Icon(
+                  Icons.drag_indicator,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  semanticLabel: 'Drag to reorder',
+                ),
               ],
             ),
           ),
@@ -205,7 +208,8 @@ class _CategoriesManagerScreenState
               ref.invalidate(incomeCategoriesProvider);
               if (context.mounted) Navigator.pop(context);
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Delete'),
           ),
         ],
@@ -280,17 +284,6 @@ class _CategoryFormSheetState extends State<_CategoryFormSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.divider,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
           Text(
             widget.category != null ? 'Edit Category' : 'New Category',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -310,7 +303,10 @@ class _CategoryFormSheetState extends State<_CategoryFormSheet> {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Center(
-                  child: Text(_icon, style: const TextStyle(fontSize: 28)),
+                  child: iconForEmoji(_icon) != null
+                      ? Icon(iconForEmoji(_icon),
+                          size: 28, color: Color(_color))
+                      : Text(_icon, style: const TextStyle(fontSize: 28)),
                 ),
               ),
               const SizedBox(width: 16),
@@ -347,15 +343,19 @@ class _CategoryFormSheetState extends State<_CategoryFormSheet> {
                     height: 44,
                     decoration: BoxDecoration(
                       color: _icon == icon
-                          ? AppColors.primary.withValues(alpha: 0.1)
-                          : AppColors.surfaceVariant,
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(context).colorScheme.surfaceContainerHigh,
                       borderRadius: BorderRadius.circular(10),
                       border: _icon == icon
-                          ? Border.all(color: AppColors.primary, width: 2)
+                          ? Border.all(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 2)
                           : null,
                     ),
                     child: Center(
-                      child: Text(icon, style: const TextStyle(fontSize: 22)),
+                      child: iconForEmoji(icon) != null
+                          ? Icon(iconForEmoji(icon), size: 22)
+                          : Text(icon, style: const TextStyle(fontSize: 22)),
                     ),
                   ),
                 );
@@ -373,7 +373,7 @@ class _CategoryFormSheetState extends State<_CategoryFormSheet> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: AppColors.chartPalette.map((color) {
+            children: CategoryDefaults.pickerColors.map((color) {
               final colorValue = color.toARGB32();
               return GestureDetector(
                 onTap: () => setState(() => _color = colorValue),
@@ -384,14 +384,18 @@ class _CategoryFormSheetState extends State<_CategoryFormSheet> {
                     color: color,
                     borderRadius: BorderRadius.circular(8),
                     border: _color == colorValue
-                        ? Border.all(color: Colors.white, width: 3)
+                        ? Border.all(color: contrastOn(color), width: 3)
                         : null,
                     boxShadow: _color == colorValue
-                        ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8)]
+                        ? [
+                            BoxShadow(
+                                color: color.withValues(alpha: 0.5),
+                                blurRadius: 8)
+                          ]
                         : null,
                   ),
                   child: _color == colorValue
-                      ? const Icon(Icons.check, color: Colors.white, size: 20)
+                      ? Icon(Icons.check, color: contrastOn(color), size: 20)
                       : null,
                 ),
               );

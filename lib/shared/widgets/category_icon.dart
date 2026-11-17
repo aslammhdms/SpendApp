@@ -62,9 +62,16 @@ const Map<String, IconData> _iconForEmoji = {
   '🧘': Icons.self_improvement_outlined,
 };
 
+/// Black or white, whichever reads better on [background]. For marks drawn
+/// on user-chosen colors (color picker swatches), which the theme can't know.
+Color contrastOn(Color background) =>
+    ThemeData.estimateBrightnessForColor(background) == Brightness.dark
+        ? const Color(0xFFFFFFFF)
+        : const Color(0xFF000000);
+
 /// The Material icon for a stored emoji, or null if there is none.
 IconData? iconForEmoji(String emoji) =>
-    _iconForEmoji[emoji.replaceAll('️', '').trim()];
+    _iconForEmoji[emoji.replaceAll('\uFE0F', '').trim()];
 
 /// A category or account icon in a circle tinted with its [color].
 class CategoryIcon extends StatelessWidget {
@@ -88,7 +95,9 @@ class CategoryIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Lift dark category colors in dark mode so the icon stays legible.
-    final fg = isDark ? Color.lerp(color, Colors.white, 0.3)! : color;
+    final fg = isDark
+        ? Color.lerp(color, Theme.of(context).colorScheme.onSurface, 0.3)!
+        : color;
     final icon = iconForEmoji(emoji);
     return Semantics(
       label: semanticLabel,

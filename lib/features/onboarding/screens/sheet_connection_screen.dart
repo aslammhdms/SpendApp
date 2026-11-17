@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/theme/app_palette.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
 import '../providers/sheet_setup_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
 
@@ -26,7 +26,8 @@ class _SheetConnectionScreenState extends ConsumerState<SheetConnectionScreen> {
   }
 
   Future<void> _createNewSheet() async {
-    final success = await ref.read(sheetSetupProvider.notifier).createNewSheet();
+    final success =
+        await ref.read(sheetSetupProvider.notifier).createNewSheet();
     if (success && mounted) {
       final setupData = ref.read(sheetSetupProvider);
       if (setupData.spreadsheetId != null) {
@@ -37,7 +38,9 @@ class _SheetConnectionScreenState extends ConsumerState<SheetConnectionScreen> {
   }
 
   Future<void> _connectToSheet(String spreadsheetId) async {
-    final success = await ref.read(sheetSetupProvider.notifier).connectToSheet(spreadsheetId);
+    final success = await ref
+        .read(sheetSetupProvider.notifier)
+        .connectToSheet(spreadsheetId);
     if (success && mounted) {
       setState(() => _isSyncing = true);
       try {
@@ -82,7 +85,7 @@ class _SheetConnectionScreenState extends ConsumerState<SheetConnectionScreen> {
               Text(
                 'Your expense data will be stored in Google Sheets for easy access and backup.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
               const SizedBox(height: 32),
@@ -104,7 +107,7 @@ class _SheetConnectionScreenState extends ConsumerState<SheetConnectionScreen> {
                 Text(
                   'Or connect to an existing SpendSheet:',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
                 const SizedBox(height: 12),
@@ -117,16 +120,18 @@ class _SheetConnectionScreenState extends ConsumerState<SheetConnectionScreen> {
                       return _ExistingSheetCard(
                         name: sheet.name,
                         modifiedTime: sheet.modifiedTime,
-                        onTap: isLoading
-                            ? null
-                            : () => _connectToSheet(sheet.id),
-                        isLoading: setupData.state == SheetSetupState.connecting || _isSyncing,
+                        onTap:
+                            isLoading ? null : () => _connectToSheet(sheet.id),
+                        isLoading:
+                            setupData.state == SheetSetupState.connecting ||
+                                _isSyncing,
                         statusText: _isSyncing ? 'Syncing data...' : null,
                       );
                     },
                   ),
                 ),
-              ] else if (setupData.state == SheetSetupState.searchingExisting) ...[
+              ] else if (setupData.state ==
+                  SheetSetupState.searchingExisting) ...[
                 const Expanded(
                   child: Center(
                     child: Column(
@@ -149,22 +154,25 @@ class _SheetConnectionScreenState extends ConsumerState<SheetConnectionScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .error
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline,
-                        color: AppColors.error,
+                        color: Theme.of(context).colorScheme.error,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           setupData.errorMessage!,
-                          style: const TextStyle(
-                            color: AppColors.error,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
                             fontSize: 14,
                           ),
                         ),
@@ -210,7 +218,7 @@ class _OptionCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: isLoading
@@ -218,7 +226,7 @@ class _OptionCard extends StatelessWidget {
                         padding: EdgeInsets.all(12),
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Icon(icon, color: AppColors.primary),
+                    : Icon(icon, color: Theme.of(context).colorScheme.primary),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -239,9 +247,9 @@ class _OptionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right,
-                color: AppColors.textTertiary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -280,7 +288,7 @@ class _ExistingSheetCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.1),
+                  color: context.palette.incomeContainer,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: isLoading
@@ -288,9 +296,9 @@ class _ExistingSheetCard extends StatelessWidget {
                         padding: EdgeInsets.all(10),
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(
+                    : Icon(
                         Icons.table_chart,
-                        color: AppColors.secondary,
+                        color: context.palette.income,
                         size: 20,
                       ),
               ),
@@ -310,7 +318,7 @@ class _ExistingSheetCard extends StatelessWidget {
                       Text(
                         statusText!,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                       ),
                     ] else if (modifiedTime != null) ...[
@@ -323,9 +331,9 @@ class _ExistingSheetCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right,
-                color: AppColors.textTertiary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 size: 20,
               ),
             ],

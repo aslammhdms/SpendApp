@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../data/remote/sync_engine.dart';
 
@@ -20,7 +20,7 @@ class SyncStatusTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: _buildStatusIcon(),
+      leading: _buildStatusIcon(context),
       title: Text(_getStatusTitle()),
       subtitle: Text(_getStatusSubtitle()),
       trailing: status == SyncStatus.syncing
@@ -36,31 +36,31 @@ class SyncStatusTile extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusIcon() {
+  Widget _buildStatusIcon(BuildContext context) {
     IconData icon;
     Color color;
 
     switch (status) {
       case SyncStatus.synced:
         icon = Icons.cloud_done;
-        color = AppColors.success;
+        color = context.palette.income;
         break;
       case SyncStatus.syncing:
         icon = Icons.sync;
-        color = AppColors.info;
+        color = Theme.of(context).colorScheme.primary;
         break;
       case SyncStatus.pending:
         icon = Icons.cloud_upload;
-        color = AppColors.warning;
+        color = context.palette.budgetWarning;
         break;
       case SyncStatus.error:
         icon = Icons.cloud_off;
-        color = AppColors.error;
+        color = Theme.of(context).colorScheme.error;
         break;
       case SyncStatus.idle:
       default:
         icon = Icons.cloud_queue;
-        color = AppColors.textTertiary;
+        color = Theme.of(context).colorScheme.onSurfaceVariant;
     }
 
     return Container(

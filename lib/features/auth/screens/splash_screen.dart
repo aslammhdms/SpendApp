@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/theme/app_palette.dart';
+import '../../../core/theme/tokens.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../data/repositories/settings_repository.dart';
 import '../providers/auth_provider.dart';
 import '../../settings/providers/settings_provider.dart';
@@ -128,8 +129,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: scheme.surface,
       body: Center(
         child: AnimatedBuilder(
           animation: _animationController,
@@ -142,50 +145,44 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 100,
-                      height: 100,
+                      width: 96,
+                      height: 96,
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
+                        color: scheme.primaryContainer,
+                        borderRadius: Radii.xlAll,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                            color: context.palette.cardShadow,
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.account_balance_wallet,
-                        size: 50,
-                        color: AppColors.primary,
+                      child: Icon(
+                        Icons.account_balance_wallet_rounded,
+                        size: 48,
+                        color: scheme.onPrimaryContainer,
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    const Text(
+                    const SizedBox(height: Space.xl),
+                    Text(
                       'SpendSheet',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.2,
-                      ),
+                      style: text.headlineMedium
+                          ?.copyWith(color: scheme.onSurface),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Space.sm),
                     Text(
                       'Track your expenses effortlessly',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white.withValues(alpha: 0.8),
-                      ),
+                      style: text.bodyLarge
+                          ?.copyWith(color: scheme.onSurfaceVariant),
                     ),
-                    const SizedBox(height: 48),
-                    const SizedBox(
+                    const SizedBox(height: Space.xxl + Space.lg),
+                    SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        strokeWidth: 2.5,
+                        color: scheme.primary,
                       ),
                     ),
                   ],

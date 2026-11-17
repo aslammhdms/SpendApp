@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -19,28 +19,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       title: 'Track Expenses',
       description:
           'Easily log your daily expenses and income with just a few taps.',
-      color: AppColors.primary,
+      accent: 0,
     ),
     OnboardingPage(
       icon: Icons.cloud_sync,
       title: 'Sync with Google Sheets',
       description:
           'Your data is stored in your own Google Sheets, giving you full control.',
-      color: AppColors.secondary,
+      accent: 1,
     ),
     OnboardingPage(
       icon: Icons.pie_chart,
       title: 'Insightful Analytics',
       description:
           'Visualize your spending patterns with beautiful charts and reports.',
-      color: AppColors.info,
+      accent: 4,
     ),
     OnboardingPage(
       icon: Icons.savings,
       title: 'Budget Wisely',
       description:
           'Set budgets and get notified when you are close to your limits.',
-      color: AppColors.warning,
+      accent: 2,
     ),
   ];
 
@@ -126,13 +126,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: page.color.withValues(alpha: 0.1),
+              color: context.palette
+                  .chartColor(page.accent)
+                  .withValues(alpha: 0.14),
               shape: BoxShape.circle,
             ),
             child: Icon(
               page.icon,
               size: 60,
-              color: page.color,
+              color: context.palette.chartColor(page.accent),
             ),
           ),
           const SizedBox(height: 48),
@@ -147,7 +149,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           Text(
             page.description,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
             textAlign: TextAlign.center,
           ),
@@ -164,8 +166,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       height: 8,
       decoration: BoxDecoration(
         color: _currentPage == index
-            ? AppColors.primary
-            : AppColors.primary.withValues(alpha: 0.3),
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(4),
       ),
     );
@@ -176,12 +178,14 @@ class OnboardingPage {
   final IconData icon;
   final String title;
   final String description;
-  final Color color;
+
+  /// Index into the palette's chart colors.
+  final int accent;
 
   const OnboardingPage({
     required this.icon,
     required this.title,
     required this.description,
-    required this.color,
+    required this.accent,
   });
 }

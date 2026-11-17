@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/widgets/category_icon.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/category_defaults.dart';
 import '../../../data/models/account.dart';
 import '../providers/accounts_provider.dart';
@@ -34,12 +34,25 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
   bool get isEditing => widget.accountId != null;
 
   final List<String> _accountIcons = [
-    '💵', '🏦', '💳', '💰', '🏧', '📈', '🪙', '💎',
+    '💵',
+    '🏦',
+    '💳',
+    '💰',
+    '🏧',
+    '📈',
+    '🪙',
+    '💎',
   ];
 
   final List<int> _accountColors = [
-    0xFF4CAF50, 0xFF2196F3, 0xFFF44336, 0xFF9C27B0,
-    0xFFFF9800, 0xFF00BCD4, 0xFF795548, 0xFF607D8B,
+    0xFF4CAF50,
+    0xFF2196F3,
+    0xFFF44336,
+    0xFF9C27B0,
+    0xFFFF9800,
+    0xFF00BCD4,
+    0xFF795548,
+    0xFF607D8B,
   ];
 
   @override
@@ -177,7 +190,8 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
                                   _nameController.text.isEmpty
                                       ? 'Account Name'
                                       : _nameController.text,
-                                  style: Theme.of(context).textTheme.titleMedium,
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium,
                                 ),
                                 Text(
                                   _getAccountTypeLabel(_type),
@@ -257,15 +271,21 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
                           height: 48,
                           decoration: BoxDecoration(
                             color: _icon == icon
-                                ? AppColors.primary.withValues(alpha: 0.1)
-                                : AppColors.surfaceVariant,
+                                ? Theme.of(context).colorScheme.primaryContainer
+                                : Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHigh,
                             borderRadius: BorderRadius.circular(12),
                             border: _icon == icon
-                                ? Border.all(color: AppColors.primary, width: 2)
+                                ? Border.all(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                    width: 2)
                                 : null,
                           ),
                           child: Center(
-                            child: Text(icon, style: const TextStyle(fontSize: 24)),
+                            child: Text(icon,
+                                style: const TextStyle(fontSize: 24)),
                           ),
                         ),
                       );
@@ -292,19 +312,22 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
                             color: Color(color),
                             borderRadius: BorderRadius.circular(12),
                             border: _color == color
-                                ? Border.all(color: Colors.white, width: 3)
+                                ? Border.all(
+                                    color: contrastOn(Color(color)), width: 3)
                                 : null,
                             boxShadow: _color == color
                                 ? [
                                     BoxShadow(
-                                      color: Color(color).withValues(alpha: 0.5),
+                                      color:
+                                          Color(color).withValues(alpha: 0.5),
                                       blurRadius: 8,
                                     )
                                   ]
                                 : null,
                           ),
                           child: _color == color
-                              ? const Icon(Icons.check, color: Colors.white)
+                              ? Icon(Icons.check,
+                                  color: contrastOn(Color(color)))
                               : null,
                         ),
                       );
@@ -366,7 +389,8 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
                   .deleteAccount(widget.accountId!);
               if (mounted) context.pop();
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Delete'),
           ),
         ],

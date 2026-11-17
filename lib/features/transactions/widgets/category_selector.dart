@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../data/models/category.dart';
 
 class CategorySelector extends StatelessWidget {
@@ -17,12 +16,13 @@ class CategorySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (categories.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Text(
             'No categories available',
-            style: TextStyle(color: AppColors.textTertiary),
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       );
@@ -74,11 +74,10 @@ class _CategoryItem extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? categoryColor.withValues(alpha: 0.2)
-              : AppColors.surfaceVariant,
+              : Theme.of(context).colorScheme.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(12),
-          border: isSelected
-              ? Border.all(color: categoryColor, width: 2)
-              : null,
+          border:
+              isSelected ? Border.all(color: categoryColor, width: 2) : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -105,10 +104,9 @@ class _CategoryItem extends StatelessWidget {
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: isSelected
                           ? categoryColor
-                          : AppColors.textSecondary,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
@@ -153,7 +151,7 @@ class CategorySelectorBottomSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.divider,
+                color: Theme.of(context).colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

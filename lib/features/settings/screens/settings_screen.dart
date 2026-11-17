@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../core/services/notification_service.dart';
@@ -126,8 +125,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             value: settings.biometricLockEnabled,
             onChanged: (value) async {
               if (value) {
-                final biometricService =
-                    ref.read(biometricServiceProvider);
+                final biometricService = ref.read(biometricServiceProvider);
                 final canAuth = await biometricService.canAuthenticate();
                 if (!canAuth) {
                   if (mounted) {
@@ -193,9 +191,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           // Sign Out
           ListTile(
-            leading: const Icon(Icons.logout, color: AppColors.error),
-            title: const Text('Sign Out',
-                style: TextStyle(color: AppColors.error)),
+            leading:
+                Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
+            title: Text('Sign Out',
+                style: TextStyle(color: Theme.of(context).colorScheme.error)),
             onTap: () => _confirmSignOut(context),
           ),
           const SizedBox(height: 32),
@@ -205,7 +204,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Text(
               'SpendSheet v1.0.0',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textTertiary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
           ),
@@ -222,14 +221,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         shrinkWrap: true,
         children: CurrencyUtils.allCurrencies.map((currency) {
           return ListTile(
-            leading: Text(currency.symbol, style: const TextStyle(fontSize: 20)),
+            leading:
+                Text(currency.symbol, style: const TextStyle(fontSize: 20)),
             title: Text(currency.name),
             subtitle: Text(currency.code),
             trailing: currentCurrency == currency.code
-                ? const Icon(Icons.check, color: AppColors.primary)
+                ? Icon(Icons.check,
+                    color: Theme.of(context).colorScheme.primary)
                 : null,
             onTap: () async {
-              await ref.read(settingsProvider.notifier).setCurrency(currency.code);
+              await ref
+                  .read(settingsProvider.notifier)
+                  .setCurrency(currency.code);
               if (context.mounted) {
                 Navigator.pop(context);
               }
@@ -250,7 +253,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             leading: const Icon(Icons.brightness_auto),
             title: const Text('System'),
             trailing: currentTheme == 'system'
-                ? const Icon(Icons.check, color: AppColors.primary)
+                ? Icon(Icons.check,
+                    color: Theme.of(context).colorScheme.primary)
                 : null,
             onTap: () {
               ref.read(settingsProvider.notifier).setThemeMode('system');
@@ -261,7 +265,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             leading: const Icon(Icons.light_mode),
             title: const Text('Light'),
             trailing: currentTheme == 'light'
-                ? const Icon(Icons.check, color: AppColors.primary)
+                ? Icon(Icons.check,
+                    color: Theme.of(context).colorScheme.primary)
                 : null,
             onTap: () {
               ref.read(settingsProvider.notifier).setThemeMode('light');
@@ -272,7 +277,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             leading: const Icon(Icons.dark_mode),
             title: const Text('Dark'),
             trailing: currentTheme == 'dark'
-                ? const Icon(Icons.check, color: AppColors.primary)
+                ? Icon(Icons.check,
+                    color: Theme.of(context).colorScheme.primary)
                 : null,
             onTap: () {
               ref.read(settingsProvider.notifier).setThemeMode('dark');
@@ -357,7 +363,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 context.go('/welcome');
               }
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Sign Out'),
           ),
         ],

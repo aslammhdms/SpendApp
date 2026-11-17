@@ -2,7 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
+import '../../../shared/widgets/money_text.dart';
+import '../../../shared/widgets/category_icon.dart';
+import '../../../core/theme/tokens.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../data/models/account.dart';
 import '../../../data/remote/sync_engine.dart';
@@ -25,7 +29,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(accountsProvider.notifier).loadAccounts();
-      _syncSubscription = ref.read(syncEngineProvider).statusStream.listen((status) {
+      _syncSubscription =
+          ref.read(syncEngineProvider).statusStream.listen((status) {
         if (status == SyncStatus.synced && mounted) {
           ref.read(accountsProvider.notifier).loadAccounts();
         }
@@ -55,8 +60,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline,
-                          size: 48, color: AppColors.error),
+                      Icon(Icons.error_outline,
+                          size: 48, color: Theme.of(context).colorScheme.error),
                       const SizedBox(height: 16),
                       Text(state.error!),
                       const SizedBox(height: 16),
@@ -73,34 +78,17 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                     await ref.read(accountsProvider.notifier).loadAccounts();
                   },
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(
+                      Space.lg,
+                      Space.sm,
+                      Space.lg,
+                      Space.fabClearance,
+                    ),
                     children: [
                       // Total Balance Card
-                      Card(
-                        color: AppColors.primary,
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            children: [
-                              const Text(
-                                'Total Balance',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                CurrencyUtils.format(state.totalBalance, currencyCode: currency),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      _TotalBalanceCard(
+                        total: state.totalBalance,
+                        currency: currency,
                       ),
                       const SizedBox(height: 24),
                       Text(
@@ -109,13 +97,16 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                       ),
                       const SizedBox(height: 12),
                       if (state.accounts.isEmpty)
-                        const Card(
+                        Card(
                           child: Padding(
                             padding: EdgeInsets.all(32),
                             child: Column(
                               children: [
                                 Icon(Icons.account_balance_wallet_outlined,
-                                    size: 48, color: AppColors.textTertiary),
+                                    size: 48,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant),
                                 SizedBox(height: 12),
                                 Text('No accounts yet'),
                               ],
@@ -124,11 +115,11 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                         )
                       else
                         ...state.accounts.map((account) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.only(bottom: Space.sm),
                               child: _AccountCard(
                                 account: account,
-                                onTap: () =>
-                                    context.push('/accounts/edit/${account.id}'),
+                                onTap: () => context
+                                    .push('/accounts/edit/${account.id}'),
                                 onDelete: () => _confirmDelete(account.id),
                               ),
                             )),
@@ -158,12 +149,15 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await ref.read(accountsProvider.notifier).deleteAccount(accountId);
+              await ref
+                  .read(accountsProvider.notifier)
+                  .deleteAccount(accountId);
               if (mounted) {
                 ref.read(dashboardProvider.notifier).refresh();
               }
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Delete'),
           ),
         ],
@@ -186,58 +180,47 @@ class _AccountCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.lg,
+            vertical: Space.md + 2,
+          ),
           child: Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Color(account.color).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    account.icon,
-                    style: const TextStyle(fontSize: 24),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
+              CategoryIcon(emoji: account.icon, color: Color(account.color)),
+              const SizedBox(width: Space.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       account.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
                     Text(
                       _getAccountTypeLabel(account.type),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textTertiary,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ],
                 ),
               ),
-              Text(
-                CurrencyUtils.format(
-                  account.currentBalance,
-                  currencyCode: account.currency,
-                ),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: account.currentBalance >= 0
-                          ? AppColors.income
-                          : AppColors.expense,
-                    ),
+              MoneyText(
+                account.currentBalance,
+                currency: account.currency,
+                semanticLabel: '${account.name} balance',
+                // Positive balances are neutral; only a negative one is a
+                // warning signal.
+                color: account.currentBalance >= 0
+                    ? Theme.of(context).colorScheme.onSurface
+                    : context.palette.expense,
+                style: Theme.of(context).textTheme.titleMedium,
               ),
             ],
           ),
@@ -263,5 +246,50 @@ class _AccountCard extends StatelessWidget {
       case AccountType.other:
         return 'Other';
     }
+  }
+}
+
+class _TotalBalanceCard extends StatelessWidget {
+  const _TotalBalanceCard({required this.total, required this.currency});
+
+  final double total;
+  final String currency;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
+    final text = Theme.of(context).textTheme;
+    final formatted = CurrencyUtils.format(total, currencyCode: currency);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(Space.xl),
+      decoration: BoxDecoration(
+        color: palette.raisedSurface,
+        borderRadius: Radii.xlAll,
+        boxShadow: [
+          BoxShadow(
+            color: palette.cardShadow,
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Total Balance',
+            style: text.titleSmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: Space.xs),
+          Semantics(
+            label: 'Total balance, $formatted',
+            excludeSemantics: true,
+            child: Text(formatted, style: text.displaySmall?.tabular),
+          ),
+        ],
+      ),
+    );
   }
 }

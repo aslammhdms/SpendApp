@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../data/repositories/settings_repository.dart';
 import '../providers/auth_provider.dart';
 
@@ -67,13 +66,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(24),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.account_balance_wallet,
                   size: 50,
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 24),
@@ -88,7 +87,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               Text(
                 'Sign in with your Google account to sync your expenses with Google Sheets',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                 textAlign: TextAlign.center,
               ),
@@ -97,22 +96,25 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .error
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline,
-                        color: AppColors.error,
+                        color: Theme.of(context).colorScheme.error,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: const TextStyle(
-                            color: AppColors.error,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
                             fontSize: 14,
                           ),
                         ),
@@ -127,13 +129,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _isLoading ? null : _signInWithGoogle,
                   icon: _isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Theme.of(context).colorScheme.onPrimary),
                           ),
                         )
                       : Image.network(
@@ -145,11 +147,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                             size: 24,
                           ),
                         ),
-                  label: Text(_isLoading ? 'Signing in...' : 'Sign in with Google'),
+                  label: Text(
+                      _isLoading ? 'Signing in...' : 'Sign in with Google'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.textPrimary,
-                    side: const BorderSide(color: AppColors.border),
+                    backgroundColor:
+                        Theme.of(context).colorScheme.surfaceContainerLowest,
+                    foregroundColor: Theme.of(context).colorScheme.onSurface,
+                    side: BorderSide(
+                        color: Theme.of(context).colorScheme.outline),
                   ),
                 ),
               ),
@@ -157,7 +162,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               Text(
                 'By signing in, you agree to our Terms of Service and Privacy Policy',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textTertiary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                 textAlign: TextAlign.center,
               ),
