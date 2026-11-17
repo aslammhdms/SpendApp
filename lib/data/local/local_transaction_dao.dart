@@ -247,6 +247,20 @@ class LocalTransactionDao {
     return rows.map((row) => row['category_id'] as String).toSet();
   }
 
+  /// How many live transactions dated on or after [since] use each category.
+  /// Categories with none are left out.
+  Future<Map<String, int>> getCategoryUseCounts(DateTime since) async {
+    final db = await _db;
+    final rows = await db.rawQuery(
+      'SELECT category_id, COUNT(*) AS uses FROM transactions '
+      'WHERE deleted_at IS NULL AND date >= ? GROUP BY category_id',
+      [since.toIso8601String()],
+    );
+    return {
+      for (final row in rows) row['category_id'] as String: row['uses'] as int,
+    };
+  }
+
   /// IDs of the accounts that live transactions use, as source or target.
   Future<Set<String>> getUsedAccountIds() async {
     final db = await _db;

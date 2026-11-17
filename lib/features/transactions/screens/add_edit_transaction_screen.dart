@@ -11,7 +11,9 @@ import '../../../data/models/account.dart';
 import '../../../data/models/loan.dart';
 import '../../../data/models/person.dart';
 import '../providers/transactions_provider.dart';
+import '../services/category_order.dart';
 import '../widgets/amount_input_pad.dart';
+import '../widgets/category_picker_sheet.dart';
 import '../../../shared/widgets/category_icon.dart';
 import '../../../shared/widgets/money_text.dart';
 import '../../home/providers/dashboard_provider.dart';
@@ -38,6 +40,11 @@ class _AddEditTransactionScreenState
   TransactionType _type = TransactionType.expense;
   double _amount = 0;
   String? _categoryId;
+
+  /// Shown first in the category strip: the category picked from the full
+  /// list, or the one on the transaction being edited.
+  String? _pinnedCategoryId;
+  final ScrollController _categoryScroll = ScrollController();
   String? _accountId;
   String? _toAccountId;
   DateTime _date = DateTime.now();
@@ -80,6 +87,7 @@ class _AddEditTransactionScreenState
         _amount = transaction.amount;
         _type = transaction.type;
         _categoryId = transaction.categoryId;
+        _pinnedCategoryId = transaction.categoryId;
         _accountId = transaction.accountId;
         _toAccountId = transaction.toAccountId;
         _date = transaction.date;
@@ -109,6 +117,7 @@ class _AddEditTransactionScreenState
         _type = TransactionType.values[_tabController.index];
       }
       _categoryId = null; // Reset category when type changes
+      _pinnedCategoryId = null;
     });
   }
 
@@ -117,6 +126,7 @@ class _AddEditTransactionScreenState
     _tabController.dispose();
     _noteController.dispose();
     _newPersonController.dispose();
+    _categoryScroll.dispose();
     super.dispose();
   }
 
@@ -388,7 +398,18 @@ class _AddEditTransactionScreenState
           SizedBox(
             height: Sizes.touchTarget,
             child: categoriesAsync.when(
-              data: _buildCategoryChips,
+              data: (categories) {
+                final useCounts = ref.watch(categoryUseCountsProvider);
+                // Wait for the counts so the strip does not reorder after
+                // it appears. If they cannot be read, keep the set order.
+                if (useCounts.isLoading && !useCounts.hasValue) {
+                  return const Center(child: LinearProgressIndicator());
+                }
+                return _buildCategoryChips(
+                  categories,
+                  useCounts.valueOrNull ?? const {},
+                );
+              },
               loading: () => const Center(child: LinearProgressIndicator()),
               error: (_, __) => const Center(child: Text('Failed to load')),
             ),
@@ -427,26 +448,85 @@ class _AddEditTransactionScreenState
     );
   }
 
-  Widget _buildCategoryChips(List<Category> categories) {
-    return ListView.separated(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: Space.lg),
-      itemCount: categories.length,
-      separatorBuilder: (_, __) => const SizedBox(width: Space.sm),
-      itemBuilder: (context, index) {
-        final category = categories[index];
-        return _ChoicePill(
-          label: category.name,
-          leading: CategoryIcon(
-            emoji: category.icon,
-            color: Color(category.color),
-            size: 28,
-          ),
-          selected: category.id == _categoryId,
-          onTap: () => setState(() => _categoryId = category.id),
-        );
-      },
+  /// The "All" button, which stays put, then the categories with the most
+  /// used first. [categories] is in the order set in Settings.
+  Widget _buildCategoryChips(
+    List<Category> categories,
+    Map<String, int> useCounts,
+  ) {
+    final ordered = orderCategoriesForQuickPick(
+      categories,
+      useCounts,
+      pinnedId: _pinnedCategoryId,
     );
+    return Row(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: Space.lg),
+          child: _ChoicePill(
+            key: const Key('allCategoriesButton'),
+            label: 'All',
+            semanticLabel: 'All categories',
+            leading: SizedBox.square(
+              dimension: 28,
+              child: Icon(
+                Icons.grid_view_rounded,
+                size: Sizes.icon,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            selected: false,
+            onTap: () => _pickFromAllCategories(categories),
+          ),
+        ),
+        // A fixed gap, so pills scrolling past are cut off before "All"
+        // instead of running into it.
+        const SizedBox(width: Space.sm),
+        Expanded(
+          child: ListView.separated(
+            controller: _categoryScroll,
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(right: Space.lg),
+            itemCount: ordered.length,
+            separatorBuilder: (_, __) => const SizedBox(width: Space.sm),
+            itemBuilder: (context, index) {
+              final category = ordered[index];
+              return _ChoicePill(
+                label: category.name,
+                leading: CategoryIcon(
+                  emoji: category.icon,
+                  color: Color(category.color),
+                  size: 28,
+                ),
+                selected: category.id == _categoryId,
+                onTap: () => setState(() => _categoryId = category.id),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickFromAllCategories(List<Category> categories) async {
+    final picked = await showCategoryPicker(
+      context,
+      categories: categories,
+      selectedId: _categoryId,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _categoryId = picked.id;
+      // Bring it to the front of the strip so the choice is visible.
+      _pinnedCategoryId = picked.id;
+    });
+    if (_categoryScroll.hasClients) {
+      _categoryScroll.animateTo(
+        0,
+        duration: Motion.medium,
+        curve: Motion.standard,
+      );
+    }
   }
 
   Future<void> _pickAccount(
@@ -776,9 +856,11 @@ class _FieldLabel extends StatelessWidget {
 /// A tonal, selectable pill (categories, loan direction).
 class _ChoicePill extends StatelessWidget {
   const _ChoicePill({
+    super.key,
     required this.label,
     required this.selected,
     required this.onTap,
+    this.semanticLabel,
     this.leading,
     this.selectedColor,
     this.selectedForeground,
@@ -786,6 +868,9 @@ class _ChoicePill extends StatelessWidget {
   });
 
   final String label;
+
+  /// Read by screen readers in place of [label], when the label is terse.
+  final String? semanticLabel;
   final bool selected;
   final VoidCallback onTap;
   final Widget? leading;
@@ -806,7 +891,7 @@ class _ChoicePill extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: label,
+      label: semanticLabel ?? label,
       excludeSemantics: true,
       child: AnimatedContainer(
         duration: Motion.fast,

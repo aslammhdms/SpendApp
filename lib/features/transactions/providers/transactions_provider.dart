@@ -8,6 +8,7 @@ import '../../../data/repositories/loan_repository.dart';
 import '../../../data/repositories/person_repository.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../loans/providers/loans_provider.dart';
+import '../services/category_order.dart';
 
 class TransactionFilter {
   final DateTime? startDate;
@@ -428,4 +429,13 @@ final expenseCategoriesProvider = FutureProvider<List<Category>>((ref) async {
 final incomeCategoriesProvider = FutureProvider<List<Category>>((ref) async {
   final repository = ref.watch(categoryRepositoryProvider);
   return await repository.getIncomeCategories();
+});
+
+/// How often each category was used lately, for putting the usual ones
+/// first when adding a transaction. Read again each time it is needed.
+final categoryUseCountsProvider =
+    FutureProvider.autoDispose<Map<String, int>>((ref) async {
+  final repository = ref.watch(transactionRepositoryProvider);
+  final since = DateTime.now().subtract(categoryUseWindow);
+  return await repository.getCategoryUseCounts(since);
 });

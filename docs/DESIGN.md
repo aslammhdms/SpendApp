@@ -136,6 +136,10 @@ the theme; don't draw another.
   visibility.onScroll)`, and pad the list's bottom by `Space.fabClearance`.
 - **Full-screen pages** (forms, details) are `GoRoute`s with
   `parentNavigatorKey: _rootNavigatorKey`, so they cover the bottom navigation.
+- **Choosing from a long list** (categories when adding a transaction): a
+  strip of pills with the most used first, and an "All" pill that stays put
+  and opens every option in a searchable grid (`showCategoryPicker`). Nothing
+  should be more than two taps away.
 - **Destructive actions:** red only in the confirming dialog's button and in
   swipe actions (`colorScheme.error`); the icon on the row stays neutral.
 

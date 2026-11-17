@@ -156,6 +156,11 @@ class TransactionRepository {
     return await _localDao.getTotalsByCategory(startDate, endDate);
   }
 
+  /// How many transactions since [since] used each category.
+  Future<Map<String, int>> getCategoryUseCounts(DateTime since) async {
+    return await _localDao.getCategoryUseCounts(since);
+  }
+
   Future<double> getMonthlyIncome(DateTime month) async {
     final startDate = DateTime(month.year, month.month, 1);
     final endDate = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
