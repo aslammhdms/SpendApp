@@ -87,9 +87,10 @@ class LocalPersonDao {
     return results.length;
   }
 
-  Future<int> deleteAll() async {
+  /// Deletes every row, except those whose ID is in [except].
+  Future<int> deleteAll({Set<String> except = const {}}) async {
     final db = await _db;
-    return await db.delete('people');
+    return DatabaseHelper.deleteAllExcept(db, 'people', except);
   }
 
   Map<String, dynamic> _toMap(Person person) {

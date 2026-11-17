@@ -69,6 +69,19 @@ class SyncQueueDao {
     );
   }
 
+  /// Removes [item] after it was pushed, unless the entity changed again
+  /// while the push was running. [enqueue] merges a newer change into the
+  /// same row and stamps a new `created_at`, so that newer change stays
+  /// queued for the next push instead of being dropped.
+  Future<int> deleteIfUnchanged(SyncQueueItem item) async {
+    final db = await _db;
+    return await db.delete(
+      'sync_queue',
+      where: 'id = ? AND created_at = ?',
+      whereArgs: [item.id, item.createdAt.toIso8601String()],
+    );
+  }
+
   Future<int> deleteByEntity(String entityType, String entityId) async {
     final db = await _db;
     return await db.delete(
