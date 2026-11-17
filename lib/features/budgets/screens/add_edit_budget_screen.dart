@@ -250,7 +250,7 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
                               setState(() => _categoryId = category.id);
                             },
                             selectedColor:
-                                Color(category.color).withOpacity(0.2),
+                                Color(category.color).withValues(alpha: 0.2),
                           );
                         }),
                       ],

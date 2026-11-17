@@ -34,7 +34,7 @@ A Flutter expense tracking app for Android with Google Sheets as the backend dat
 
 ### Prerequisites
 
-- Flutter SDK 3.2.0 or higher
+- Flutter SDK 3.50.0 or higher (stable)
 - Android Studio or VS Code with Flutter extensions
 - A Google Cloud project with Sheets API and Drive API enabled
 

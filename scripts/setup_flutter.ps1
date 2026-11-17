@@ -2,7 +2,7 @@
 # Run this script in PowerShell as Administrator
 
 $ErrorActionPreference = "Stop"
-$FlutterVersion = "3.19.0"
+$FlutterVersion = "3.50.0"
 $FlutterUrl = "https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_$FlutterVersion-stable.zip"
 $FlutterPath = "C:\flutter"
 

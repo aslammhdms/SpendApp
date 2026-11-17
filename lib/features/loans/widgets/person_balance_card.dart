@@ -59,7 +59,7 @@ class PersonBalanceCard extends StatelessWidget {
             child: Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: AppColors.primary.withOpacity(0.15),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.15),
                   child: Text(
                     person.name.isNotEmpty ? person.name[0].toUpperCase() : '?',
                     style: const TextStyle(

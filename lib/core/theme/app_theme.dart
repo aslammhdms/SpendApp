@@ -37,7 +37,7 @@ class AppTheme {
           fontWeight: FontWeight.w600,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         color: AppColors.surface,
         shape: RoundedRectangleBorder(
@@ -122,8 +122,8 @@ class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.primary.withOpacity(0.2),
-        labelTextStyle: MaterialStateProperty.all(
+        indicatorColor: AppColors.primary.withValues(alpha: 0.2),
+        labelTextStyle: WidgetStateProperty.all(
           const TextStyle(fontSize: 11, overflow: TextOverflow.ellipsis),
         ),
       ),
@@ -145,7 +145,7 @@ class AppTheme {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),

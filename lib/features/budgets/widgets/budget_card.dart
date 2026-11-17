@@ -43,7 +43,7 @@ class BudgetCard extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: progressColor.withOpacity(0.1),
+                        color: progressColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(
@@ -143,7 +143,7 @@ class BudgetCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: progressColor.withOpacity(0.1),
+                      color: progressColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(

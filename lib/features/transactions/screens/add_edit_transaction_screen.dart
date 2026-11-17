@@ -403,7 +403,7 @@ class _AddEditTransactionScreenState
           onSelected: (_) {
             setState(() => _categoryId = category.id);
           },
-          selectedColor: Color(category.color).withOpacity(0.2),
+          selectedColor: Color(category.color).withValues(alpha: 0.2),
         );
       }).toList(),
     );
@@ -435,7 +435,7 @@ class _AddEditTransactionScreenState
               }
             });
           },
-          selectedColor: Color(account.color).withOpacity(0.2),
+          selectedColor: Color(account.color).withValues(alpha: 0.2),
         );
       }).toList(),
     );
@@ -572,7 +572,7 @@ class _AddEditTransactionScreenState
                     setState(() => _loanType = LoanType.lent);
                   }
                 },
-                selectedColor: AppColors.income.withOpacity(0.2),
+                selectedColor: AppColors.income.withValues(alpha: 0.2),
               ),
             ),
             const SizedBox(width: 12),
@@ -585,7 +585,7 @@ class _AddEditTransactionScreenState
                     setState(() => _loanType = LoanType.borrowed);
                   }
                 },
-                selectedColor: AppColors.expense.withOpacity(0.2),
+                selectedColor: AppColors.expense.withValues(alpha: 0.2),
               ),
             ),
           ],

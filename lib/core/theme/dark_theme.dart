@@ -76,7 +76,7 @@ class DarkTheme {
           fontWeight: FontWeight.w600,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         color: DarkThemeColors.surface,
         shape: RoundedRectangleBorder(
@@ -152,8 +152,8 @@ class DarkTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: DarkThemeColors.surface,
-        indicatorColor: DarkThemeColors.primary.withOpacity(0.2),
-        labelTextStyle: MaterialStateProperty.all(
+        indicatorColor: DarkThemeColors.primary.withValues(alpha: 0.2),
+        labelTextStyle: WidgetStateProperty.all(
           const TextStyle(fontSize: 11, overflow: TextOverflow.ellipsis),
         ),
       ),
@@ -175,7 +175,7 @@ class DarkTheme {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: DarkThemeColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),

@@ -73,7 +73,7 @@ class _CategoryItem extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: isSelected
-              ? categoryColor.withOpacity(0.2)
+              ? categoryColor.withValues(alpha: 0.2)
               : AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(12),
           border: isSelected
@@ -87,7 +87,7 @@ class _CategoryItem extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: categoryColor.withOpacity(0.15),
+                color: categoryColor.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Center(

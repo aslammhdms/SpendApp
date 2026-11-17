@@ -126,7 +126,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: page.color.withOpacity(0.1),
+              color: page.color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -165,7 +165,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       decoration: BoxDecoration(
         color: _currentPage == index
             ? AppColors.primary
-            : AppColors.primary.withOpacity(0.3),
+            : AppColors.primary.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(4),
       ),
     );

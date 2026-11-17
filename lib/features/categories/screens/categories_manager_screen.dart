@@ -94,8 +94,7 @@ class _CategoriesManagerScreenState
     return ReorderableListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: categories.length,
-      onReorder: (oldIndex, newIndex) {
-        if (newIndex > oldIndex) newIndex--;
+      onReorderItem: (oldIndex, newIndex) {
         final reordered = List<Category>.from(categories);
         final item = reordered.removeAt(oldIndex);
         reordered.insert(newIndex, item);
@@ -113,7 +112,7 @@ class _CategoriesManagerScreenState
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Color(category.color).withOpacity(0.15),
+                color: Color(category.color).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(
@@ -307,7 +306,7 @@ class _CategoryFormSheetState extends State<_CategoryFormSheet> {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: Color(_color).withOpacity(0.15),
+                  color: Color(_color).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Center(
@@ -348,7 +347,7 @@ class _CategoryFormSheetState extends State<_CategoryFormSheet> {
                     height: 44,
                     decoration: BoxDecoration(
                       color: _icon == icon
-                          ? AppColors.primary.withOpacity(0.1)
+                          ? AppColors.primary.withValues(alpha: 0.1)
                           : AppColors.surfaceVariant,
                       borderRadius: BorderRadius.circular(10),
                       border: _icon == icon
@@ -375,7 +374,7 @@ class _CategoryFormSheetState extends State<_CategoryFormSheet> {
             spacing: 8,
             runSpacing: 8,
             children: AppColors.chartPalette.map((color) {
-              final colorValue = color.value;
+              final colorValue = color.toARGB32();
               return GestureDetector(
                 onTap: () => setState(() => _color = colorValue),
                 child: Container(
@@ -388,7 +387,7 @@ class _CategoryFormSheetState extends State<_CategoryFormSheet> {
                         ? Border.all(color: Colors.white, width: 3)
                         : null,
                     boxShadow: _color == colorValue
-                        ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 8)]
+                        ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8)]
                         : null,
                   ),
                   child: _color == colorValue

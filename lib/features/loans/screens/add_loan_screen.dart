@@ -257,7 +257,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                           setState(() => _selectedType = LoanType.lent);
                         }
                       },
-                      selectedColor: AppColors.income.withOpacity(0.2),
+                      selectedColor: AppColors.income.withValues(alpha: 0.2),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -270,7 +270,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                           setState(() => _selectedType = LoanType.borrowed);
                         }
                       },
-                      selectedColor: AppColors.expense.withOpacity(0.2),
+                      selectedColor: AppColors.expense.withValues(alpha: 0.2),
                     ),
                   ),
                 ],

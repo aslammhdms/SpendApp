@@ -158,7 +158,7 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
                             width: 56,
                             height: 56,
                             decoration: BoxDecoration(
-                              color: Color(_color).withOpacity(0.15),
+                              color: Color(_color).withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: Center(
@@ -257,7 +257,7 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
                           height: 48,
                           decoration: BoxDecoration(
                             color: _icon == icon
-                                ? AppColors.primary.withOpacity(0.1)
+                                ? AppColors.primary.withValues(alpha: 0.1)
                                 : AppColors.surfaceVariant,
                             borderRadius: BorderRadius.circular(12),
                             border: _icon == icon
@@ -297,7 +297,7 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
                             boxShadow: _color == color
                                 ? [
                                     BoxShadow(
-                                      color: Color(color).withOpacity(0.5),
+                                      color: Color(color).withValues(alpha: 0.5),
                                       blurRadius: 8,
                                     )
                                   ]

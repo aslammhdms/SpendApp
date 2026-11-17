@@ -197,7 +197,7 @@ class _AccountCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Color(account.color).withOpacity(0.15),
+                  color: Color(account.color).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(

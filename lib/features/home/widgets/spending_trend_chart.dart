@@ -138,7 +138,7 @@ class SpendingTrendChart extends StatelessWidget {
                                 toY: amount,
                                 color: isToday
                                     ? AppColors.primary
-                                    : AppColors.primary.withOpacity(0.5),
+                                    : AppColors.primary.withValues(alpha: 0.5),
                                 width: 28,
                                 borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(6),
