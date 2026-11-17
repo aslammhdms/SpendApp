@@ -29,6 +29,16 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.chartOther,
     required this.raisedSurface,
     required this.cardShadow,
+    required this.cardBorder,
+    required this.glassBarTint,
+    required this.glassSheetTint,
+    required this.glassBorder,
+    required this.heroGradient,
+    required this.heroGlow,
+    required this.heroShade,
+    required this.onHero,
+    required this.onHeroMuted,
+    required this.heroShadow,
   });
 
   /// Money in: income amounts, "owed to you".
@@ -66,8 +76,41 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// lightness rather than shadow.
   final Color raisedSurface;
 
-  /// Soft shadow for raised cards (the hero card, sheets).
+  /// Soft shadow for raised cards (summary cards, sheets).
   final Color cardShadow;
+
+  /// Hairline around cards. Together with the page-to-card tone step it is
+  /// what separates a card from the page.
+  final Color cardBorder;
+
+  /// Tint laid over the blur on glass bars and on glass sheets, before the
+  /// opacity in [Glass] is applied. See `GlassSurface`.
+  final Color glassBarTint;
+  final Color glassSheetTint;
+
+  /// Hairline on the edge of a glass surface that faces the content.
+  final Color glassBorder;
+
+  /// The Home hero card: the one place the brand color fills a surface.
+  /// A diagonal gradient (top left to bottom right) with a soft highlight.
+  /// [onHero] and [onHeroMuted] meet AA (4.5:1) on every part of it,
+  /// highlight included. The same in light and dark mode.
+  final List<Color> heroGradient;
+
+  /// Decoration on the hero: [heroGlow] lightens (the contrast figures
+  /// allow for one layer of it, so glows must not overlap); [heroShade]
+  /// darkens, which only helps contrast.
+  final Color heroGlow;
+  final Color heroShade;
+  final Color onHero;
+  final Color onHeroMuted;
+  final Color heroShadow;
+
+  static const _heroGradient = [Color(0xFF474AD8), Color(0xFF2E2B9C)];
+  static const _heroGlow = Color(0x14FFFFFF);
+  static const _onHero = Color(0xFFFFFFFF);
+  static const _onHeroMuted = Color(0xFFECEDFF);
+  static const _heroShade = Color(0x14000000);
 
   static AppPalette light(ColorScheme scheme) => AppPalette(
         income: const Color(0xFF047552),
@@ -97,7 +140,17 @@ class AppPalette extends ThemeExtension<AppPalette> {
         ],
         chartOther: const Color(0xFF64748B),
         raisedSurface: scheme.surfaceContainerLowest,
-        cardShadow: const Color(0x141B1B3A),
+        cardShadow: const Color(0x12101828),
+        cardBorder: const Color(0xFFE6E6EB),
+        glassBarTint: const Color(0xFFFFFFFF),
+        glassSheetTint: const Color(0xFFFFFFFF),
+        glassBorder: const Color(0x1F17181C),
+        heroGradient: _heroGradient,
+        heroGlow: _heroGlow,
+        heroShade: _heroShade,
+        onHero: _onHero,
+        onHeroMuted: _onHeroMuted,
+        heroShadow: const Color(0x524648D4),
       );
 
   static AppPalette dark(ColorScheme scheme) => AppPalette(
@@ -129,6 +182,16 @@ class AppPalette extends ThemeExtension<AppPalette> {
         chartOther: const Color(0xFF64748B),
         raisedSurface: scheme.surfaceContainerHigh,
         cardShadow: const Color(0x66000000),
+        cardBorder: const Color(0xFF24252B),
+        glassBarTint: const Color(0xFF17181D),
+        glassSheetTint: const Color(0xFF1C1D23),
+        glassBorder: const Color(0x1FFFFFFF),
+        heroGradient: _heroGradient,
+        heroGlow: _heroGlow,
+        heroShade: _heroShade,
+        onHero: _onHero,
+        onHeroMuted: _onHeroMuted,
+        heroShadow: const Color(0x66000000),
       );
 
   /// Budget color for a fraction of the budget used (0.85 = 85%).
@@ -163,6 +226,16 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? chartOther,
     Color? raisedSurface,
     Color? cardShadow,
+    Color? cardBorder,
+    Color? glassBarTint,
+    Color? glassSheetTint,
+    Color? glassBorder,
+    List<Color>? heroGradient,
+    Color? heroGlow,
+    Color? heroShade,
+    Color? onHero,
+    Color? onHeroMuted,
+    Color? heroShadow,
   }) {
     return AppPalette(
       income: income ?? this.income,
@@ -184,6 +257,16 @@ class AppPalette extends ThemeExtension<AppPalette> {
       chartOther: chartOther ?? this.chartOther,
       raisedSurface: raisedSurface ?? this.raisedSurface,
       cardShadow: cardShadow ?? this.cardShadow,
+      cardBorder: cardBorder ?? this.cardBorder,
+      glassBarTint: glassBarTint ?? this.glassBarTint,
+      glassSheetTint: glassSheetTint ?? this.glassSheetTint,
+      glassBorder: glassBorder ?? this.glassBorder,
+      heroGradient: heroGradient ?? this.heroGradient,
+      heroGlow: heroGlow ?? this.heroGlow,
+      heroShade: heroShade ?? this.heroShade,
+      onHero: onHero ?? this.onHero,
+      onHeroMuted: onHeroMuted ?? this.onHeroMuted,
+      heroShadow: heroShadow ?? this.heroShadow,
     );
   }
 
@@ -214,6 +297,19 @@ class AppPalette extends ThemeExtension<AppPalette> {
       chartOther: c(chartOther, other.chartOther),
       raisedSurface: c(raisedSurface, other.raisedSurface),
       cardShadow: c(cardShadow, other.cardShadow),
+      cardBorder: c(cardBorder, other.cardBorder),
+      glassBarTint: c(glassBarTint, other.glassBarTint),
+      glassSheetTint: c(glassSheetTint, other.glassSheetTint),
+      glassBorder: c(glassBorder, other.glassBorder),
+      heroGradient: [
+        for (var i = 0; i < heroGradient.length; i++)
+          c(heroGradient[i], other.heroGradient[i % other.heroGradient.length]),
+      ],
+      heroGlow: c(heroGlow, other.heroGlow),
+      heroShade: c(heroShade, other.heroShade),
+      onHero: c(onHero, other.onHero),
+      onHeroMuted: c(onHeroMuted, other.onHeroMuted),
+      heroShadow: c(heroShadow, other.heroShadow),
     );
   }
 }

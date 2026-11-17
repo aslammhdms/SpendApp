@@ -270,7 +270,24 @@ class _MainShellState extends ConsumerState<_MainShell>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: widget.child,
+      // Tab content runs under the navigation bar, so there is something
+      // behind the glass. Each tab pads its scrollable with ScreenInsets.
+      extendBody: true,
+      body: Builder(
+        builder: (context) {
+          // extendBody reports the bar's height as padding only. Tabs have
+          // their own Scaffold, which places its floating button by
+          // viewPadding, so report it there too.
+          final media = MediaQuery.of(context);
+          return MediaQuery(
+            data: media.copyWith(
+              viewPadding:
+                  media.viewPadding.copyWith(bottom: media.padding.bottom),
+            ),
+            child: widget.child,
+          );
+        },
+      ),
       bottomNavigationBar: AppBottomNav(currentIndex: _getSelectedIndex()),
     );
   }

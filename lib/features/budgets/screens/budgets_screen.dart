@@ -11,6 +11,7 @@ import '../widgets/budget_card.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../transactions/providers/transactions_provider.dart';
 import '../../settings/providers/settings_provider.dart';
+import '../../../shared/widgets/screen_insets.dart';
 
 class BudgetsScreen extends ConsumerStatefulWidget {
   const BudgetsScreen({super.key});
@@ -115,11 +116,11 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
 
   Widget _buildBudgetsList(BudgetsState state, List<Category> categories, {String currency = 'USD'}) {
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         Space.lg,
         Space.sm,
         Space.lg,
-        Space.fabClearance,
+        Space.fabClearance + ScreenInsets.bottomOf(context),
       ),
       itemCount: state.budgets.length,
       separatorBuilder: (_, __) => const SizedBox(height: Space.md),

@@ -19,6 +19,7 @@ import '../../../shared/widgets/money_text.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
+import '../../../shared/widgets/screen_insets.dart';
 
 class TransactionsListScreen extends ConsumerStatefulWidget {
   const TransactionsListScreen({super.key});
@@ -229,11 +230,11 @@ class _TransactionsListScreenState
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         Space.lg,
         0,
         Space.lg,
-        Space.fabClearance,
+        Space.fabClearance + ScreenInsets.bottomOf(context),
       ),
       itemCount: dateKeys.length + (state.isLoading ? 1 : 0),
       itemBuilder: (context, index) {

@@ -48,17 +48,26 @@ abstract final class AppTheme {
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
           statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-          systemNavigationBarColor: scheme.surfaceContainer,
+          // Where Android still draws its own navigation strip, match the
+          // glass bar above it (its tint over the page color).
+          systemNavigationBarColor: Color.alphaBlend(
+            palette.glassBarTint.withValues(alpha: Glass.barTintOpacity),
+            scheme.surface,
+          ),
           systemNavigationBarIconBrightness:
               isDark ? Brightness.light : Brightness.dark,
         ),
       ),
-      // Tonal cards: a filled surface one step off the page, no border.
+      // Cards: a solid surface set off from the neutral page by its tone
+      // and a hairline. No elevation shadow.
       cardTheme: CardThemeData(
         color: scheme.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        shape: const RoundedRectangleBorder(borderRadius: Radii.lgAll),
+        shape: RoundedRectangleBorder(
+          borderRadius: Radii.lgAll,
+          side: BorderSide(color: palette.cardBorder),
+        ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(

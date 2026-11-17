@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../data/remote/sync_engine.dart';
 import '../../../shared/widgets/auto_hide_fab.dart';
+import '../../../shared/widgets/glass_app_bar.dart';
+import '../../../shared/widgets/screen_insets.dart';
 import '../../../shared/widgets/sync_indicator.dart';
 import '../providers/dashboard_provider.dart';
 import '../widgets/monthly_summary_card.dart';
@@ -64,17 +66,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final currency = ref.watch(settingsProvider).currency;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('SpendSheet'),
-        actions: const [
+      // Content scrolls under the glass app bar (and, through the shell,
+      // under the navigation bar); the list's padding keeps it clear.
+      extendBodyBehindAppBar: true,
+      appBar: const GlassAppBar(
+        title: Text('SpendSheet'),
+        actions: [
           SyncIndicator(),
           SizedBox(width: Space.sm),
         ],
       ),
-      body: NotificationListener<UserScrollNotification>(
+      // A Builder, so the insets include the app bar above this body.
+      body: Builder(
+        builder: (context) => _buildBody(context, dashboardData, currency),
+      ),
+      floatingActionButton: AutoHideFab(
+        visibility: _fabVisibility,
+        child: FloatingActionButton.extended(
+          onPressed: () => context.push('/transactions/add'),
+          tooltip: 'Add transaction',
+          icon: const Icon(Icons.add),
+          label: const Text('Add'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    DashboardData dashboardData,
+    String currency,
+  ) {
+    return NotificationListener<UserScrollNotification>(
         onNotification: _fabVisibility.onScroll,
         child: RefreshIndicator(
           onRefresh: _handleRefresh,
+          // Show the spinner below the app bar, not behind it.
+          edgeOffset: ScreenInsets.topOf(context),
           child: dashboardData.isLoading
               ? const Center(child: CircularProgressIndicator())
               : dashboardData.error != null
@@ -101,11 +129,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     )
                   : ListView(
-                      padding: const EdgeInsets.fromLTRB(
-                        Space.lg,
-                        Space.sm,
-                        Space.lg,
-                        Space.fabClearance,
+                      padding: ScreenInsets.of(
+                        context,
+                        bottom: Space.fabClearance,
                       ),
                       children: [
                         const PendingCapturesBanner(),
@@ -146,16 +172,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ],
                     ),
         ),
-      ),
-      floatingActionButton: AutoHideFab(
-        visibility: _fabVisibility,
-        child: FloatingActionButton.extended(
-          onPressed: () => context.push('/transactions/add'),
-          tooltip: 'Add transaction',
-          icon: const Icon(Icons.add),
-          label: const Text('Add'),
-        ),
-      ),
     );
   }
 }

@@ -10,6 +10,7 @@ import '../widgets/category_pie_chart.dart';
 import '../widgets/income_expense_bar_chart.dart';
 import '../widgets/spending_line_chart.dart';
 import '../../settings/providers/settings_provider.dart';
+import '../../../shared/widgets/screen_insets.dart';
 
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
@@ -100,11 +101,11 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen>
               : RefreshIndicator(
                   onRefresh: () => notifier.loadData(),
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(
+                    padding: EdgeInsets.fromLTRB(
                       Space.lg,
                       Space.sm,
                       Space.lg,
-                      Space.xxl,
+                      Space.xxl + ScreenInsets.bottomOf(context),
                     ),
                     children: [
                       // Summary Card

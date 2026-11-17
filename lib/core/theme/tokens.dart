@@ -60,6 +60,30 @@ abstract final class Motion {
   static const Curve emphasized = Curves.easeInOutCubicEmphasized;
 }
 
+/// Frosted glass, used only on surfaces that float over content: the app
+/// bar once content scrolls under it, the bottom navigation, pinned action
+/// bars, sheets, dialogs and menus. See `GlassSurface`.
+///
+/// The tint opacities are set by calculation, not by eye: text and icons on
+/// glass must keep WCAG AA contrast whatever passes behind. Against the
+/// worst possible backdrop (pure black in light mode, pure white in dark)
+/// neutral text needs at least 0.74 (light) and 0.75 (dark) on bars, and
+/// colored text needs 0.90 and 0.91 on sheets. Do not go below those.
+abstract final class Glass {
+  /// Set to false to draw every glass surface solid.
+  static const bool enabled = true;
+
+  /// Gaussian blur of what is behind the surface, in logical pixels.
+  static const double blurSigma = 20;
+
+  /// Tint over the blur on bars, which only carry neutral text and icons.
+  static const double barTintOpacity = 0.78;
+
+  /// Tint over the blur on sheets, dialogs and menus, which can carry any
+  /// text color (green and red amounts, links, errors).
+  static const double sheetTintOpacity = 0.92;
+}
+
 /// Fixed component sizes.
 abstract final class Sizes {
   /// Minimum touch target (Material and WCAG guidance).
