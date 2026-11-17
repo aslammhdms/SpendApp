@@ -359,7 +359,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Sign Out'),
         content: const Text(
-            'Are you sure you want to sign out? Your local data will remain on this device.'),
+            'Your data stays in your Google Sheet. The copy on this device '
+            'is kept for when you sign in again, and is removed if a '
+            'different account signs in.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

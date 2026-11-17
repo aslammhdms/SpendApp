@@ -230,6 +230,53 @@ void main() {
     });
   });
 
+  group('stopping (sign-out or a change of account)', () {
+    setUp(seedSheetWithDefaults);
+
+    test('nothing reaches the spreadsheet after stop', () async {
+      engine.online = false;
+      final expense = await recordExpense();
+      engine.online = true;
+
+      await engine.stop();
+      await engine.sync();
+      await engine.fullSync();
+
+      expect(sheet.transactions.countOf(expense.id), 0);
+      expect(await queuedCount(), 1, reason: 'the change stays queued');
+    });
+
+    test('lets a push that is already running finish first', () async {
+      final expense = await recordExpense();
+      sheet.appendGate = Completer<void>();
+
+      final running = engine.sync(); // blocks inside the append
+      await pumpEventQueue();
+      var stopped = false;
+      final stopping = engine.stop().then((_) => stopped = true);
+      await pumpEventQueue();
+      expect(stopped, isFalse);
+
+      sheet.appendGate!.complete();
+      await Future.wait([running, stopping]);
+
+      expect(sheet.transactions.countOf(expense.id), 1);
+      expect(await queuedCount(), 0);
+    });
+
+    test('syncing resumes when the engine is initialized again', () async {
+      engine.online = false;
+      final expense = await recordExpense();
+      engine.online = true;
+      await engine.stop();
+
+      await engine.initialize('sheet-1');
+      await engine.sync();
+
+      expect(sheet.transactions.countOf(expense.id), 1);
+    });
+  });
+
   group('pushing a change', () {
     setUp(seedSheetWithDefaults);
 

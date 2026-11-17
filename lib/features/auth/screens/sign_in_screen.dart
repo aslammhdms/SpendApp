@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../data/repositories/settings_repository.dart';
+import '../../home/providers/dashboard_provider.dart' show syncEngineProvider;
 import '../providers/auth_provider.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -33,6 +36,22 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         if (!mounted) return;
 
         if (isOnboarded) {
+          // The same account is back: its data is still here. Syncing
+          // stopped at sign-out, so start it again without holding up the
+          // way in.
+          final spreadsheetId = await settingsRepo.getSpreadsheetId();
+          if (!mounted) return;
+          if (spreadsheetId != null) {
+            final syncEngine = ref.read(syncEngineProvider);
+            unawaited(
+              syncEngine
+                  .initialize(spreadsheetId)
+                  .then((_) => syncEngine.sync())
+                  .catchError(
+                    (Object e) => debugPrint('Sync restart failed: $e'),
+                  ),
+            );
+          }
           context.go('/home');
         } else {
           context.go('/onboarding');

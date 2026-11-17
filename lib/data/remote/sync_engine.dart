@@ -137,6 +137,20 @@ class SyncEngine {
     _startPeriodicSync();
   }
 
+  /// Stops syncing and forgets the spreadsheet, after letting a sync that is
+  /// already running finish. Called when the account signs out or changes,
+  /// so nothing more is written to that account's spreadsheet.
+  Future<void> stop() async {
+    _syncTimer?.cancel();
+    _syncTimer = null;
+    _batchTimer?.cancel();
+    _batchTimer = null;
+    await _waitForInFlightSync();
+    _spreadsheetId = null;
+    _pendingBatch.clear();
+    _updateStatus(SyncStatus.idle);
+  }
+
   void _startPeriodicSync() {
     _syncTimer?.cancel();
     _syncTimer = Timer.periodic(

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../data/remote/google_auth_service.dart';
 import '../../../core/errors/app_exceptions.dart';
+import '../services/account_session.dart';
 import '../services/sign_in_error.dart';
+import 'account_session_provider.dart';
 
 enum AuthState {
   initial,
@@ -15,8 +17,11 @@ enum AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final GoogleAuthService _authService;
+  final AccountSession? _session;
 
-  AuthNotifier(this._authService) : super(AuthState.initial);
+  AuthNotifier(this._authService, {AccountSession? session})
+      : _session = session,
+        super(AuthState.initial);
 
   /// Why the last [signIn] did not succeed, worded for the person using the
   /// app. Null after a successful sign-in.
@@ -33,6 +38,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = AuthState.loading;
     try {
       await _authService.init();
+      final user = _authService.currentUser;
+      if (user != null) {
+        await _session?.onSignedIn(user.id, interactive: false);
+      }
       state = _authService.isSignedIn
           ? AuthState.authenticated
           : AuthState.unauthenticated;
@@ -47,6 +56,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final user = await _authService.signIn();
       if (user != null) {
+        // Before anything is shown: make sure the data on this device
+        // belongs to the account that just signed in.
+        await _session?.onSignedIn(user.id, interactive: true);
         state = AuthState.authenticated;
         return true;
       } else {
@@ -67,7 +79,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> signOut() async {
     state = AuthState.loading;
     try {
+      await _session?.onSigningOut();
       await _authService.signOut();
+      _session?.onSignedOut();
       state = AuthState.unauthenticated;
     } catch (e) {
       state = AuthState.error;
@@ -77,7 +91,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> disconnect() async {
     state = AuthState.loading;
     try {
+      await _session?.onSigningOut();
       await _authService.disconnect();
+      _session?.onSignedOut();
       state = AuthState.unauthenticated;
     } catch (e) {
       state = AuthState.error;
@@ -91,7 +107,10 @@ final googleAuthServiceProvider = Provider<GoogleAuthService>((ref) {
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final authService = ref.watch(googleAuthServiceProvider);
-  return AuthNotifier(authService);
+  return AuthNotifier(
+    authService,
+    session: ref.watch(accountSessionProvider),
+  );
 });
 
 final currentUserProvider = Provider<GoogleSignInAccount?>((ref) {

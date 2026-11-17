@@ -253,7 +253,7 @@ class DatabaseHelper {
         'CREATE INDEX idx_captured_payments_status ON captured_payments(status)');
   }
 
-  Future<void> _insertDefaultCategories(Database db) async {
+  Future<void> _insertDefaultCategories(DatabaseExecutor db) async {
     final now = DateTime.now().toIso8601String();
 
     Future<void> insertAll(
@@ -277,7 +277,7 @@ class DatabaseHelper {
     await insertAll(CategoryDefaults.incomeCategories, 'income');
   }
 
-  Future<void> _insertDefaultAccounts(Database db) async {
+  Future<void> _insertDefaultAccounts(DatabaseExecutor db) async {
     final now = DateTime.now().toIso8601String();
 
     const accounts = CategoryDefaults.defaultAccounts;
@@ -334,17 +334,37 @@ class DatabaseHelper {
     }
   }
 
+  static const _tables = [
+    'transactions',
+    'categories',
+    'accounts',
+    'budgets',
+    'recurring_rules',
+    'sync_queue',
+    'settings',
+    'people',
+    'loans',
+    'captured_payments',
+  ];
+
   Future<void> clearAllData() async {
     final db = await database;
-    await db.delete('transactions');
-    await db.delete('categories');
-    await db.delete('accounts');
-    await db.delete('budgets');
-    await db.delete('recurring_rules');
-    await db.delete('sync_queue');
-    await db.delete('settings');
-    await db.delete('people');
-    await db.delete('loans');
-    await db.delete('captured_payments');
+    for (final table in _tables) {
+      await db.delete(table);
+    }
+  }
+
+  /// Empties every table and puts the default categories and accounts back,
+  /// leaving the database as it is after a fresh install. Used when a
+  /// different Google account takes over the device.
+  Future<void> resetToFreshInstall() async {
+    final db = await database;
+    await db.transaction((txn) async {
+      for (final table in _tables) {
+        await txn.delete(table);
+      }
+      await _insertDefaultCategories(txn);
+      await _insertDefaultAccounts(txn);
+    });
   }
 }
