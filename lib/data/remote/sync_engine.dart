@@ -160,12 +160,9 @@ class SyncEngine {
   }
 
   Future<bool> isOnline() async {
+    // One entry per active connection type; [none] alone means offline.
     final result = await Connectivity().checkConnectivity();
-    // connectivity_plus 5.x returns List<ConnectivityResult>
-    if (result is List) {
-      return !(result as List).contains(ConnectivityResult.none);
-    }
-    return result != ConnectivityResult.none;
+    return !result.contains(ConnectivityResult.none);
   }
 
   static const String _lastSyncKey = 'settings_last_sync_at';

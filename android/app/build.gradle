@@ -25,7 +25,9 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.spendsheet.spendsheet"
-    compileSdk flutter.compileSdkVersion
+    // 37 is required by androidx.core 1.19 (pulled in by
+    // flutter_local_notifications); Flutter's default is 36.
+    compileSdk 37
     ndkVersion flutter.ndkVersion
 
     compileOptions {
