@@ -26,8 +26,11 @@ class CurrencyUtils {
     'MYR': const CurrencyInfo(code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit', decimalDigits: 2),
     'PHP': const CurrencyInfo(code: 'PHP', symbol: '\u20B1', name: 'Philippine Peso', decimalDigits: 2),
     'VND': const CurrencyInfo(code: 'VND', symbol: '\u20AB', name: 'Vietnamese Dong', decimalDigits: 0),
-    'AED': const CurrencyInfo(code: 'AED', symbol: 'د.إ', name: 'UAE Dirham', decimalDigits: 2),
-    'SAR': const CurrencyInfo(code: 'SAR', symbol: '﷼', name: 'Saudi Riyal', decimalDigits: 2),
+    // Dirham and riyal use their codes. Their own symbols are written right
+    // to left, which scrambles the order next to Latin digits ("12.37" then
+    // the symbol, with the minus sign on the wrong side).
+    'AED': const CurrencyInfo(code: 'AED', symbol: 'AED', name: 'UAE Dirham', decimalDigits: 2),
+    'SAR': const CurrencyInfo(code: 'SAR', symbol: 'SAR', name: 'Saudi Riyal', decimalDigits: 2),
     'NZD': const CurrencyInfo(code: 'NZD', symbol: 'NZ\$', name: 'New Zealand Dollar', decimalDigits: 2),
   };
 
@@ -37,10 +40,18 @@ class CurrencyUtils {
     return _currencies[code] ?? _currencies['USD']!;
   }
 
+  /// What goes in front of the number. A currency shown by its code gets a
+  /// space after it ("AED 12.37"); a symbol does not ("\$12.37"). The space
+  /// is a non-breaking one, so an amount never wraps between the two.
+  static String _prefix(CurrencyInfo currency) =>
+      currency.symbol == currency.code
+          ? '${currency.code}\u00A0'
+          : currency.symbol;
+
   static String format(double amount, {String currencyCode = 'USD', bool showSymbol = true}) {
     final currency = getCurrency(currencyCode);
     final formatter = NumberFormat.currency(
-      symbol: showSymbol ? currency.symbol : '',
+      symbol: showSymbol ? _prefix(currency) : '',
       decimalDigits: currency.decimalDigits,
     );
     return formatter.format(amount);
@@ -49,7 +60,7 @@ class CurrencyUtils {
   static String formatCompact(double amount, {String currencyCode = 'USD'}) {
     final currency = getCurrency(currencyCode);
     final formatter = NumberFormat.compactCurrency(
-      symbol: currency.symbol,
+      symbol: _prefix(currency),
       decimalDigits: 0,
     );
     return formatter.format(amount);

@@ -29,6 +29,30 @@ void main() {
       );
     });
 
+    test('dirham and riyal are shown by code, with a space', () {
+      const space = '\u00A0'; // non-breaking
+      expect(CurrencyUtils.format(12.37, currencyCode: 'AED'),
+          'AED${space}12.37');
+      expect(CurrencyUtils.format(1250, currencyCode: 'SAR'),
+          'SAR${space}1,250.00');
+      expect(CurrencyUtils.formatWithSign(-12.37, currencyCode: 'AED'),
+          '-AED${space}12.37');
+    });
+
+    test('no amount contains right-to-left characters', () {
+      final rightToLeft = RegExp('[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]');
+      for (final currency in CurrencyUtils.allCurrencies) {
+        final text = CurrencyUtils.format(-1234.5, currencyCode: currency.code);
+        expect(rightToLeft.hasMatch(text), isFalse, reason: currency.code);
+        expect(text, contains('1,23'), reason: currency.code);
+      }
+    });
+
+    test('symbol currencies keep their symbol with no space', () {
+      expect(CurrencyUtils.format(12.5, currencyCode: 'USD'), r'$12.50');
+      expect(CurrencyUtils.format(12.5, currencyCode: 'MYR'), 'RM12.50');
+    });
+
     test('getCurrency returns correct currency info', () {
       expect(CurrencyUtils.getCurrency('USD').symbol, equals('\$'));
       expect(CurrencyUtils.getCurrency('EUR').symbol, equals('\u20AC'));
