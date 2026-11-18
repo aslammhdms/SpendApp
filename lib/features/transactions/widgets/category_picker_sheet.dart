@@ -4,6 +4,7 @@ import '../../../core/theme/tokens.dart';
 import '../../../data/models/category.dart';
 import '../../../shared/widgets/category_icon.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/glass_sheet.dart';
 
 /// Shows every category in a searchable grid and returns the one chosen, or
 /// null if the sheet is dismissed.
@@ -12,7 +13,7 @@ Future<Category?> showCategoryPicker(
   required List<Category> categories,
   String? selectedId,
 }) {
-  return showModalBottomSheet<Category>(
+  return showAppSheet<Category>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,

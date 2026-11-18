@@ -13,6 +13,9 @@ import '../../../data/remote/sync_engine.dart';
 import '../providers/accounts_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
+import '../../../shared/widgets/glass_dialog.dart';
+import '../../../shared/widgets/screen_insets.dart';
+import '../../../shared/widgets/glass_app_bar.dart';
 
 class AccountsScreen extends ConsumerStatefulWidget {
   const AccountsScreen({super.key});
@@ -50,8 +53,9 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     final currency = ref.watch(settingsProvider).currency;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Accounts'),
+      extendBodyBehindAppBar: true,
+      appBar: const GlassAppBar(
+        title: Text('Accounts'),
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -74,15 +78,14 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                   ),
                 )
               : RefreshIndicator(
+                  edgeOffset: ScreenInsets.topOf(context),
                   onRefresh: () async {
                     await ref.read(accountsProvider.notifier).loadAccounts();
                   },
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(
-                      Space.lg,
-                      Space.sm,
-                      Space.lg,
-                      Space.fabClearance,
+                    padding: ScreenInsets.of(
+                      context,
+                      bottom: Space.fabClearance,
                     ),
                     children: [
                       // Total Balance Card
@@ -99,7 +102,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                       if (state.accounts.isEmpty)
                         Card(
                           child: Padding(
-                            padding: EdgeInsets.all(32),
+                            padding: const EdgeInsets.all(32),
                             child: Column(
                               children: [
                                 Icon(Icons.account_balance_wallet_outlined,
@@ -107,8 +110,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                                     color: Theme.of(context)
                                         .colorScheme
                                         .onSurfaceVariant),
-                                SizedBox(height: 12),
-                                Text('No accounts yet'),
+                                const SizedBox(height: 12),
+                                const Text('No accounts yet'),
                               ],
                             ),
                           ),
@@ -137,7 +140,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
   void _confirmDelete(String accountId) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => AppAlertDialog(
         title: const Text('Delete Account'),
         content: const Text(
             'Are you sure? This will not delete transactions, but they will be orphaned.'),

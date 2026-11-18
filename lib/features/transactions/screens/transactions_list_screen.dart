@@ -20,6 +20,9 @@ import '../../../shared/widgets/section_header.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/screen_insets.dart';
+import '../../../shared/widgets/glass_sheet.dart';
+import '../../../shared/widgets/glass_app_bar.dart';
+import '../../../shared/widgets/glass_dialog.dart';
 
 class TransactionsListScreen extends ConsumerStatefulWidget {
   const TransactionsListScreen({super.key});
@@ -82,7 +85,7 @@ class _TransactionsListScreenState
 
     if (!mounted) return;
 
-    showModalBottomSheet(
+    showAppSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) => DraggableScrollableSheet(
@@ -112,7 +115,8 @@ class _TransactionsListScreenState
     final currency = ref.watch(settingsProvider).currency;
 
     return Scaffold(
-      appBar: AppBar(
+      extendBodyBehindAppBar: true,
+      appBar: GlassAppBar(
         title: _showSearch
             ? TextField(
                 controller: _searchController,
@@ -194,6 +198,7 @@ class _TransactionsListScreenState
                       onNotification: _fabVisibility.onScroll,
                       child: RefreshIndicator(
                         onRefresh: _handleRefresh,
+                        edgeOffset: ScreenInsets.topOf(context),
                         child: categoriesAsync.when(
                           data: (categories) => _buildList(
                             state,
@@ -230,11 +235,10 @@ class _TransactionsListScreenState
 
     return ListView.builder(
       controller: _scrollController,
-      padding: EdgeInsets.fromLTRB(
-        Space.lg,
-        0,
-        Space.lg,
-        Space.fabClearance + ScreenInsets.bottomOf(context),
+      padding: ScreenInsets.of(
+        context,
+        top: 0,
+        bottom: Space.fabClearance,
       ),
       itemCount: dateKeys.length + (state.isLoading ? 1 : 0),
       itemBuilder: (context, index) {
@@ -413,13 +417,13 @@ class _TransactionsListScreenState
   void _confirmDeleteTransaction(String transactionId) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AppAlertDialog(
         title: const Text('Delete Transaction'),
         content:
             const Text('Are you sure you want to delete this transaction?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
@@ -427,7 +431,7 @@ class _TransactionsListScreenState
               await ref
                   .read(transactionsProvider.notifier)
                   .deleteTransaction(transactionId);
-              Navigator.pop(context);
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
               ref.read(dashboardProvider.notifier).refresh();
             },
             style: TextButton.styleFrom(
@@ -443,18 +447,18 @@ class _TransactionsListScreenState
   void _confirmDeleteLoan(String loanId) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AppAlertDialog(
         title: const Text('Delete Loan'),
         content: const Text('Are you sure you want to delete this loan?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
               await ref.read(transactionsProvider.notifier).deleteLoan(loanId);
-              Navigator.pop(context);
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
               ref.read(syncEngineProvider).sync();
               ref.read(dashboardProvider.notifier).refresh();
             },

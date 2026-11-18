@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/widgets/category_icon.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/category_defaults.dart';
 import '../../../data/models/account.dart';
 import '../providers/accounts_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
+import '../../../shared/widgets/glass_dialog.dart';
+import '../../../shared/widgets/glass_app_bar.dart';
+import '../../../shared/widgets/screen_insets.dart';
+import '../../../core/theme/tokens.dart';
 
 class AddEditAccountScreen extends ConsumerStatefulWidget {
   final String? accountId;
@@ -144,12 +147,14 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      extendBodyBehindAppBar: true,
+      appBar: GlassAppBar(
         title: Text(isEditing ? 'Edit Account' : 'New Account'),
         actions: [
           if (isEditing)
             IconButton(
-              icon: const Icon(Icons.delete),
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Delete account',
               onPressed: _confirmDelete,
             ),
         ],
@@ -159,7 +164,7 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
           : Form(
               key: _formKey,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: ScreenInsets.of(context, top: Space.lg),
                 children: [
                   // Preview
                   Card(
@@ -373,17 +378,17 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
   void _confirmDelete() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AppAlertDialog(
         title: const Text('Delete Account'),
         content: const Text('Are you sure you want to delete this account?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               await ref
                   .read(accountsProvider.notifier)
                   .deleteAccount(widget.accountId!);

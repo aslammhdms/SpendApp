@@ -10,6 +10,9 @@ import '../providers/loans_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../widgets/loan_tile.dart';
 import '../../settings/providers/settings_provider.dart';
+import '../../../shared/widgets/glass_dialog.dart';
+import '../../../shared/widgets/screen_insets.dart';
+import '../../../shared/widgets/glass_app_bar.dart';
 
 class PersonLoansScreen extends ConsumerStatefulWidget {
   final String personId;
@@ -51,7 +54,8 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
     final person = _person;
 
     return Scaffold(
-      appBar: AppBar(
+      extendBodyBehindAppBar: true,
+      appBar: GlassAppBar(
         title: Text(person?.name ?? 'Loading...'),
         actions: [
           if (person != null && person.netBalance != 0)
@@ -69,7 +73,11 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
           : state.error != null
               ? Center(child: Text(state.error!))
               : ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: ScreenInsets.of(
+                    context,
+                    top: Space.lg,
+                    bottom: Space.fabClearance,
+                  ),
                   children: [
                     // Balance summary card
                     if (person != null)
@@ -173,7 +181,7 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
                                 currency: currency,
                                 onDelete: () => _confirmDeleteLoan(loan.id),
                               ))
-                          .toList(),
+                          ,
                     const SizedBox(height: Space.fabClearance - Space.lg),
                   ],
                 ),
@@ -188,42 +196,10 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
     );
   }
 
-  void _confirmDeletePerson() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Person'),
-        content: const Text(
-            'Are you sure? This will hide this person and their loan history.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await ref
-                  .read(loansProvider.notifier)
-                  .deletePerson(widget.personId);
-              if (mounted) {
-                await ref.read(dashboardProvider.notifier).refresh();
-                if (mounted) this.context.pop();
-              }
-            },
-            style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _confirmDeleteLoan(String loanId) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => AppAlertDialog(
         title: const Text('Delete Loan'),
         content: const Text('Are you sure you want to delete this loan?'),
         actions: [

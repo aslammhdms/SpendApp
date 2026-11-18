@@ -5,37 +5,50 @@ live in `lib/core/theme/`; shared components live in `lib/shared/widgets/`.
 
 ## Principles
 
-- **Calm by default, color for meaning.** Surfaces are neutral. Green and red
+- **Calm by default, color for meaning.** Surfaces are near-neutral greys.
+  Indigo marks primary actions, selection and the Home hero. Green and red
   mean money in and money out; amber means a budget is close to its limit.
   Nothing else gets those colors.
 - **Everything comes from the theme.** Widgets never use raw colors. Read
   `Theme.of(context).colorScheme`, `context.palette` and
   `Theme.of(context).textTheme`. Light and dark mode then come for free.
 - **Numbers line up.** Every money amount uses tabular figures.
-- **Depth through tone, not lines.** Cards are filled one step off the page;
-  borders are rare.
+- **Solid content, glass chrome.** Cards, lists, charts and forms are solid:
+  a card is a surface one tone off the page with a hairline border. Only the
+  surfaces that float over content are frosted glass (see [Glass](#glass)).
 
 ## Color
 
 ### Scheme
 
-`AppColorSchemes` (`app_color_schemes.dart`) builds both schemes with
-`ColorScheme.fromSeed(seedColor: #6366F1, dynamicSchemeVariant: fidelity)`.
-The fidelity variant keeps the brand indigo saturated: primary is `#4648D4`
-in light mode and `#C0C1FF` in dark mode. To restyle the whole app, change
-the seed.
+`AppColorSchemes` (`app_color_schemes.dart`) builds both schemes. The accent
+roles come from `ColorScheme.fromSeed(seedColor: #6366F1, dynamicSchemeVariant:
+fidelity)`, which keeps the brand indigo saturated: primary is `#4648D4` in
+light mode and `#C0C1FF` in dark mode. To change the brand color, change the
+seed.
 
-| Surface role | Use for |
-| --- | --- |
-| `surface` | Page background (`scaffoldBackgroundColor`) |
-| `surfaceContainerLow` | Cards (the `Card` default), details bars |
-| `surfaceContainer` | Navigation bar |
-| `surfaceContainerHigh` | Text fields, chips, segmented controls, neutral icon circles, dialogs |
-| `surfaceContainerHighest` | Progress-bar tracks |
-| `palette.raisedSurface` | Raised summary cards (Home, Loans, Accounts): white with a soft shadow in light mode, a lighter tone in dark mode |
+The surface roles are set by hand to near-neutral greys. Seeded surfaces
+carry the brand hue, which made the page, cards, fields and bars all tints of
+one lavender.
+
+| Surface role | Light | Dark | Use for |
+| --- | --- | --- | --- |
+| `surface` | `#F5F5F7` | `#0E0F12` | Page background (`scaffoldBackgroundColor`) |
+| `surfaceContainerLow` | `#FFFFFF` | `#17181D` | Cards (the `Card` default), keypad keys |
+| `surfaceContainer` | `#EFEFF2` | `#1C1D23` | Solid bars (what glass falls back to) |
+| `surfaceContainerHigh` | `#E9E9EE` | `#25262D` | Text fields, chips, segmented tracks, neutral icon circles |
+| `surfaceContainerHighest` | `#E1E1E7` | `#303139` | Progress-bar tracks |
+| `palette.raisedSurface` | `#FFFFFF` | `#25262D` | Raised summary cards (Loans, Accounts) and the panel inside the hero |
+
+Cards are separated from the page by their tone and by `palette.cardBorder`,
+a hairline the `Card` theme draws. They have no elevation shadow.
 
 Text on surfaces uses `onSurface`. Secondary text (dates, captions, hints)
 uses `onSurfaceVariant`.
+
+Selection (the navigation indicator, selected chips and segments) uses
+`secondaryContainer` with `onSecondaryContainer`: an indigo tint, `#E3E4FF` /
+`#2F31B0` in light mode and `#2E3070` / `#D9DAFF` in dark mode.
 
 ### App palette
 
@@ -50,11 +63,22 @@ has no role for. Read it with `context.palette`.
 | `loan` | `#6D28D9` | `#C4B5FD` | Loans with people |
 | `budgetSafe` / `Warning` / `Danger` | `#047552` / `#A14A07` / `#B91C1C` | `#34D399` / `#FBBF24` / `#F87171` | Budget under 80%, from 80%, at 100% or more. Use `palette.budgetColor(used)`. |
 | `*Container` / `on*Container` | soft tints | deep tints | Backgrounds of icon circles and tabs, with text on them |
+| `cardBorder` | `#E6E6EB` | `#24252B` | Hairline around cards and keypad keys |
+| `heroGradient`, `heroGlow`, `heroShade` | `#474AD8` → `#2E2B9C` | same | The Home hero card and its decoration |
+| `onHero`, `onHeroMuted` | `#FFFFFF`, `#ECEDFF` | same | Text on the hero |
+| `glassBarTint`, `glassSheetTint`, `glassBorder` | white | `#17181D`, `#1C1D23` | Glass surfaces; use them through `GlassSurface` |
 | `chart[0..7]`, `chartOther` | 8 hues + slate | lighter set | Chart series in order of size. Use `palette.chartColor(i)`. |
 
-Every text color meets WCAG AA (4.5:1) on `surface`, `surfaceContainerLow`
-and `surfaceContainerHigh` in its own mode. Every chart color meets 3:1
-against cards. If you add a color, check it the same way.
+Every text color meets WCAG AA (4.5:1) on `surface`, `surfaceContainerLow`,
+`surfaceContainer` and `surfaceContainerHigh` in its own mode. Every chart
+color meets 3:1 against cards. `test/core/theme/contrast_test.dart` checks
+all of this against the real theme, so add new colors to it.
+
+**The hero** is the one place the brand color fills a surface. Its text is
+`onHero` or `onHeroMuted`, which keep at least 4.76:1 on the lightest part
+of the gradient with the highlight on top. Green and red would not be
+readable there, so income and expense sit on a solid panel inside the card,
+and "Over budget" is a solid red-tinted badge.
 
 **Lists:** in a long list, show expense amounts in `onSurface` with a minus
 sign and only income in green, so the list doesn't turn red. `MoneyText`
@@ -65,6 +89,85 @@ green and red signals.
 saved in their spreadsheet. Draw them as they are (`CategoryIcon` tints with
 them), offer `CategoryDefaults.pickerColors` in pickers, and use
 `contrastOn(color)` for marks drawn on top of them.
+
+## Glass
+
+Frosted glass is for surfaces that float over content, and nothing else:
+
+- the app bar, once content has scrolled under it (`GlassAppBar`)
+- the bottom navigation bar (`AppBottomNav`)
+- a pinned action bar (`GlassBottomBar`)
+- bottom sheets (`showAppSheet`), dialogs (`AppAlertDialog`) and popup menus
+  (`GlassMenuButton`)
+
+All of them are built on one widget, `GlassSurface`, which blurs what is
+behind it and lays a tint on top. The system date and time pickers and the
+dropdown of a form field are left as Material draws them.
+
+### Tokens
+
+`Glass` in `tokens.dart`:
+
+| Token | Value | Meaning |
+| --- | --- | --- |
+| `Glass.enabled` | `true` | Set to `false` to draw every glass surface solid |
+| `Glass.blurSigma` | 20 | Blur of what is behind |
+| `Glass.barTintOpacity` | 0.78 | Tint on bars, which carry only neutral text and icons |
+| `Glass.sheetTintOpacity` | 0.92 | Tint on sheets, dialogs and menus, which can carry any text color |
+
+The tint colors are `palette.glassBarTint` and `palette.glassSheetTint`.
+
+### Why those opacities
+
+Text on glass must meet AA whatever passes behind it. The opacities are
+calculated for the worst backdrop there can be, pure black in light mode and
+pure white in dark mode, which is harsher than any color the app or a
+category can draw. Blur is ignored, which makes the figures conservative.
+
+| | Minimum opacity (light / dark) | Chosen |
+| --- | --- | --- |
+| Bars: `onSurface` and `onSurfaceVariant` text at 4.5:1, status icons at 3:1 | 0.74 / 0.75 | 0.78 |
+| Sheets: every text color in the palette at 4.5:1 | 0.90 / 0.91 | 0.92 |
+
+Worst-case contrast at the chosen values:
+
+| On glass | Light | Dark |
+| --- | --- | --- |
+| Bar title (`onSurface`) | 10.5 | 6.9 |
+| Bar labels and icons (`onSurfaceVariant`) | 5.3 | 5.1 |
+| Bar status icon, weakest color | 3.4 | 4.5 |
+| Sheet text, weakest color | 4.8 | 4.8 |
+
+`contrast_test.dart` recomputes these from the theme. Do not lower an
+opacity below its minimum, and re-run the test if you change a tint or a
+text color.
+
+### Rules
+
+- **Content must pass behind it.** Glass over a plain page is just a tint.
+  Give the screen's `Scaffold` `extendBodyBehindAppBar: true` and pad its
+  scrollable with `ScreenInsets.of(context)`, so the content fills the
+  screen while the first and last rows still rest clear of the bars. The
+  shell extends every tab under the navigation bar the same way.
+- **Solid when asked.** `GlassSurface` draws its `solidColor` with no blur
+  when `MediaQuery.highContrastOf(context)` is true (Increase Contrast on
+  iOS, the contrast setting on Android 14 and later). Flutter exposes no
+  "reduce transparency" setting; high contrast is the closest signal there
+  is. Always pass the surface's ordinary color as `solidColor`.
+- **One blur per surface, clipped to it.** `GlassSurface` clips the blur to
+  its `borderRadius`. Never place one glass surface on another, and never
+  put one inside a scrolling list item: each re-reads and blurs the pixels
+  behind it on every frame.
+- **Do not fade glass in with opacity.** Inside a fading layer the blur has
+  nothing behind it. `GlassSurface.intensity` ramps the blur and tint
+  instead (the app bar uses it); menus scale in.
+- **Neutral text on bars.** Bars are see-through enough that only
+  `onSurface`, `onSurfaceVariant` and status icons are safe on them. Put
+  colored text on a sheet or on a solid surface.
+
+Blur cost depends on the device's GPU and has not been measured on a phone.
+If scrolling stutters on a low-end device, lower `Glass.blurSigma` or set
+`Glass.enabled` to `false`.
 
 ## Typography
 
@@ -103,6 +206,7 @@ From `tokens.dart`:
   that only decorate check `MediaQuery.disableAnimationsOf`.
 - `Sizes`: `touchTarget` 48, `iconCircle` 40, `iconCircleSmall` 32,
   `progressBar` 8.
+- `Glass`: blur and tint opacities of glass surfaces (see [Glass](#glass)).
 
 ## Components
 
@@ -116,18 +220,33 @@ From `tokens.dart`:
 | `OverlineHeader` | Small group label above cards ("Today", "People"). |
 | `EmptyState` | Icon in a circle, title, optional subtitle and action; `compact` inside cards. |
 | `AutoHideFab` + `FabVisibility` | Floating button that slides away while you scroll down. |
+| `GlassSurface` | The frosted-glass background every glass surface is built on. |
+| `GlassAppBar` | App bar that is clear at the top of the page and turns to glass once content scrolls under it. |
+| `ScreenInsets` | Padding that keeps a scrollable's first and last rows clear of the glass bars. |
+| `GlassBottomBar` | Pinned bar for a screen's main action (Save). |
+| `showAppSheet` | Modal bottom sheet on glass, with the drag handle. Use it instead of `showModalBottomSheet`. |
+| `AppAlertDialog` | Alert dialog on glass: title, message, actions. Use it instead of `AlertDialog`. |
+| `GlassMenuButton` | Icon button that opens a small menu on glass. Use it instead of `PopupMenuButton`. |
+| `SegmentedControl` | "Pick one of a few": a rounded block that slides along a rounded track. |
 
-Material components (`Card`, `FilledButton`, `SegmentedButton`, chips, list
-tiles, sheets, dialogs, snack bars, tooltips, the navigation bar) are styled
-in `AppTheme`, so use them plainly. Bottom sheets get their drag handle from
-the theme; don't draw another.
+Material components (`Card`, `FilledButton`, chips, list tiles, snack bars,
+tooltips, text fields, switches) are styled in `AppTheme`, so use them
+plainly. Sheets, dialogs and menus go through the glass widgets above, which
+also draw the sheet's drag handle; don't draw another.
 
 ## Patterns
 
-- **Screen:** `Scaffold` on `surface`, centered title, content inset by
-  `Space.lg`.
-- **Summary card:** `raisedSurface`, radius `xl`, `cardShadow`. A neutral
-  headline amount, then `SignalStat`s.
+- **Screen:** `Scaffold(extendBodyBehindAppBar: true)` on `surface` with a
+  `GlassAppBar` (centered title). Pad the scrollable with
+  `ScreenInsets.of(context)`, called with the screen's own `context`; pass
+  `bottom: Space.fabClearance` under a floating button and `appBarBottom:`
+  when the app bar has a `bottom`. A `RefreshIndicator` takes
+  `edgeOffset: ScreenInsets.topOf(context)`. A screen that does not scroll
+  (Add Transaction) keeps a normal body under the same app bar.
+- **Hero card (Home only):** `palette.heroGradient`, radius `xl`, text in
+  `onHero` / `onHeroMuted`, signals on a solid `raisedSurface` panel.
+- **Summary card (Loans, Accounts):** `raisedSurface`, radius `xl`,
+  `cardShadow`. A neutral headline amount, then `SignalStat`s.
 - **List of items:** group rows in a `Card` under an `OverlineHeader`. Rows
   are at least 64 dp tall: `CategoryIcon`, title (`titleSmall`), second line
   (`bodySmall`, `onSurfaceVariant`), `MoneyText` on the right.
@@ -136,6 +255,17 @@ the theme; don't draw another.
   visibility.onScroll)`, and pad the list's bottom by `Space.fabClearance`.
 - **Full-screen pages** (forms, details) are `GoRoute`s with
   `parentNavigatorKey: _rootNavigatorKey`, so they cover the bottom navigation.
+- **Picking one of a few:** `SegmentedControl` (Analytics period). The type
+  tabs on Add Transaction are a `TabBar` in the same shape: a track of
+  `surfaceContainerHigh` with radius `md`, 48 dp tall, and a selected block
+  with radius `sm`.
+- **Amount entry:** `AmountInputPad`. The amount sits in a card that takes
+  the free space; the keys are card-colored with a hairline, the delete key a
+  tone darker. The whole cell of a key is tappable.
+- **Pinned action:** `GlassBottomBar` as the `bottomNavigationBar`, holding
+  one full-width `FilledButton`.
+- **Sheets, dialogs, menus:** `showAppSheet`, `AppAlertDialog` (inside
+  `showDialog`), `GlassMenuButton`. They open above the bottom navigation.
 - **Choosing from a long list** (categories when adding a transaction): a
   strip of pills with the most used first, and an "All" pill that stays put
   and opens every option in a searchable grid (`showCategoryPicker`). Nothing
@@ -159,7 +289,10 @@ the theme; don't draw another.
 ## Accessibility checklist
 
 - Text meets 4.5:1; icons and chart marks meet 3:1.
-- Touch targets are at least 48 dp (the theme sets this for buttons).
+- Touch targets are at least 48 dp (the theme sets this for buttons;
+  segments and keypad keys are tappable over their whole cell).
+- Text and icons on glass meet the same ratios over any backdrop, and glass
+  turns solid under the system high-contrast setting.
 - Every `IconButton` has a `tooltip`; amounts use `MoneyText` or a
   `Semantics` label that says what the number is.
 - Meaning never depends on color alone: signs, arrows, labels.
@@ -170,10 +303,12 @@ the theme; don't draw another.
 
 ## Building a new screen
 
-1. Use the Material component the theme already styles before making a custom one.
+1. Use the Material component the theme already styles, or the shared widget
+   in the table above, before making a custom one.
 2. Colors from `colorScheme` or `context.palette`, text from `textTheme`,
    numbers from `Space` / `Radii` / `Motion` / `Sizes`.
 3. Amounts through `MoneyText`; icons for categories through `CategoryIcon`.
+   Sheets, dialogs and menus through the glass widgets; glass nowhere else.
 4. Check light and dark mode, and 1.3× text.
 5. Widget tests can wrap the widget in a plain `MaterialApp`:
    `context.palette` falls back to a palette built from the active scheme.

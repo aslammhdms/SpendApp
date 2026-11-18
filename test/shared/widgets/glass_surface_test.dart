@@ -95,22 +95,8 @@ void main() {
   });
 
   group('GlassAppBar', () {
-    Widget screen({bool highContrast = false}) => _host(
-          Scaffold(
-            extendBodyBehindAppBar: true,
-            appBar: const GlassAppBar(title: Text('Title')),
-            body: Builder(
-              builder: (context) => ListView(
-                padding: ScreenInsets.of(context),
-                children: [
-                  for (var i = 0; i < 40; i++)
-                    SizedBox(height: 48, child: Text('row $i')),
-                ],
-              ),
-            ),
-          ),
-          highContrast: highContrast,
-        );
+    Widget screen({bool highContrast = false}) =>
+        _host(const _Screen(), highContrast: highContrast);
 
     testWidgets('is clear at the top and turns to glass once scrolled under',
         (tester) async {
@@ -153,4 +139,23 @@ void main() {
       expect(find.byType(BackdropFilter), findsNothing);
     });
   });
+}
+
+class _Screen extends StatelessWidget {
+  const _Screen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: const GlassAppBar(title: Text('Title')),
+      body: ListView(
+        padding: ScreenInsets.of(context),
+        children: [
+          for (var i = 0; i < 40; i++)
+            SizedBox(height: 48, child: Text('row $i')),
+        ],
+      ),
+    );
+  }
 }

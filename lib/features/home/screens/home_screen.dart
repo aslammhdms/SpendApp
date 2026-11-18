@@ -76,10 +76,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           SizedBox(width: Space.sm),
         ],
       ),
-      // A Builder, so the insets include the app bar above this body.
-      body: Builder(
-        builder: (context) => _buildBody(context, dashboardData, currency),
-      ),
+      body: _buildBody(context, dashboardData, currency),
       floatingActionButton: AutoHideFab(
         visibility: _fabVisibility,
         child: FloatingActionButton.extended(

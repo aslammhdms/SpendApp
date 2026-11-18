@@ -12,6 +12,8 @@ import '../../home/providers/dashboard_provider.dart';
 import '../../transactions/providers/transactions_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/screen_insets.dart';
+import '../../../shared/widgets/glass_dialog.dart';
+import '../../../shared/widgets/glass_app_bar.dart';
 
 class BudgetsScreen extends ConsumerStatefulWidget {
   const BudgetsScreen({super.key});
@@ -49,8 +51,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     final currency = ref.watch(settingsProvider).currency;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Budgets'),
+      extendBodyBehindAppBar: true,
+      appBar: const GlassAppBar(
+        title: Text('Budgets'),
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -88,6 +91,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                       ),
                     )
                   : RefreshIndicator(
+                      edgeOffset: ScreenInsets.topOf(context),
                       onRefresh: () async {
                         await ref.read(budgetsProvider.notifier).loadBudgets();
                       },
@@ -116,12 +120,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
 
   Widget _buildBudgetsList(BudgetsState state, List<Category> categories, {String currency = 'USD'}) {
     return ListView.separated(
-      padding: EdgeInsets.fromLTRB(
-        Space.lg,
-        Space.sm,
-        Space.lg,
-        Space.fabClearance + ScreenInsets.bottomOf(context),
-      ),
+      padding: ScreenInsets.of(context, bottom: Space.fabClearance),
       itemCount: state.budgets.length,
       separatorBuilder: (_, __) => const SizedBox(height: Space.md),
       itemBuilder: (context, index) {
@@ -154,7 +153,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
   void _confirmDelete(String budgetId) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => AppAlertDialog(
         title: const Text('Delete Budget'),
         content: const Text('Are you sure you want to delete this budget?'),
         actions: [

@@ -19,6 +19,11 @@ import '../../../shared/widgets/money_text.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../loans/providers/loans_provider.dart';
+import '../../../shared/widgets/glass_sheet.dart';
+import '../../../shared/widgets/glass_dialog.dart';
+import '../../../shared/widgets/glass_app_bar.dart';
+import '../../../shared/widgets/glass_bottom_bar.dart';
+import '../../../shared/widgets/segmented_control.dart';
 
 class AddEditTransactionScreen extends ConsumerStatefulWidget {
   final String? transactionId;
@@ -272,7 +277,7 @@ class _AddEditTransactionScreenState
     final (typeContainer, onTypeContainer) = _typeColors();
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: GlassAppBar(
         title: Text(isEditing ? 'Edit Transaction' : 'Add Transaction'),
         actions: [
           if (isEditing)
@@ -289,10 +294,11 @@ class _AddEditTransactionScreenState
               Space.lg,
               0,
               Space.lg,
-              Space.sm + 2,
+              Space.sm,
             ),
+            // Same shape as SegmentedControl: a rounded block in a track.
             child: Container(
-              height: 44,
+              height: SegmentedControl.height,
               padding: const EdgeInsets.all(Space.xs),
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerHigh,
@@ -341,21 +347,13 @@ class _AddEditTransactionScreenState
                       currency,
                     ),
             ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Space.lg,
-            Space.sm,
-            Space.lg,
-            Space.lg,
+      bottomNavigationBar: GlassBottomBar(
+        child: FilledButton(
+          onPressed: _isLoading ? null : _saveTransaction,
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(Sizes.touchTarget + 4),
           ),
-          child: FilledButton(
-            onPressed: _isLoading ? null : _saveTransaction,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(Sizes.touchTarget + 4),
-            ),
-            child: Text(isEditing ? 'Update' : 'Save'),
-          ),
+          child: Text(isEditing ? 'Update' : 'Save'),
         ),
       ),
     );
@@ -539,7 +537,7 @@ class _AddEditTransactionScreenState
         ? accounts.where((a) => a.id != _accountId).toList()
         : accounts;
     final current = isToAccount ? _toAccountId : _accountId;
-    final picked = await showModalBottomSheet<String>(
+    final picked = await showAppSheet<String>(
       context: context,
       builder: (context) {
         final scheme = Theme.of(context).colorScheme;
@@ -610,7 +608,7 @@ class _AddEditTransactionScreenState
   }
 
   Future<void> _editNote() async {
-    await showModalBottomSheet<void>(
+    await showAppSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (context) => Padding(
@@ -655,11 +653,12 @@ class _AddEditTransactionScreenState
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       final time = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(_date),
       );
+      if (!mounted) return;
 
       setState(() {
         _date = DateTime(
@@ -676,18 +675,18 @@ class _AddEditTransactionScreenState
   void _confirmDelete() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AppAlertDialog(
         title: const Text('Delete Transaction'),
         content:
             const Text('Are you sure you want to delete this transaction?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               await ref
                   .read(transactionsProvider.notifier)
                   .deleteTransaction(widget.transactionId!);
@@ -720,7 +719,7 @@ class _AddEditTransactionScreenState
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _selectedPersonId,
+                    initialValue: _selectedPersonId,
                     hint: const Text('Select a person'),
                     items: _people
                         .map((p) => DropdownMenuItem(

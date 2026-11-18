@@ -5,11 +5,13 @@ import '../../../core/theme/tokens.dart';
 import '../../../shared/widgets/category_icon.dart';
 import '../../../data/models/budget.dart';
 import '../../../core/services/notification_service.dart';
-import '../../../data/models/category.dart';
 import '../providers/budgets_provider.dart';
 import '../../transactions/providers/transactions_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
+import '../../../shared/widgets/glass_dialog.dart';
+import '../../../shared/widgets/glass_app_bar.dart';
+import '../../../shared/widgets/screen_insets.dart';
 
 class AddEditBudgetScreen extends ConsumerStatefulWidget {
   final String? budgetId;
@@ -136,12 +138,14 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
     final categoriesAsync = ref.watch(expenseCategoriesProvider);
 
     return Scaffold(
-      appBar: AppBar(
+      extendBodyBehindAppBar: true,
+      appBar: GlassAppBar(
         title: Text(isEditing ? 'Edit Budget' : 'New Budget'),
         actions: [
           if (isEditing)
             IconButton(
-              icon: const Icon(Icons.delete),
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Delete budget',
               onPressed: _confirmDelete,
             ),
         ],
@@ -151,7 +155,7 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
           : Form(
               key: _formKey,
               child: ListView(
-                padding: const EdgeInsets.all(Space.lg),
+                padding: ScreenInsets.of(context, top: Space.lg),
                 children: [
                   // Name Field
                   TextFormField(
@@ -296,17 +300,17 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
   void _confirmDelete() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AppAlertDialog(
         title: const Text('Delete Budget'),
         content: const Text('Are you sure you want to delete this budget?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               await ref
                   .read(budgetsProvider.notifier)
                   .deleteBudget(widget.budgetId!);

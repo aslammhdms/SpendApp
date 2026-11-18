@@ -11,6 +11,8 @@ import '../../transactions/providers/transactions_provider.dart';
 import '../models/captured_payment.dart';
 import '../providers/wallet_capture_provider.dart';
 import '../widgets/captured_payment_card.dart';
+import '../../../shared/widgets/screen_insets.dart';
+import '../../../shared/widgets/glass_app_bar.dart';
 
 final _captureAccountsProvider =
     FutureProvider.autoDispose<List<Account>>((ref) async {
@@ -96,7 +98,8 @@ class _WalletCaptureScreenState extends ConsumerState<WalletCaptureScreen>
     final notifier = ref.read(walletCaptureProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Google Wallet payments')),
+      extendBodyBehindAppBar: true,
+      appBar: const GlassAppBar(title: Text('Google Wallet payments')),
       body: capture.isLoading
           ? const Center(child: CircularProgressIndicator())
           : !capture.isSupported
@@ -108,13 +111,9 @@ class _WalletCaptureScreenState extends ConsumerState<WalletCaptureScreen>
                 )
               : RefreshIndicator(
                   onRefresh: notifier.refresh,
+                  edgeOffset: ScreenInsets.topOf(context),
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(
-                      Space.lg,
-                      Space.sm,
-                      Space.lg,
-                      Space.xxl,
-                    ),
+                    padding: ScreenInsets.of(context, bottom: Space.xxl),
                     children: [
                       _SetupCard(capture: capture, notifier: notifier),
                       if (capture.isEnabled) ...[

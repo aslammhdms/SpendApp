@@ -67,6 +67,12 @@ class GlassSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final t = intensity.clamp(0.0, 1.0);
+    // Ripples and list-tile highlights are painted on the nearest Material.
+    // Give the content one of its own, so they draw on top of the tint
+    // instead of underneath it.
+    final child = this.child == null
+        ? null
+        : Material(type: MaterialType.transparency, child: this.child);
 
     if (isSolid(context)) {
       return ClipRRect(

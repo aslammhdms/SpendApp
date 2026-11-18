@@ -11,6 +11,8 @@ import '../widgets/income_expense_bar_chart.dart';
 import '../widgets/spending_line_chart.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/screen_insets.dart';
+import '../../../shared/widgets/segmented_control.dart';
+import '../../../shared/widgets/glass_app_bar.dart';
 
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
@@ -44,34 +46,30 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen>
     final notifier = ref.read(analyticsProvider.notifier);
     final currency = ref.watch(settingsProvider).currency;
 
+    // The period control sits in the app bar, with a little air under it.
+    const periodBarHeight = SegmentedControl.height + Space.sm;
+
     return Scaffold(
-      appBar: AppBar(
+      extendBodyBehindAppBar: true,
+      appBar: GlassAppBar(
         title: const Text('Analytics'),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
+          preferredSize: const Size.fromHeight(periodBarHeight),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
               Space.lg,
               0,
               Space.lg,
-              Space.sm + 2,
+              Space.sm,
             ),
-            child: SizedBox(
-              width: double.infinity,
-              child: SegmentedButton<AnalyticsPeriod>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(
-                      value: AnalyticsPeriod.week, label: Text('Week')),
-                  ButtonSegment(
-                      value: AnalyticsPeriod.month, label: Text('Month')),
-                  ButtonSegment(
-                      value: AnalyticsPeriod.year, label: Text('Year')),
-                ],
-                selected: {notifier.period},
-                onSelectionChanged: (selection) =>
-                    notifier.setPeriod(selection.first),
-              ),
+            child: SegmentedControl<AnalyticsPeriod>(
+              segments: const {
+                AnalyticsPeriod.week: 'Week',
+                AnalyticsPeriod.month: 'Month',
+                AnalyticsPeriod.year: 'Year',
+              },
+              selected: notifier.period,
+              onChanged: notifier.setPeriod,
             ),
           ),
         ),
@@ -100,12 +98,15 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen>
                 )
               : RefreshIndicator(
                   onRefresh: () => notifier.loadData(),
+                  edgeOffset: ScreenInsets.topOf(
+                    context,
+                    appBarBottom: periodBarHeight,
+                  ),
                   child: ListView(
-                    padding: EdgeInsets.fromLTRB(
-                      Space.lg,
-                      Space.sm,
-                      Space.lg,
-                      Space.xxl + ScreenInsets.bottomOf(context),
+                    padding: ScreenInsets.of(
+                      context,
+                      appBarBottom: periodBarHeight,
+                      bottom: Space.xxl,
                     ),
                     children: [
                       // Summary Card

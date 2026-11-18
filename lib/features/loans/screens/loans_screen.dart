@@ -14,6 +14,9 @@ import '../providers/loans_provider.dart';
 import '../widgets/person_balance_card.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
+import '../../../shared/widgets/glass_dialog.dart';
+import '../../../shared/widgets/screen_insets.dart';
+import '../../../shared/widgets/glass_app_bar.dart';
 
 class LoansScreen extends ConsumerStatefulWidget {
   const LoansScreen({super.key});
@@ -37,8 +40,9 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
     final currency = ref.watch(settingsProvider).currency;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Loans & Debts'),
+      extendBodyBehindAppBar: true,
+      appBar: const GlassAppBar(
+        title: Text('Loans & Debts'),
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -61,15 +65,14 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                   ),
                 )
               : RefreshIndicator(
+                  edgeOffset: ScreenInsets.topOf(context),
                   onRefresh: () async {
                     await ref.read(loansProvider.notifier).loadPeople();
                   },
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(
-                      Space.lg,
-                      Space.sm,
-                      Space.lg,
-                      Space.fabClearance,
+                    padding: ScreenInsets.of(
+                      context,
+                      bottom: Space.fabClearance,
                     ),
                     children: [
                       _LoansSummary(
@@ -140,7 +143,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
   void _confirmDeletePerson(Person person) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => AppAlertDialog(
         title: const Text('Delete Person'),
         content: Text(
             'Are you sure? This will hide ${person.name} and their loan history.'),

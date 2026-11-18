@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import '../../core/theme/tokens.dart';
 
 /// Padding for a scrollable that runs under the glass bars.
@@ -7,36 +7,37 @@ import '../../core/theme/tokens.dart';
 /// scrollable itself fills the screen and its padding is what keeps the
 /// first and last rows clear of the bars when it is scrolled to either end.
 ///
-/// The bars' heights come from [MediaQuery.paddingOf], which the enclosing
-/// scaffolds set, so call this with a context inside the scaffold's body
-/// (the `context` of a [Builder] or of a child widget, not the one that
-/// built the scaffold).
+/// Use it on screens whose `Scaffold` has `extendBodyBehindAppBar: true`,
+/// and call it with the context that builds that Scaffold (the screen's own
+/// `context`), not one from inside the Scaffold's body: inside the body the
+/// app bar is already counted, and it would be added twice.
 abstract final class ScreenInsets {
-  /// [top] and [bottom] are the space wanted between the bars and the
-  /// content. Pass [Space.fabClearance] as [bottom] on screens with a
-  /// floating button.
+  /// Padding for the screen's main scrollable. [top] and [bottom] are the
+  /// space wanted between the bars and the content; pass
+  /// [Space.fabClearance] as [bottom] on screens with a floating button.
+  /// [appBarBottom] is the height of the app bar's `bottom` widget, if any.
   static EdgeInsets of(
     BuildContext context, {
     double horizontal = Space.screen,
     double top = Space.sm,
     double bottom = Space.lg,
+    double appBarBottom = 0,
   }) {
-    final bars = MediaQuery.paddingOf(context);
     return EdgeInsets.fromLTRB(
       horizontal,
-      bars.top + top,
+      topOf(context, appBarBottom: appBarBottom) + top,
       horizontal,
-      bars.bottom + bottom,
+      bottomOf(context) + bottom,
     );
   }
 
-  /// Height of what covers the bottom of the body (the navigation bar, or
-  /// the system gesture area), to add to a scrollable's bottom padding.
+  /// Height of what covers the top of the body: the status bar and the app
+  /// bar. Also where a pull-to-refresh spinner should appear.
+  static double topOf(BuildContext context, {double appBarBottom = 0}) =>
+      MediaQuery.paddingOf(context).top + kToolbarHeight + appBarBottom;
+
+  /// Height of what covers the bottom of the body: the navigation bar on a
+  /// tab, otherwise the system gesture area.
   static double bottomOf(BuildContext context) =>
       MediaQuery.paddingOf(context).bottom;
-
-  /// Distance from the top of the body to the bottom of the app bar, for
-  /// things that must appear below it (a pull-to-refresh spinner).
-  static double topOf(BuildContext context) =>
-      MediaQuery.paddingOf(context).top;
 }

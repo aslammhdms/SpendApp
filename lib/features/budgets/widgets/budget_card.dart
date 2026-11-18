@@ -5,6 +5,7 @@ import '../../../core/theme/tokens.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../data/models/budget.dart';
 import '../../../shared/widgets/category_icon.dart';
+import '../../../shared/widgets/glass_menu.dart';
 
 class BudgetCard extends StatelessWidget {
   final Budget budget;
@@ -74,34 +75,23 @@ class BudgetCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  PopupMenuButton<String>(
+                  GlassMenuButton<String>(
                     tooltip: 'Budget options',
                     onSelected: (value) {
                       if (value == 'edit') onEdit?.call();
                       if (value == 'delete') onDelete?.call();
                     },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
+                    items: const [
+                      GlassMenuItem(
                         value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit_outlined, size: 20),
-                            SizedBox(width: Space.md),
-                            Text('Edit'),
-                          ],
-                        ),
+                        label: 'Edit',
+                        icon: Icons.edit_outlined,
                       ),
-                      PopupMenuItem(
+                      GlassMenuItem(
                         value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_outline,
-                                size: 20, color: scheme.error),
-                            const SizedBox(width: Space.md),
-                            Text('Delete',
-                                style: TextStyle(color: scheme.error)),
-                          ],
-                        ),
+                        label: 'Delete',
+                        icon: Icons.delete_outline,
+                        destructive: true,
                       ),
                     ],
                   ),

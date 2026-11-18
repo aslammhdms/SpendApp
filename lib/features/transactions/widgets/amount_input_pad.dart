@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/utils/currency_utils.dart';
 
-/// Amount display on top, an optional [middle] section (category and
-/// details), then a number pad that fills the remaining height.
+/// The amount in a card on top, an optional [middle] section (category and
+/// details), then a number pad of shaped keys.
 class AmountInputPad extends StatefulWidget {
   final double initialAmount;
   final String currency;
@@ -80,12 +81,10 @@ class _AmountInputPadState extends State<AmountInputPad> {
     final formatted =
         CurrencyUtils.format(amount, currencyCode: widget.currency);
 
-    final display = Padding(
-      padding: const EdgeInsets.fromLTRB(
-        Space.lg,
-        Space.md,
-        Space.lg,
-        Space.sm,
+    final amountText = Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: Space.lg,
+        vertical: Space.md,
       ),
       child: Semantics(
         liveRegion: true,
@@ -119,12 +118,34 @@ class _AmountInputPadState extends State<AmountInputPad> {
       ),
     );
 
+    // The amount sits in a card that takes the space left over, so it reads
+    // as the screen's display instead of floating in a gap. If that space
+    // gets very small (short screen, large text) the amount scales down.
+    final display = Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Space.lg,
+        Space.sm,
+        Space.lg,
+        Space.md,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLow,
+          borderRadius: Radii.lgAll,
+          border: Border.all(color: context.palette.cardBorder),
+        ),
+        child: Center(
+          child: FittedBox(fit: BoxFit.scaleDown, child: amountText),
+        ),
+      ),
+    );
+
     return LayoutBuilder(
       builder: (context, constraints) {
         if (widget.middle == null) {
           return Column(
             children: [
-              display,
+              SizedBox(height: 132, child: display),
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, c) => _keypad(
@@ -142,7 +163,7 @@ class _AmountInputPadState extends State<AmountInputPad> {
             (constraints.maxHeight * 0.4 / 4).clamp(Sizes.touchTarget, 64.0);
         return Column(
           children: [
-            Expanded(child: Center(child: display)),
+            Expanded(child: display),
             ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: constraints.maxHeight * 0.42,
@@ -185,34 +206,47 @@ class _AmountInputPadState extends State<AmountInputPad> {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final label = isIcon ? 'Delete' : (key == '.' ? 'Decimal point' : key);
-    return Padding(
-      padding: const EdgeInsets.all(Space.xs / 2),
-      child: Semantics(
-        button: true,
-        label: label,
-        hint: isIcon ? 'Long press to clear' : null,
-        excludeSemantics: true,
-        child: Material(
-          type: MaterialType.transparency,
-          shape: const RoundedRectangleBorder(borderRadius: Radii.mdAll),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: () => _onKeyPressed(key),
-            onLongPress: key == 'backspace' ? () => _onKeyPressed('C') : null,
-            child: Center(
-              child: isIcon
-                  ? Icon(
-                      Icons.backspace_outlined,
-                      size: 26,
-                      color: scheme.onSurfaceVariant,
-                    )
-                  : Text(
-                      key,
-                      style: text.headlineSmall?.tabular.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: scheme.onSurface,
+    return Semantics(
+      button: true,
+      label: label,
+      hint: isIcon ? 'Long press to clear' : null,
+      excludeSemantics: true,
+      child: Material(
+        type: MaterialType.transparency,
+        // The whole cell is tappable (at least 48dp); the key drawn inside
+        // it is a little smaller, which leaves the gap between keys.
+        child: InkWell(
+          customBorder: const RoundedRectangleBorder(borderRadius: Radii.mdAll),
+          onTap: () => _onKeyPressed(key),
+          onLongPress: key == 'backspace' ? () => _onKeyPressed('C') : null,
+          child: Padding(
+            padding: const EdgeInsets.all(Space.xs),
+            child: Ink(
+              decoration: BoxDecoration(
+                // Digits are card-colored keys; delete is a step darker.
+                color: isIcon
+                    ? scheme.surfaceContainerHigh
+                    : scheme.surfaceContainerLow,
+                borderRadius: Radii.mdAll,
+                border: isIcon
+                    ? null
+                    : Border.all(color: context.palette.cardBorder),
+              ),
+              child: Center(
+                child: isIcon
+                    ? Icon(
+                        Icons.backspace_outlined,
+                        size: 24,
+                        color: scheme.onSurfaceVariant,
+                      )
+                    : Text(
+                        key,
+                        style: text.titleLarge?.tabular.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: scheme.onSurface,
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
         ),

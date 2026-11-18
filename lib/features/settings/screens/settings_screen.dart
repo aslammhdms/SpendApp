@@ -5,10 +5,12 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../core/services/notification_service.dart';
-import '../../../data/remote/sync_engine.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/sync_status_tile.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../../shared/widgets/glass_sheet.dart';
+import '../../../shared/widgets/glass_dialog.dart';
+import '../../../shared/widgets/glass_app_bar.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -34,13 +36,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
-    final authState = ref.watch(authProvider);
+    // Rebuild when the account changes; the value itself is not needed.
+    ref.watch(authProvider);
     final authNotifier = ref.read(authProvider.notifier);
     final settingsNotifier = ref.read(settingsProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
+      // The list has no padding of its own, so it picks up the bars'
+      // insets by itself.
+      extendBodyBehindAppBar: true,
+      appBar: const GlassAppBar(
+        title: Text('Settings'),
       ),
       body: ListView(
         children: [
@@ -128,7 +134,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 final biometricService = ref.read(biometricServiceProvider);
                 final canAuth = await biometricService.canAuthenticate();
                 if (!canAuth) {
-                  if (mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
@@ -225,7 +231,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showCurrencyPicker(BuildContext context, String currentCurrency) {
-    showModalBottomSheet(
+    showAppSheet(
       context: context,
       builder: (context) => ListView(
         shrinkWrap: true,
@@ -254,7 +260,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showThemePicker(BuildContext context, String currentTheme) {
-    showModalBottomSheet(
+    showAppSheet(
       context: context,
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
@@ -327,20 +333,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _confirmFullSync(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AppAlertDialog(
         title: const Text('Full Sync'),
         content: const Text(
             'This will upload changes waiting to sync, then re-download all data from your Google Sheet. Anything that still can\'t be uploaded stays on this device and syncs later.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               await ref.read(settingsProvider.notifier).fullSync();
-              if (mounted) {
+              if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Full sync completed')),
                 );
@@ -356,7 +362,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _confirmSignOut(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AppAlertDialog(
         title: const Text('Sign Out'),
         content: const Text(
             'Your data stays in your Google Sheet. The copy on this device '
@@ -364,14 +370,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             'different account signs in.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               await ref.read(authProvider.notifier).signOut();
-              if (mounted) {
+              if (context.mounted) {
                 context.go('/welcome');
               }
             },

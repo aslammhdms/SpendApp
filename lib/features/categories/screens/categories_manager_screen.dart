@@ -7,6 +7,10 @@ import '../../../data/models/category.dart';
 import '../providers/categories_provider.dart';
 import '../../transactions/providers/transactions_provider.dart'
     show expenseCategoriesProvider, incomeCategoriesProvider;
+import '../../../shared/widgets/glass_app_bar.dart';
+import '../../../shared/widgets/glass_dialog.dart';
+import '../../../shared/widgets/glass_sheet.dart';
+import '../../../shared/widgets/screen_insets.dart';
 
 class CategoriesManagerScreen extends ConsumerStatefulWidget {
   const CategoriesManagerScreen({super.key});
@@ -41,8 +45,12 @@ class _CategoriesManagerScreenState
     final state = ref.watch(categoriesManagerProvider);
 
     return Scaffold(
-      appBar: AppBar(
+      extendBodyBehindAppBar: true,
+      appBar: GlassAppBar(
         title: const Text('Categories'),
+        // The lists sit inside the tab view, one scrollable deeper than
+        // the app bar looks by default.
+        notificationPredicate: (notification) => notification.depth == 1,
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -87,19 +95,18 @@ class _CategoriesManagerScreenState
             Icon(Icons.category_outlined,
                 size: 64,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
-            SizedBox(height: 16),
-            Text('No categories yet'),
+            const SizedBox(height: 16),
+            const Text('No categories yet'),
           ],
         ),
       );
     }
 
     return ReorderableListView.builder(
-      padding: const EdgeInsets.fromLTRB(
-        Space.lg,
-        Space.sm,
-        Space.lg,
-        Space.fabClearance,
+      padding: ScreenInsets.of(
+        context,
+        appBarBottom: kTextTabBarHeight,
+        bottom: Space.fabClearance,
       ),
       itemCount: categories.length,
       onReorderItem: (oldIndex, newIndex) {
@@ -148,10 +155,10 @@ class _CategoriesManagerScreenState
   }
 
   void _showAddCategoryDialog(CategoryType type) {
-    showModalBottomSheet(
+    showAppSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => _CategoryFormSheet(
+      builder: (sheetContext) => _CategoryFormSheet(
         type: type,
         onSave: (name, icon, color) async {
           await ref.read(categoriesManagerProvider.notifier).createCategory(
@@ -162,17 +169,17 @@ class _CategoriesManagerScreenState
               );
           ref.invalidate(expenseCategoriesProvider);
           ref.invalidate(incomeCategoriesProvider);
-          if (mounted) Navigator.pop(context);
+          if (sheetContext.mounted) Navigator.pop(sheetContext);
         },
       ),
     );
   }
 
   void _showEditCategoryDialog(Category category) {
-    showModalBottomSheet(
+    showAppSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => _CategoryFormSheet(
+      builder: (sheetContext) => _CategoryFormSheet(
         category: category,
         type: category.type,
         onSave: (name, icon, color) async {
@@ -181,7 +188,7 @@ class _CategoriesManagerScreenState
               );
           ref.invalidate(expenseCategoriesProvider);
           ref.invalidate(incomeCategoriesProvider);
-          if (mounted) Navigator.pop(context);
+          if (sheetContext.mounted) Navigator.pop(sheetContext);
         },
       ),
     );
@@ -190,7 +197,7 @@ class _CategoriesManagerScreenState
   void _confirmDelete(Category category) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => AppAlertDialog(
         title: const Text('Delete Category'),
         content: Text(
             'Are you sure you want to delete "${category.name}"? Transactions using this category will not be deleted.'),

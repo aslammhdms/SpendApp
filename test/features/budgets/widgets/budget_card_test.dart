@@ -124,8 +124,8 @@ void main() {
         onDelete: () {},
       ));
 
-      // Tap the popup menu button
-      await tester.tap(find.byType(PopupMenuButton<String>));
+      // Open the options menu
+      await tester.tap(find.byTooltip('Budget options'));
       await tester.pumpAndSettle();
 
       expect(find.text('Edit'), findsOneWidget);

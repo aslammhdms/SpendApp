@@ -7,6 +7,9 @@ import '../../../data/models/person.dart';
 import '../providers/loans_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
+import '../../../shared/widgets/glass_app_bar.dart';
+import '../../../shared/widgets/screen_insets.dart';
+import '../../../core/theme/tokens.dart';
 
 class AddLoanScreen extends ConsumerStatefulWidget {
   final String? personId;
@@ -156,13 +159,14 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
     final currency = ref.watch(settingsProvider).currency;
 
     return Scaffold(
-      appBar: AppBar(
+      extendBodyBehindAppBar: true,
+      appBar: GlassAppBar(
         title: Text(widget.isSettlement ? 'Settle Up' : 'Add Loan'),
       ),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: ScreenInsets.of(context, top: Space.lg),
           children: [
             // Person picker
             Text(
@@ -185,7 +189,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
             else ...[
               if (!_isCreatingNewPerson) ...[
                 DropdownButtonFormField<String>(
-                  value: _selectedPersonId,
+                  initialValue: _selectedPersonId,
                   hint: const Text('Select a person'),
                   items: _people
                       .map((p) => DropdownMenuItem(
