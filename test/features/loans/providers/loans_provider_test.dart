@@ -49,7 +49,7 @@ void main() {
     );
   });
 
-  void _stubLoadPeople({
+  void stubLoadPeople({
     List<Person> people = const [],
     Map<String, double> balances = const {},
     double owedToYou = 0,
@@ -72,7 +72,7 @@ void main() {
     });
 
     test('loadPeople fetches people with balances', () async {
-      _stubLoadPeople(
+      stubLoadPeople(
         people: [_makePerson(id: 'per_1', name: 'Alice')],
         balances: {'per_1': 200.0},
         owedToYou: 200,
@@ -87,7 +87,7 @@ void main() {
     });
 
     test('people sorted: unsettled first, then by name', () async {
-      _stubLoadPeople(
+      stubLoadPeople(
         people: [
           _makePerson(id: 'per_z', name: 'Zara'),
           _makePerson(id: 'per_a', name: 'Alice'),
@@ -121,7 +121,7 @@ void main() {
             phone: any(named: 'phone'),
             note: any(named: 'note'),
           )).thenAnswer((_) async => _makePerson());
-      _stubLoadPeople(people: [_makePerson()]);
+      stubLoadPeople(people: [_makePerson()]);
 
       final person = await notifier.createPerson(name: 'Alice');
 
@@ -140,7 +140,7 @@ void main() {
             note: any(named: 'note'),
             isSettlement: any(named: 'isSettlement'),
           )).thenAnswer((_) async => _makeLoan());
-      _stubLoadPeople(people: [_makePerson()]);
+      stubLoadPeople(people: [_makePerson()]);
 
       await notifier.createLoan(
         personId: 'per_1',
@@ -166,7 +166,7 @@ void main() {
             date: any(named: 'date'),
             note: any(named: 'note'),
           )).thenAnswer((_) async => _makeLoan());
-      _stubLoadPeople();
+      stubLoadPeople();
 
       await notifier.settleLoan(
         personId: 'per_1', amount: 500, date: DateTime.now(),
@@ -183,7 +183,7 @@ void main() {
     test('deletePerson calls repo and reloads', () async {
       when(() => mockPersonRepo.delete(any()))
           .thenAnswer((_) async {});
-      _stubLoadPeople();
+      stubLoadPeople();
 
       await notifier.deletePerson('per_1');
 

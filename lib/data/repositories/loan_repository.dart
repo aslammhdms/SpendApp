@@ -6,15 +6,15 @@ import '../../core/utils/id_generator.dart';
 
 class LoanRepository {
   final LocalLoanDao _localDao;
-  final SyncQueueDao _syncQueueDao;
   final SyncEngine _syncEngine;
 
   LoanRepository({
     required LocalLoanDao localDao,
+    // Unused: changes are queued through the sync engine. Kept so callers
+    // do not have to change.
     required SyncQueueDao syncQueueDao,
     required SyncEngine syncEngine,
   })  : _localDao = localDao,
-        _syncQueueDao = syncQueueDao,
         _syncEngine = syncEngine;
 
   Future<List<Loan>> getAll({bool includeDeleted = false}) async {

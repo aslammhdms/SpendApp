@@ -36,7 +36,7 @@ void main() {
     );
   });
 
-  void _stubAllRepos({
+  void stubAllRepos({
     double income = 0,
     double expense = 0,
     double totalBalance = 0,
@@ -74,7 +74,7 @@ void main() {
     });
 
     test('refresh loads all data', () async {
-      _stubAllRepos(
+      stubAllRepos(
         income: 5000,
         expense: 3000,
         totalBalance: 10000,
@@ -94,7 +94,7 @@ void main() {
     });
 
     test('monthlyBalance computed correctly', () async {
-      _stubAllRepos(income: 5000, expense: 3000);
+      stubAllRepos(income: 5000, expense: 3000);
 
       await notifier.refresh();
 
@@ -127,7 +127,7 @@ void main() {
     });
 
     test('empty data returns zero values', () async {
-      _stubAllRepos();
+      stubAllRepos();
 
       await notifier.refresh();
 
@@ -140,7 +140,7 @@ void main() {
     });
 
     test('refresh sets isLoading true then false', () async {
-      _stubAllRepos();
+      stubAllRepos();
 
       final loadingStates = <bool>[];
       notifier.addListener((state) {
@@ -196,7 +196,7 @@ void main() {
     });
 
     test('refresh checks the freshly loaded budgets for alerts', () async {
-      _stubAllRepos(budgets: [groceries]);
+      stubAllRepos(budgets: [groceries]);
       when(() => alerts.check(any())).thenAnswer((_) async {});
 
       await notifier.refresh();
@@ -205,7 +205,7 @@ void main() {
     });
 
     test('a failing alert check does not break the dashboard', () async {
-      _stubAllRepos(budgets: [groceries], expense: 450);
+      stubAllRepos(budgets: [groceries], expense: 450);
       when(() => alerts.check(any())).thenThrow(Exception('no notifications'));
 
       await notifier.refresh();

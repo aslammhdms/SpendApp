@@ -13,6 +13,12 @@ linter:
 analyzer:
   errors:
     invalid_annotation_target: ignore
+    # Flutter 3.50 deprecates `package:flutter/material.dart` in favour of
+    # the separate material_ui package, which this project has not moved to
+    # yet. That one notice appears in every file, and the analyzer can only
+    # switch off deprecation notices as a whole. Remove this line when the
+    # imports are migrated, so other deprecations show up again.
+    deprecated_member_use: ignore
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"

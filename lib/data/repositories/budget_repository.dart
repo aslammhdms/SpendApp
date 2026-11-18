@@ -11,15 +11,15 @@ import '../../core/utils/date_utils.dart';
 class BudgetRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   final LocalTransactionDao _transactionDao;
-  final SyncQueueDao _syncQueueDao;
   final SyncEngine _syncEngine;
 
   BudgetRepository({
     required LocalTransactionDao transactionDao,
+    // Unused: changes are queued through the sync engine. Kept so callers
+    // do not have to change.
     required SyncQueueDao syncQueueDao,
     required SyncEngine syncEngine,
   })  : _transactionDao = transactionDao,
-        _syncQueueDao = syncQueueDao,
         _syncEngine = syncEngine;
 
   Future<Database> get _db => _dbHelper.database;

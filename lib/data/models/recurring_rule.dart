@@ -95,7 +95,9 @@ abstract class RecurringRule with _$RecurringRule {
 
   static RecurringRule fromSheetRow(List<dynamic> row) {
     // Pad row — Sheets API strips trailing empty cells
-    while (row.length < 15) row.add('');
+    while (row.length < 15) {
+      row.add('');
+    }
     return RecurringRule(
       id: row[0]?.toString() ?? '',
       name: row[1]?.toString() ?? '',

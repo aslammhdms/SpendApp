@@ -54,7 +54,9 @@ abstract class Category with _$Category {
 
   static Category fromSheetRow(List<dynamic> row) {
     // Pad row — Sheets API strips trailing empty cells
-    while (row.length < 9) row.add('');
+    while (row.length < 9) {
+      row.add('');
+    }
     return Category(
       id: row[0]?.toString() ?? '',
       name: row[1]?.toString() ?? '',

@@ -73,7 +73,9 @@ abstract class Transaction with _$Transaction {
 
   static Transaction fromSheetRow(List<dynamic> row) {
     // Pad row — Sheets API strips trailing empty cells
-    while (row.length < 13) row.add('');
+    while (row.length < 13) {
+      row.add('');
+    }
     return Transaction(
       id: row[0]?.toString() ?? '',
       date: DateTime.tryParse(row[1]?.toString() ?? '') ?? DateTime.now(),

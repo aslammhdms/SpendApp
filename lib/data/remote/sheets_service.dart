@@ -76,18 +76,6 @@ class SheetsService {
   Future<void> _setupHeaders(String spreadsheetId) async {
     final api = await _api;
 
-    final requests = <sheets.Request>[
-      _createHeaderRequest(SheetConstants.transactionsSheet, SheetConstants.transactionHeaders),
-      _createHeaderRequest(SheetConstants.categoriesSheet, SheetConstants.categoryHeaders),
-      _createHeaderRequest(SheetConstants.accountsSheet, SheetConstants.accountHeaders),
-      _createHeaderRequest(SheetConstants.budgetsSheet, SheetConstants.budgetHeaders),
-      _createHeaderRequest(SheetConstants.recurringSheet, SheetConstants.recurringHeaders),
-      _createHeaderRequest(SheetConstants.settingsSheet, SheetConstants.settingsHeaders),
-      _createHeaderRequest(SheetConstants.metaSheet, SheetConstants.metaHeaders),
-      _createHeaderRequest(SheetConstants.peopleSheet, SheetConstants.personHeaders),
-      _createHeaderRequest(SheetConstants.loansSheet, SheetConstants.loanHeaders),
-    ];
-
     // Use batchUpdate for efficiency
     final valueRanges = <sheets.ValueRange>[
       sheets.ValueRange(
@@ -135,10 +123,6 @@ class SheetsService {
       ),
       spreadsheetId,
     );
-  }
-
-  sheets.Request _createHeaderRequest(String sheetTitle, List<String> headers) {
-    return sheets.Request();
   }
 
   Future<void> _setupDefaultCategories(String spreadsheetId) async {

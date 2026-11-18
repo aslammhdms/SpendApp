@@ -2,9 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:sqflite/sqflite.dart' hide Transaction;
 import 'package:spendsheet/data/models/transaction.dart';
-import 'package:spendsheet/data/repositories/transaction_repository.dart';
-import 'package:spendsheet/data/local/local_transaction_dao.dart';
-import 'package:spendsheet/data/local/sync_queue_dao.dart';
 import 'package:spendsheet/data/remote/sync_engine.dart';
 
 import '../../helpers/test_database_helper.dart';
@@ -13,7 +10,6 @@ import '../../helpers/mock_sync_engine.dart';
 void main() {
   late Database db;
   late MockSyncEngine mockSyncEngine;
-  late MockSyncQueueDao mockSyncQueueDao;
 
   // We need a real DAO backed by a test DB, but LocalTransactionDao uses
   // the singleton. So we create a thin wrapper similar to the DAO test.
@@ -27,7 +23,6 @@ void main() {
   setUp(() async {
     db = await createTestDatabase();
     mockSyncEngine = MockSyncEngine();
-    mockSyncQueueDao = MockSyncQueueDao();
 
     // Stub queueOperation to always succeed
     when(() => mockSyncEngine.queueOperation(
@@ -44,7 +39,7 @@ void main() {
     await closeTestDatabase(db);
   });
 
-  Transaction _makeTxn({
+  Transaction makeTxn({
     required String id,
     DateTime? date,
     double amount = 100.0,
@@ -96,8 +91,8 @@ void main() {
     });
 
     test('getAll returns non-deleted transactions', () async {
-      final txn1 = _makeTxn(id: 'txn_1');
-      final txn2 = _makeTxn(id: 'txn_2');
+      final txn1 = makeTxn(id: 'txn_1');
+      final txn2 = makeTxn(id: 'txn_2');
       await repo.insertDirect(txn1);
       await repo.insertDirect(txn2);
 
@@ -110,7 +105,7 @@ void main() {
     });
 
     test('getById returns correct transaction', () async {
-      await repo.insertDirect(_makeTxn(id: 'txn_1', amount: 55.0));
+      await repo.insertDirect(makeTxn(id: 'txn_1', amount: 55.0));
 
       final result = await repo.getById('txn_1');
       expect(result, isNotNull);
@@ -124,11 +119,11 @@ void main() {
 
     test('getByDateRange filters correctly', () async {
       await repo.insertDirect(
-          _makeTxn(id: 'txn_jan', date: DateTime(2024, 1, 15)));
+          makeTxn(id: 'txn_jan', date: DateTime(2024, 1, 15)));
       await repo.insertDirect(
-          _makeTxn(id: 'txn_mar', date: DateTime(2024, 3, 10)));
+          makeTxn(id: 'txn_mar', date: DateTime(2024, 3, 10)));
       await repo.insertDirect(
-          _makeTxn(id: 'txn_jun', date: DateTime(2024, 6, 20)));
+          makeTxn(id: 'txn_jun', date: DateTime(2024, 6, 20)));
 
       final results = await repo.getByDateRange(
           DateTime(2024, 2, 1), DateTime(2024, 4, 30));
@@ -138,9 +133,9 @@ void main() {
 
     test('getByCategory returns matching', () async {
       await repo.insertDirect(
-          _makeTxn(id: 'txn_1', categoryId: 'cat_food'));
+          makeTxn(id: 'txn_1', categoryId: 'cat_food'));
       await repo.insertDirect(
-          _makeTxn(id: 'txn_2', categoryId: 'cat_transport'));
+          makeTxn(id: 'txn_2', categoryId: 'cat_transport'));
 
       final results = await repo.getByCategory('cat_food');
       expect(results.length, 1);
@@ -150,7 +145,7 @@ void main() {
     test('getRecent respects limit', () async {
       for (int i = 0; i < 10; i++) {
         await repo.insertDirect(
-            _makeTxn(id: 'txn_$i', date: DateTime(2024, 1, i + 1)));
+            makeTxn(id: 'txn_$i', date: DateTime(2024, 1, i + 1)));
       }
 
       final recent = await repo.getRecent(3);
@@ -158,7 +153,7 @@ void main() {
     });
 
     test('update modifies locally and queues sync', () async {
-      final txn = _makeTxn(id: 'txn_1', amount: 100, note: 'Old');
+      final txn = makeTxn(id: 'txn_1', amount: 100, note: 'Old');
       await repo.insertDirect(txn);
 
       final updated = txn.copyWith(amount: 200, note: 'New');
@@ -177,7 +172,7 @@ void main() {
     });
 
     test('delete soft-deletes and queues sync', () async {
-      await repo.insertDirect(_makeTxn(id: 'txn_1'));
+      await repo.insertDirect(makeTxn(id: 'txn_1'));
 
       await repo.delete('txn_1');
 
@@ -206,20 +201,20 @@ void main() {
 
     test('getMonthlyIncome computes correct amount', () async {
       // Insert income in June 2024
-      await repo.insertDirect(_makeTxn(
+      await repo.insertDirect(makeTxn(
         id: 'inc_1',
         date: DateTime(2024, 6, 10),
         amount: 3000,
         type: TransactionType.income,
       ));
-      await repo.insertDirect(_makeTxn(
+      await repo.insertDirect(makeTxn(
         id: 'inc_2',
         date: DateTime(2024, 6, 20),
         amount: 2000,
         type: TransactionType.income,
       ));
       // Expense should not count
-      await repo.insertDirect(_makeTxn(
+      await repo.insertDirect(makeTxn(
         id: 'exp_1',
         date: DateTime(2024, 6, 15),
         amount: 500,
@@ -231,13 +226,13 @@ void main() {
     });
 
     test('getMonthlyExpense computes correct amount', () async {
-      await repo.insertDirect(_makeTxn(
+      await repo.insertDirect(makeTxn(
         id: 'exp_1',
         date: DateTime(2024, 6, 10),
         amount: 300,
         type: TransactionType.expense,
       ));
-      await repo.insertDirect(_makeTxn(
+      await repo.insertDirect(makeTxn(
         id: 'exp_2',
         date: DateTime(2024, 6, 20),
         amount: 200,
@@ -252,21 +247,21 @@ void main() {
       final start = DateTime(2024, 1, 1);
       final end = DateTime(2024, 12, 31);
 
-      await repo.insertDirect(_makeTxn(
+      await repo.insertDirect(makeTxn(
         id: 'txn_1',
         date: DateTime(2024, 3, 1),
         categoryId: 'cat_food',
         type: TransactionType.expense,
         amount: 50,
       ));
-      await repo.insertDirect(_makeTxn(
+      await repo.insertDirect(makeTxn(
         id: 'txn_2',
         date: DateTime(2024, 5, 1),
         categoryId: 'cat_food',
         type: TransactionType.expense,
         amount: 30,
       ));
-      await repo.insertDirect(_makeTxn(
+      await repo.insertDirect(makeTxn(
         id: 'txn_3',
         date: DateTime(2024, 7, 1),
         categoryId: 'cat_transport',

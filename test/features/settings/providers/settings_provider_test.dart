@@ -29,7 +29,7 @@ void main() {
     });
 
     test('loadSettings reads from repository', () async {
-      final settings = const AppSettings(
+      const settings = AppSettings(
         currency: 'EUR',
         themeMode: 'dark',
         notificationsEnabled: false,

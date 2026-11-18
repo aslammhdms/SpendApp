@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:spendsheet/data/models/transaction.dart';
 import 'package:spendsheet/data/models/loan.dart';
-import 'package:spendsheet/data/models/person.dart';
 import 'package:spendsheet/data/repositories/transaction_repository.dart';
 import 'package:spendsheet/data/repositories/loan_repository.dart';
 import 'package:spendsheet/data/repositories/person_repository.dart';

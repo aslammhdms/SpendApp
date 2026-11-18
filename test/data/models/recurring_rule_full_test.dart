@@ -5,7 +5,7 @@ import 'package:spendsheet/data/models/transaction.dart';
 void main() {
   final now = DateTime(2024, 6, 15, 10, 30);
 
-  RecurringRule _makeRule({
+  RecurringRule makeRule({
     String id = 'rule_1',
     String name = 'Monthly Rent',
     double amount = 1000.0,
@@ -39,7 +39,7 @@ void main() {
 
   group('RecurringRule', () {
     test('creates with all fields and defaults', () {
-      final rule = _makeRule();
+      final rule = makeRule();
       expect(rule.interval, 1);
       expect(rule.isActive, isTrue);
       expect(rule.note, isNull);
@@ -47,12 +47,12 @@ void main() {
     });
 
     test('isDeleted returns true when deletedAt set', () {
-      final rule = _makeRule(deletedAt: now);
+      final rule = makeRule(deletedAt: now);
       expect(rule.isDeleted, isTrue);
     });
 
     test('isDue true when active and nextDueDate in past', () {
-      final rule = _makeRule(
+      final rule = makeRule(
         nextDueDate: DateTime.now().subtract(const Duration(days: 1)),
         isActive: true,
       );
@@ -60,7 +60,7 @@ void main() {
     });
 
     test('isDue false when isActive is false', () {
-      final rule = _makeRule(
+      final rule = makeRule(
         nextDueDate: DateTime.now().subtract(const Duration(days: 1)),
         isActive: false,
       );
@@ -68,7 +68,7 @@ void main() {
     });
 
     test('isDue false when nextDueDate in future', () {
-      final rule = _makeRule(
+      final rule = makeRule(
         nextDueDate: DateTime.now().add(const Duration(days: 1)),
         isActive: true,
       );
@@ -76,33 +76,33 @@ void main() {
     });
 
     test('hasEnded true when endDate in past', () {
-      final rule = _makeRule(
+      final rule = makeRule(
         endDate: DateTime.now().subtract(const Duration(days: 1)),
       );
       expect(rule.hasEnded, isTrue);
     });
 
     test('hasEnded false when endDate is null', () {
-      final rule = _makeRule(endDate: null);
+      final rule = makeRule(endDate: null);
       expect(rule.hasEnded, isFalse);
     });
 
     test('hasEnded false when endDate in future', () {
-      final rule = _makeRule(
+      final rule = makeRule(
         endDate: DateTime.now().add(const Duration(days: 30)),
       );
       expect(rule.hasEnded, isFalse);
     });
 
     test('copyWithDelete sets deletedAt', () {
-      final rule = _makeRule();
+      final rule = makeRule();
       final deleted = rule.copyWithDelete();
       expect(deleted.isDeleted, isTrue);
       expect(deleted.id, rule.id);
     });
 
     test('toJson / fromJson roundtrip', () {
-      final rule = _makeRule(note: 'Test note', interval: 2);
+      final rule = makeRule(note: 'Test note', interval: 2);
       final json = rule.toJson();
       final restored = RecurringRule.fromJson(json);
       expect(restored.id, rule.id);
@@ -115,7 +115,7 @@ void main() {
     });
 
     test('toSheetRow / fromSheetRow roundtrip', () {
-      final rule = _makeRule(
+      final rule = makeRule(
         note: 'Rent payment',
         interval: 1,
         isActive: true,

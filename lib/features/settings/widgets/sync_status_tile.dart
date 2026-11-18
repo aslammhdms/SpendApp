@@ -58,7 +58,6 @@ class SyncStatusTile extends StatelessWidget {
         color = Theme.of(context).colorScheme.error;
         break;
       case SyncStatus.idle:
-      default:
         icon = Icons.cloud_queue;
         color = Theme.of(context).colorScheme.onSurfaceVariant;
     }
@@ -85,7 +84,6 @@ class SyncStatusTile extends StatelessWidget {
       case SyncStatus.error:
         return 'Sync Error';
       case SyncStatus.idle:
-      default:
         return 'Not synced';
     }
   }

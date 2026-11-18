@@ -6,15 +6,15 @@ import '../../core/utils/id_generator.dart';
 
 class PersonRepository {
   final LocalPersonDao _localDao;
-  final SyncQueueDao _syncQueueDao;
   final SyncEngine _syncEngine;
 
   PersonRepository({
     required LocalPersonDao localDao,
+    // Unused: changes are queued through the sync engine. Kept so callers
+    // do not have to change.
     required SyncQueueDao syncQueueDao,
     required SyncEngine syncEngine,
   })  : _localDao = localDao,
-        _syncQueueDao = syncQueueDao,
         _syncEngine = syncEngine;
 
   Future<List<Person>> getAll({bool includeDeleted = false}) async {

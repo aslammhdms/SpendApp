@@ -52,7 +52,9 @@ abstract class Loan with _$Loan {
 
   static Loan fromSheetRow(List<dynamic> row) {
     // Pad row — Sheets API strips trailing empty cells
-    while (row.length < 10) row.add('');
+    while (row.length < 10) {
+      row.add('');
+    }
     return Loan(
       id: row[0]?.toString() ?? '',
       personId: row[1]?.toString() ?? '',

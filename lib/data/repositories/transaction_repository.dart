@@ -1,4 +1,3 @@
-import 'dart:convert';
 import '../models/transaction.dart';
 import '../local/local_transaction_dao.dart';
 import '../local/sync_queue_dao.dart';
@@ -7,15 +6,15 @@ import '../../core/utils/id_generator.dart';
 
 class TransactionRepository {
   final LocalTransactionDao _localDao;
-  final SyncQueueDao _syncQueueDao;
   final SyncEngine _syncEngine;
 
   TransactionRepository({
     required LocalTransactionDao localDao,
+    // Unused: changes are queued through the sync engine. Kept so callers
+    // do not have to change.
     required SyncQueueDao syncQueueDao,
     required SyncEngine syncEngine,
   })  : _localDao = localDao,
-        _syncQueueDao = syncQueueDao,
         _syncEngine = syncEngine;
 
   Future<List<Transaction>> getAll({bool includeDeleted = false}) async {

@@ -6,15 +6,15 @@ import '../../core/utils/id_generator.dart';
 
 class CategoryRepository {
   final LocalCategoryDao _localDao;
-  final SyncQueueDao _syncQueueDao;
   final SyncEngine _syncEngine;
 
   CategoryRepository({
     required LocalCategoryDao localDao,
+    // Unused: changes are queued through the sync engine. Kept so callers
+    // do not have to change.
     required SyncQueueDao syncQueueDao,
     required SyncEngine syncEngine,
   })  : _localDao = localDao,
-        _syncQueueDao = syncQueueDao,
         _syncEngine = syncEngine;
 
   Future<List<Category>> getAll({bool includeDeleted = false}) async {
