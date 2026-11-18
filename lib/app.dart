@@ -30,6 +30,7 @@ import 'features/transactions/providers/transactions_provider.dart';
 import 'features/analytics/providers/analytics_provider.dart';
 import 'features/budgets/providers/budgets_provider.dart';
 import 'shared/widgets/app_bottom_nav.dart';
+import 'shared/widgets/sync_list_refresher.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -317,22 +318,24 @@ class SpendSheetApp extends ConsumerWidget {
       biometricService: ref.watch(biometricServiceProvider),
       isLockEnabled: settings.biometricLockEnabled,
       themeMode: themeMode,
-      child: MaterialApp.router(
-        title: 'SpendSheet',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: themeMode,
-        routerConfig: router,
-        builder: (context, child) {
-          // System bars follow the active theme on every screen, including
-          // those without an app bar.
-          final theme = Theme.of(context);
-          return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: theme.appBarTheme.systemOverlayStyle!,
-            child: child!,
-          );
-        },
+      child: SyncListRefresher(
+        child: MaterialApp.router(
+          title: 'SpendSheet',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: themeMode,
+          routerConfig: router,
+          builder: (context, child) {
+            // System bars follow the active theme on every screen, including
+            // those without an app bar.
+            final theme = Theme.of(context);
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: theme.appBarTheme.systemOverlayStyle!,
+              child: child!,
+            );
+          },
+        ),
       ),
     );
   }
