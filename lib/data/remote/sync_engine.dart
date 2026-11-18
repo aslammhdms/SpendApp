@@ -410,19 +410,17 @@ class SyncEngine {
     required Future<void> Function() append,
     required Future<void> Function(int rowIndex) update,
   }) async {
-    if (operation == 'create') {
-      await append();
-      return;
-    }
-
     final rowIndex = await _sheetsService.findRowByIdInSheet(
       _spreadsheetId!,
       sheetName,
       id,
     );
     if (rowIndex > 0) {
+      // Also for a 'create': an earlier attempt may have reached the sheet
+      // although its reply was lost. Appending again would leave two rows
+      // with one id.
       await update(rowIndex);
-    } else if (operation == 'update') {
+    } else if (operation != 'delete') {
       await append();
     }
     // A delete of a row that never reached the sheet has nothing to do.
@@ -464,34 +462,71 @@ class SyncEngine {
   Future<void> _applyRemote(_RemoteData remote, {required bool replace}) async {
     final queued = await _queuedIdsByType();
 
+    Object? firstError;
+
     Future<void> apply<T>(
       String type,
       List<T>? rows,
       String Function(T) idOf,
       Future<int> Function({Set<String> except}) deleteAll,
-      Future<int> Function(List<T>) insertBatch,
-    ) async {
+      Future<int> Function(List<T>) insertBatch, {
+      bool Function(T)? storable,
+    }) async {
       if (rows == null) return; // this tab failed to download
       final keep = queued[type] ?? const <String>{};
-      if (replace) await deleteAll(except: keep);
-      final fresh = rows.where((row) => !keep.contains(idOf(row))).toList();
-      if (fresh.isNotEmpty) await insertBatch(fresh);
+
+      // A row the database cannot store (no id, or a number that is not
+      // finite) is skipped, so one bad cell cannot fail the whole tab. Of
+      // several rows with one id the first wins, which is also the row a
+      // push updates.
+      // [onSheet] also counts the unusable rows, so a full sync keeps the
+      // local copy of a row whose sheet cell is broken.
+      final onSheet = <String>{};
+      final seen = <String>{};
+      final usable = rows.where((row) {
+        final id = idOf(row);
+        if (id.isEmpty) return false;
+        onSheet.add(id);
+        if (storable != null && !storable(row)) return false;
+        return seen.add(id);
+      }).toList();
+      final fresh = usable.where((row) => !keep.contains(idOf(row))).toList();
+
+      try {
+        // Insert first, delete after: a failed insert then leaves the local
+        // rows as they were.
+        if (fresh.isNotEmpty) await insertBatch(fresh);
+        if (replace) await deleteAll(except: {...keep, ...onSheet});
+      } catch (e) {
+        // The other tabs are still applied; the sync reports the failure.
+        debugPrint('SyncEngine: could not apply $type rows: $e');
+        firstError ??= e;
+        return;
+      }
       debugPrint('Pulled ${fresh.length} $type rows from sheet'
-          ' (${rows.length - fresh.length} skipped, local change pending)');
+          ' (${usable.length - fresh.length} skipped, local change pending;'
+          ' ${rows.length - usable.length} unusable)');
     }
 
     await apply<Transaction>('transaction', remote.transactions, (t) => t.id,
-        _transactionDao.deleteAll, _transactionDao.insertBatch);
+        _transactionDao.deleteAll, _transactionDao.insertBatch,
+        storable: (t) => t.amount.isFinite);
     await apply<Category>('category', remote.categories, (c) => c.id,
         _categoryDao.deleteAll, _categoryDao.insertBatch);
     await apply<Account>('account', remote.accounts, (a) => a.id,
-        _accountDao.deleteAll, _accountDao.insertBatch);
+        _accountDao.deleteAll, _accountDao.insertBatch,
+        storable: (a) => a.initialBalance.isFinite);
     await apply<Budget>('budget', remote.budgets, (b) => b.id,
-        _budgetDao.deleteAll, _budgetDao.insertBatch);
+        _budgetDao.deleteAll, _budgetDao.insertBatch,
+        storable: (b) => b.amount.isFinite);
     await apply<Person>('person', remote.people, (p) => p.id,
         _personDao.deleteAll, _personDao.insertBatch);
     await apply<Loan>('loan', remote.loans, (l) => l.id, _loanDao.deleteAll,
-        _loanDao.insertBatch);
+        _loanDao.insertBatch,
+        storable: (l) => l.amount.isFinite);
+
+    final error = firstError;
+    if (error != null) throw error;
   }
 
   /// Queues built-in categories and accounts that data uses but the sheet

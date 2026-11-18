@@ -294,6 +294,13 @@ class _MainShellState extends ConsumerState<_MainShell>
   }
 }
 
+/// The stored App Lock switch, as [SettingsRepository] writes it.
+const appLockPreferenceKey = 'settings_biometric_lock_enabled';
+
+/// Whether App Lock was on when the app started. Set in `main` before the
+/// first frame; the app then opens locked.
+final startLockedProvider = Provider<bool>((ref) => false);
+
 class SpendSheetApp extends ConsumerWidget {
   const SpendSheetApp({super.key});
 
@@ -317,6 +324,7 @@ class SpendSheetApp extends ConsumerWidget {
     return _BiometricLockGuard(
       biometricService: ref.watch(biometricServiceProvider),
       isLockEnabled: settings.biometricLockEnabled,
+      startLocked: ref.watch(startLockedProvider),
       themeMode: themeMode,
       child: SyncListRefresher(
         child: MaterialApp.router(
@@ -345,12 +353,14 @@ class _BiometricLockGuard extends StatefulWidget {
   final Widget child;
   final BiometricService biometricService;
   final bool isLockEnabled;
+  final bool startLocked;
   final ThemeMode themeMode;
 
   const _BiometricLockGuard({
     required this.child,
     required this.biometricService,
     required this.isLockEnabled,
+    required this.startLocked,
     required this.themeMode,
   });
 
@@ -360,13 +370,17 @@ class _BiometricLockGuard extends StatefulWidget {
 
 class _BiometricLockGuardState extends State<_BiometricLockGuard>
     with WidgetsBindingObserver {
-  bool _isLocked = false;
+  late bool _isLocked = widget.startLocked;
   bool _wasPaused = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (_isLocked) {
+      // A fresh start is locked like a return from the background.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _authenticate());
+    }
   }
 
   @override
@@ -377,14 +391,14 @@ class _BiometricLockGuardState extends State<_BiometricLockGuard>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!widget.isLockEnabled) return;
+    if (!widget.isLockEnabled && !_isLocked) return;
 
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
       _wasPaused = true;
     } else if (state == AppLifecycleState.resumed && _wasPaused) {
       _wasPaused = false;
-      setState(() => _isLocked = true);
+      if (!_isLocked) setState(() => _isLocked = true);
       _authenticate();
     }
   }

@@ -6,16 +6,14 @@ import 'google_auth_service.dart';
 
 class DriveService {
   final GoogleAuthService _authService;
-  drive.DriveApi? _driveApi;
 
   DriveService(this._authService);
 
+  /// A client for the account signed in right now. It is never kept: one
+  /// built for an earlier sign-in would act as that account.
   Future<drive.DriveApi> get _api async {
-    if (_driveApi == null) {
-      final client = await _authService.getAuthClient();
-      _driveApi = drive.DriveApi(client);
-    }
-    return _driveApi!;
+    final client = await _authService.getAuthClient();
+    return drive.DriveApi(client);
   }
 
   Future<List<SpendSheetFile>> searchForSpendSheets() async {

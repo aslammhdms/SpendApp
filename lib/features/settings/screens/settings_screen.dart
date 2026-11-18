@@ -149,6 +149,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   'Verify to enable App Lock',
                 );
                 if (!authenticated) return;
+              } else {
+                // Turning the lock off is as sensitive as passing it.
+                final authenticated = await ref
+                    .read(biometricServiceProvider)
+                    .authenticate('Verify to turn off App Lock');
+                if (!authenticated) return;
               }
               settingsNotifier.setBiometricLockEnabled(value);
             },

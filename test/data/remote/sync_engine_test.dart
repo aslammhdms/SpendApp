@@ -40,6 +40,21 @@ class _TestSyncEngine extends SyncEngine {
   Future<bool> isOnline() async => online;
 }
 
+/// A sheet that stores the first appended transaction but reports a failure,
+/// like a write whose reply was lost on the way back.
+class _LostReplySheet extends FakeSheetsService {
+  bool loseNextReply = true;
+
+  @override
+  Future<void> appendTransaction(String spreadsheetId, Transaction t) async {
+    await super.appendTransaction(spreadsheetId, t);
+    if (loseNextReply) {
+      loseNextReply = false;
+      throw Exception('reply lost');
+    }
+  }
+}
+
 void main() {
   late FakeSheetsService sheet;
   late _TestSyncEngine engine;
@@ -579,6 +594,112 @@ void main() {
           'cat_food');
       expect(sheet.categories.byId('cat_food')?.isDeleted, isFalse);
       expect(await queuedCount(), 0);
+    });
+  });
+
+  group('rows the app cannot rely on', () {
+    Transaction row(String id, double amount) {
+      final now = DateTime(2026, 11, 1);
+      return Transaction(
+        id: id,
+        date: now,
+        amount: amount,
+        type: TransactionType.expense,
+        categoryId: 'cat_food',
+        accountId: 'acc_cash',
+        createdAt: now,
+        updatedAt: now,
+      );
+    }
+
+    test('a cell that is not a number does not break the sync', () async {
+      await seedSheetWithDefaults();
+      sheet.transactions.rows.addAll([row('good-1', 10), row('good-2', 20)]);
+      await engine.fullSync();
+
+      // Someone types NaN into an amount cell and adds another row.
+      sheet.transactions.rows.add(Transaction.fromSheetRow(
+          ['bad', '2026-11-01T00:00:00.000', 'NaN', 'expense', 'cat_food', 'acc_cash']));
+      sheet.transactions.rows.add(row('good-3', 30));
+
+      await engine.fullSync();
+
+      expect(await transactionDao.getById('good-1'), isNotNull);
+      expect(await transactionDao.getById('good-2'), isNotNull);
+      expect(await transactionDao.getById('good-3'), isNotNull);
+      expect(await transactionDao.getById('bad'), isNull);
+    });
+
+    test('a broken cell keeps the local copy of that row', () async {
+      await seedSheetWithDefaults();
+      sheet.transactions.rows.add(row('kept', 10));
+      await engine.fullSync();
+
+      sheet.transactions.rows[0] = row('kept', double.nan);
+      await engine.fullSync();
+
+      expect((await transactionDao.getById('kept'))?.amount, 10);
+    });
+
+    test('a row without an id is ignored', () async {
+      await seedSheetWithDefaults();
+      sheet.transactions.rows.addAll([row('', 5), row('real', 7)]);
+
+      await engine.fullSync();
+
+      expect(await transactionDao.getById(''), isNull);
+      expect(await transactionDao.getById('real'), isNotNull);
+    });
+
+    test('of two rows with one id the first one wins', () async {
+      await seedSheetWithDefaults();
+      sheet.transactions.rows.addAll([row('twice', 99), row('twice', 10)]);
+
+      await engine.fullSync();
+
+      expect((await transactionDao.getById('twice'))?.amount, 99);
+    });
+  });
+
+  group('a create whose reply was lost', () {
+    test('is not appended a second time, and later changes stick', () async {
+      final lossy = _LostReplySheet();
+      final lossyEngine = _TestSyncEngine(
+        sheetsService: lossy,
+        transactionDao: transactionDao,
+        categoryDao: categoryDao,
+        accountDao: accountDao,
+        budgetDao: LocalBudgetDao(),
+        personDao: LocalPersonDao(),
+        loanDao: LocalLoanDao(),
+        syncQueueDao: queueDao,
+      );
+      addTearDown(lossyEngine.dispose);
+      final repo = TransactionRepository(
+        localDao: transactionDao,
+        syncQueueDao: queueDao,
+        syncEngine: lossyEngine,
+      );
+      await lossyEngine.initialize('sheet-1');
+      lossy.categories.rows.addAll(await categoryDao.getAll());
+      lossy.accounts.rows.addAll(await accountDao.getAll());
+
+      final created = await repo.create(
+        date: DateTime(2026, 11, 1),
+        amount: 25,
+        type: TransactionType.expense,
+        categoryId: 'cat_food',
+        accountId: 'acc_cash',
+      );
+      await lossyEngine.sync(); // stored, but reported as failed
+      await lossyEngine.sync(); // the retry
+
+      expect(lossy.transactions.rows.where((t) => t.id == created.id), hasLength(1));
+
+      await repo.update(created.copyWith(amount: 70));
+      await lossyEngine.sync();
+
+      expect((await transactionDao.getById(created.id))?.amount, 70);
     });
   });
 }
