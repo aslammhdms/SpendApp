@@ -226,8 +226,13 @@ payments**, then allow notification access for SpendSheet.
    amount, merchant and card (`WalletNotificationParser`). Nothing is sent
    anywhere.
 3. Each payment waits in a review list. Confirming one creates a normal
-   expense, which then syncs like any other. The app remembers the category
-   you pick for a merchant and the account you pick for a card.
+   expense, which then syncs like any other.
+4. A category is suggested for each payment. The app remembers the category
+   you pick for a merchant (and the account you pick for a card), also when
+   the name differs a little between branches. For a merchant it has not
+   seen, it guesses from words in the name, such as "hospital",
+   "supermarket" or "petrol" (`MerchantCategorizer`). You can always pick
+   another.
 
 Captured notifications stay on the device and are not written to the
 spreadsheet. If you install the app from an APK instead of the Play Store,

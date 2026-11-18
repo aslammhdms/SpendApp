@@ -5,6 +5,8 @@ import '../../../data/repositories/transaction_repository.dart';
 import '../models/captured_payment.dart';
 import 'wallet_capture_channel.dart';
 import 'wallet_notification_parser.dart';
+import 'merchant_categorizer.dart';
+import '../../../data/models/category.dart';
 
 /// Turns Google Wallet payment notifications into expenses the user confirms.
 ///
@@ -106,6 +108,12 @@ class WalletCaptureService {
     final merchantKey = _merchantKey(payment);
     if (merchantKey != null) {
       await prefs.setString('$_categoryRulePrefix$merchantKey', categoryId);
+      // The choice now lives under the looser key; drop the exact-name one
+      // an earlier version stored, so it cannot disagree.
+      final legacyKey = _legacyMerchantKey(payment);
+      if (legacyKey != null && legacyKey != merchantKey) {
+        await prefs.remove('$_categoryRulePrefix$legacyKey');
+      }
     }
     if (payment.cardLast4 != null) {
       await prefs.setString('$_accountRulePrefix${payment.cardLast4}', accountId);
@@ -115,12 +123,47 @@ class WalletCaptureService {
 
   Future<void> dismiss(CapturedPayment payment) => _dao.markDismissed(payment.id);
 
-  /// The category last used for this merchant, if any.
-  Future<String?> suggestedCategoryId(CapturedPayment payment) async {
+  /// The category to pre-select for [payment], or null.
+  ///
+  /// What the person chose before comes first: the same merchant, then one
+  /// whose name starts the same way ("Starbucks" and "Starbucks Dubai
+  /// Mall"). Failing that, a guess from the words in the merchant's name.
+  ///
+  /// Pass the expense [categories] to get guesses, and to leave out a
+  /// remembered category that no longer exists.
+  Future<String?> suggestedCategoryId(
+    CapturedPayment payment, {
+    List<Category> categories = const [],
+  }) async {
     final merchantKey = _merchantKey(payment);
     if (merchantKey == null) return null;
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('$_categoryRulePrefix$merchantKey');
+    bool exists(String? id) =>
+        id != null && (categories.isEmpty || categories.any((c) => c.id == id));
+
+    final legacyKey = _legacyMerchantKey(payment);
+    for (final key in [merchantKey, if (legacyKey != null) legacyKey]) {
+      final remembered = prefs.getString('$_categoryRulePrefix$key');
+      if (exists(remembered)) return remembered;
+    }
+
+    // A merchant seen before under a slightly different name. The longest
+    // remembered name wins, as the closest match.
+    String? closest;
+    var closestLength = 0;
+    for (final prefKey in prefs.getKeys()) {
+      if (!prefKey.startsWith(_categoryRulePrefix)) continue;
+      final known = prefKey.substring(_categoryRulePrefix.length);
+      if (known.length > closestLength &&
+          MerchantCategorizer.sameMerchant(known, merchantKey) &&
+          exists(prefs.getString(prefKey))) {
+        closest = prefs.getString(prefKey);
+        closestLength = known.length;
+      }
+    }
+    if (closest != null) return closest;
+
+    return MerchantCategorizer.categoryIdFor(payment.merchant!, categories);
   }
 
   /// The account last used for this card, if any.
@@ -130,7 +173,17 @@ class WalletCaptureService {
     return prefs.getString('$_accountRulePrefix${payment.cardLast4}');
   }
 
+  /// The key choices are remembered under: the merchant's name without
+  /// company words and branch numbers.
   static String? _merchantKey(CapturedPayment payment) {
+    final merchant = payment.merchant?.trim();
+    if (merchant == null || merchant.isEmpty) return null;
+    final key = MerchantCategorizer.key(merchant);
+    return key.isEmpty ? null : key;
+  }
+
+  /// The key earlier versions used: the exact name in lower case.
+  static String? _legacyMerchantKey(CapturedPayment payment) {
     final merchant = payment.merchant?.trim().toLowerCase();
     return merchant == null || merchant.isEmpty ? null : merchant;
   }

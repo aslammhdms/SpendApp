@@ -13,6 +13,8 @@ import 'package:spendsheet/features/wallet_capture/services/wallet_capture_servi
 
 import '../../helpers/mock_sync_engine.dart';
 import '../../helpers/test_database_helper.dart';
+import 'package:spendsheet/data/local/local_category_dao.dart';
+import 'package:spendsheet/data/models/category.dart';
 
 /// Stands in for the Android notification listener.
 class _FakeChannel implements WalletCaptureChannel {
@@ -240,6 +242,124 @@ void main() {
 
       expect(await service.suggestedCategoryId(next), 'cat_food');
       expect(await service.suggestedAccountId(next), 'acc_credit');
+    });
+  });
+
+  group('suggesting a category', () {
+    late List<Category> categories;
+
+    /// Captures one payment and returns it.
+    Future<CapturedPayment> capture(String title, String text,
+        {String key = 'wallet|s'}) async {
+      channel.queued.add(_note(title, text, key: key));
+      await service.importPending();
+      return (await service.getPending())
+          .firstWhere((p) => p.title == title && p.body == text);
+    }
+
+    setUp(() async {
+      categories = await LocalCategoryDao().getExpenseCategories();
+    });
+
+    test('guesses from the merchant name the first time', () async {
+      // The real notification the feature was first tried with.
+      final payment = await capture(
+        'LIFECARE HOSPITAL LLC-',
+        'AED 12.37 with ADCB Islamic Debit Mastercard ••1786',
+      );
+
+      expect(payment.amount, 12.37);
+      expect(payment.cardLast4, '1786');
+      expect(
+        await service.suggestedCategoryId(payment, categories: categories),
+        'cat_health',
+      );
+    });
+
+    test('gives nothing for a name it cannot place', () async {
+      final payment = await capture('AL FUTTAIM LLC', 'AED 80.00');
+
+      expect(
+        await service.suggestedCategoryId(payment, categories: categories),
+        isNull,
+      );
+    });
+
+    test('what the person chose beats the guess', () async {
+      final first = await capture('LIFECARE HOSPITAL LLC-', 'AED 12.37');
+      await service.confirm(first,
+          categoryId: 'cat_insurance', accountId: 'acc_cash');
+
+      final next =
+          await capture('LIFECARE HOSPITAL LLC-', 'AED 40.00', key: 'w|2');
+
+      expect(
+        await service.suggestedCategoryId(next, categories: categories),
+        'cat_insurance',
+      );
+    });
+
+    test('recognises the merchant under a slightly different name',
+        () async {
+      final first = await capture('Lifecare Hospital', 'AED 12.37');
+      await service.confirm(first,
+          categoryId: 'cat_insurance', accountId: 'acc_cash');
+
+      for (final (i, name) in [
+        'LIFECARE HOSPITAL LLC-',
+        'Lifecare Hospital Br 2',
+        'LIFECARE HOSPITAL MUSAFFAH',
+      ].indexed) {
+        final next = await capture(name, 'AED 40.00', key: 'w|n$i');
+        expect(
+          await service.suggestedCategoryId(next, categories: categories),
+          'cat_insurance',
+          reason: name,
+        );
+      }
+    });
+
+    test('does not confuse two merchants that share a first word', () async {
+      final first = await capture('LIFECARE HOSPITAL', 'AED 12.37');
+      await service.confirm(first,
+          categoryId: 'cat_insurance', accountId: 'acc_cash');
+
+      final other = await capture('LIFELINE HOSPITAL', 'AED 40.00', key: 'w|2');
+
+      expect(
+        await service.suggestedCategoryId(other, categories: categories),
+        'cat_health',
+        reason: 'guessed afresh, not taken from Lifecare',
+      );
+    });
+
+    test('falls back to the guess when the remembered category is gone',
+        () async {
+      final first = await capture('LIFECARE HOSPITAL', 'AED 12.37');
+      await service.confirm(first,
+          categoryId: 'deleted-category', accountId: 'acc_cash');
+
+      final next = await capture('LIFECARE HOSPITAL', 'AED 40.00', key: 'w|2');
+
+      expect(
+        await service.suggestedCategoryId(next, categories: categories),
+        'cat_health',
+      );
+    });
+
+    test('still honours a choice remembered by an earlier version', () async {
+      SharedPreferences.setMockInitialValues({
+        'wallet_capture.enabled': true,
+        // Earlier versions stored the exact name in lower case.
+        'wallet_capture.category.lifecare hospital llc-': 'cat_insurance',
+      });
+
+      final payment = await capture('LIFECARE HOSPITAL LLC-', 'AED 12.37');
+
+      expect(
+        await service.suggestedCategoryId(payment, categories: categories),
+        'cat_insurance',
+      );
     });
   });
 

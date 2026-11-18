@@ -19,13 +19,17 @@ final _captureAccountsProvider =
   return ref.watch(accountRepositoryProvider).getAll();
 });
 
-/// Remembered category and account for each pending payment.
+/// The category and account to pre-select for each pending payment.
 final _suggestionsProvider = FutureProvider.autoDispose
     .family<({String? categoryId, String? accountId}), CapturedPayment>(
         (ref, payment) async {
   final service = ref.watch(walletCaptureServiceProvider);
+  final categories = await ref.watch(expenseCategoriesProvider.future);
   return (
-    categoryId: await service.suggestedCategoryId(payment),
+    categoryId: await service.suggestedCategoryId(
+      payment,
+      categories: categories,
+    ),
     accountId: await service.suggestedAccountId(payment),
   );
 });

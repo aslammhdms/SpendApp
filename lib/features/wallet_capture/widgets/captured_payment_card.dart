@@ -108,6 +108,13 @@ class _CapturedPaymentCardState extends State<CapturedPaymentCard> {
     ].join(' • ');
     final secondary = text.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
     final canAdd = _categoryId != null && _accountId != null && !_busy;
+    // The suggestion goes first, so a pre-selected chip is in view without
+    // scrolling. A chip tapped by hand stays where it is.
+    final suggested = widget.suggestedCategoryId;
+    final categories = [
+      ...widget.categories.where((c) => c.id == suggested),
+      ...widget.categories.where((c) => c.id != suggested),
+    ];
 
     return Card(
       margin: EdgeInsets.zero,
@@ -196,10 +203,10 @@ class _CapturedPaymentCardState extends State<CapturedPaymentCard> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: Space.lg),
-                itemCount: widget.categories.length,
+                itemCount: categories.length,
                 separatorBuilder: (_, __) => const SizedBox(width: Space.sm),
                 itemBuilder: (context, index) {
-                  final category = widget.categories[index];
+                  final category = categories[index];
                   final icon = iconForEmoji(category.icon);
                   return ChoiceChip(
                     avatar: icon != null
