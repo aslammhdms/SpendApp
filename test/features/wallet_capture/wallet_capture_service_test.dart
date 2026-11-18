@@ -208,6 +208,24 @@ void main() {
       expect(stored.transactionId, transaction.id);
     });
 
+    test('adding it a second time is refused', () async {
+      await service.confirm(payment,
+          categoryId: 'cat_food', accountId: 'acc_credit');
+
+      await expectLater(
+        service.confirm(payment,
+            categoryId: 'cat_food', accountId: 'acc_credit'),
+        throwsStateError,
+      );
+      expect(await transactionDao.getAll(), hasLength(1));
+    });
+
+    test('turning capture off removes what was collected', () async {
+      await service.setEnabled(false);
+
+      expect(await dao.getById(payment.id), isNull);
+    });
+
     test('dismissing it clears it without creating an expense', () async {
       await service.dismiss(payment);
 

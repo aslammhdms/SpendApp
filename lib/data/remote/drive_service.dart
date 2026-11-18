@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:flutter/foundation.dart';
 import '../../core/constants/sheet_constants.dart';
@@ -21,7 +20,7 @@ class DriveService {
       final api = await _api;
 
       final response = await api.files.list(
-        q: "mimeType='application/vnd.google-apps.spreadsheet' and name contains '${SheetConstants.spreadsheetTitle}'",
+        q: "mimeType='application/vnd.google-apps.spreadsheet' and name contains '${SheetConstants.spreadsheetTitle}' and trashed=false",
         spaces: 'drive',
         $fields: 'files(id, name, modifiedTime, webViewLink)',
         orderBy: 'modifiedTime desc',
@@ -35,8 +34,9 @@ class DriveService {
         webViewLink: file.webViewLink,
       )).toList();
     } catch (e) {
+      // Not an empty list: "none found" would invite a duplicate sheet.
       debugPrint('Failed to search for SpendSheets: $e');
-      return [];
+      rethrow;
     }
   }
 
@@ -64,122 +64,6 @@ class DriveService {
       return created.id;
     } catch (e) {
       debugPrint('Failed to create receipts folder: $e');
-      return null;
-    }
-  }
-
-  Future<String?> uploadReceipt({
-    required File imageFile,
-    required String folderId,
-    String? customName,
-  }) async {
-    try {
-      final api = await _api;
-
-      final fileName = customName ??
-          'receipt_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      final driveFile = drive.File()
-        ..name = fileName
-        ..parents = [folderId];
-
-      final media = drive.Media(
-        imageFile.openRead(),
-        await imageFile.length(),
-      );
-
-      final uploaded = await api.files.create(
-        driveFile,
-        uploadMedia: media,
-      );
-
-      // Make file viewable via link
-      await api.permissions.create(
-        drive.Permission()
-          ..type = 'anyone'
-          ..role = 'reader',
-        uploaded.id!,
-      );
-
-      // Get web view link
-      final fileWithLink = await api.files.get(
-        uploaded.id!,
-        $fields: 'webViewLink, webContentLink',
-      ) as drive.File;
-
-      return fileWithLink.webViewLink ?? fileWithLink.webContentLink;
-    } catch (e) {
-      debugPrint('Failed to upload receipt: $e');
-      return null;
-    }
-  }
-
-  Future<String?> uploadReceiptBytes({
-    required Uint8List imageBytes,
-    required String folderId,
-    String? customName,
-  }) async {
-    try {
-      final api = await _api;
-
-      final fileName = customName ??
-          'receipt_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      final driveFile = drive.File()
-        ..name = fileName
-        ..parents = [folderId];
-
-      final media = drive.Media(
-        Stream.value(imageBytes),
-        imageBytes.length,
-      );
-
-      final uploaded = await api.files.create(
-        driveFile,
-        uploadMedia: media,
-      );
-
-      // Make file viewable via link
-      await api.permissions.create(
-        drive.Permission()
-          ..type = 'anyone'
-          ..role = 'reader',
-        uploaded.id!,
-      );
-
-      // Get web view link
-      final fileWithLink = await api.files.get(
-        uploaded.id!,
-        $fields: 'webViewLink, webContentLink',
-      ) as drive.File;
-
-      return fileWithLink.webViewLink ?? fileWithLink.webContentLink;
-    } catch (e) {
-      debugPrint('Failed to upload receipt bytes: $e');
-      return null;
-    }
-  }
-
-  Future<bool> deleteFile(String fileId) async {
-    try {
-      final api = await _api;
-      await api.files.delete(fileId);
-      return true;
-    } catch (e) {
-      debugPrint('Failed to delete file: $e');
-      return false;
-    }
-  }
-
-  Future<drive.File?> getFileInfo(String fileId) async {
-    try {
-      final api = await _api;
-      return await api.files.get(
-        fileId,
-        $fields: 'id, name, modifiedTime, webViewLink, size',
-      ) as drive.File;
-    } catch (e) {
-      debugPrint('Failed to get file info: $e');
       return null;
     }
   }

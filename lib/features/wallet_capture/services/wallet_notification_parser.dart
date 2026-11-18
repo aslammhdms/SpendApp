@@ -51,7 +51,7 @@ class WalletNotificationParser {
   static final _card = RegExp(r'[•·∙●*]{2,}\s?(\d{4})\b');
 
   static final _notAPayment = RegExp(
-    r"\b(declined|failed|unsuccessful|refund(ed)?|reversed|cancell?ed|couldn['’]t|could not)\b",
+    r"\b(declined|failed|unsuccessful|refund(ed)?|reversed|cancell?ed|couldn['’]t|could not|cashback)\b",
     caseSensitive: false,
   );
 
@@ -82,14 +82,26 @@ class WalletNotificationParser {
     caseSensitive: false,
   );
 
+  /// Above this a number is a parsing accident, not a card payment.
+  static const _maxAmount = 1e9;
+
   static ParsedPayment? parse({required String title, required String text}) {
     final cleanTitle = _clean(title);
     final cleanText = _clean(text);
     final all = '$cleanTitle\n$cleanText';
     if (_notAPayment.hasMatch(all)) return null;
 
-    final titleMatch = _amount.firstMatch(cleanTitle);
-    final match = titleMatch ?? _amount.firstMatch(cleanText);
+    var titleMatch = _amount.firstMatch(cleanTitle);
+    final textMatch = _amount.firstMatch(cleanText);
+    // "AED 12.37 with Visa ••1234" in the text is the payment itself. An
+    // amount-like piece of the title is then part of the merchant's name
+    // ("USD 1 SHOP"), not what was paid.
+    if (titleMatch != null &&
+        textMatch != null &&
+        _cardPhrase.hasMatch(cleanText)) {
+      titleMatch = null;
+    }
+    final match = titleMatch ?? textMatch;
     if (match == null) return null;
 
     final currency = match.namedGroup('pre') ?? match.namedGroup('post');
@@ -97,7 +109,9 @@ class WalletNotificationParser {
       match.namedGroup('n1') ?? match.namedGroup('n2')!,
       threeDecimals: _threeDecimalCodes.contains(currency),
     );
-    if (amount == null || amount <= 0) return null;
+    if (amount == null || !amount.isFinite || amount <= 0 || amount > _maxAmount) {
+      return null;
+    }
 
     final amountInTitle = titleMatch != null;
     return ParsedPayment(

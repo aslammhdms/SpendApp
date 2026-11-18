@@ -305,8 +305,8 @@ class _TransactionsListScreenState
       transaction: transaction,
       category: category.id.isNotEmpty ? category : null,
       currency: currency,
-      onTap: () => context.push('/transactions/edit/${transaction.id}'),
-      onEdit: () => context.push('/transactions/edit/${transaction.id}'),
+      onTap: () => context.push('/transactions/edit/${Uri.encodeComponent(transaction.id)}'),
+      onEdit: () => context.push('/transactions/edit/${Uri.encodeComponent(transaction.id)}'),
       onDelete: () => _confirmDeleteTransaction(transaction.id),
     );
   }
@@ -340,7 +340,7 @@ class _TransactionsListScreenState
         ],
       ),
       child: InkWell(
-        onTap: () => context.push('/loans/person/${loan.personId}'),
+        onTap: () => context.push('/loans/person/${Uri.encodeComponent(loan.personId)}'),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 64),
           child: Padding(

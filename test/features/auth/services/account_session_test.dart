@@ -183,8 +183,8 @@ void main() {
       expect(await data.ownerId(), 'account-b');
     });
 
-    test('leaves data with no recorded owner alone when restoring a session',
-        () async {
+    test('keeps data with no recorded owner when restoring a session, and '
+        'records the owner', () async {
       await seedDataOwnedBy(null);
 
       final cleared =
@@ -192,8 +192,8 @@ void main() {
 
       expect(cleared, isFalse);
       expect(await count('transactions'), 1);
-      expect(await data.ownerId(), isNull,
-          reason: 'ownership is still unproven');
+      expect(await data.ownerId(), 'account-a',
+          reason: 'a later, different account must be noticed');
     });
 
     test('removes another account\'s data even when restoring a session',

@@ -72,7 +72,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // Initialize sync engine if spreadsheet is configured
     try {
       final settings = ref.read(settingsProvider);
-      if (settings.spreadsheetId != null) {
+      // Only for a signed-in account: a signed-out app must not sync.
+      final signedIn = ref.read(authProvider) == AuthState.authenticated;
+      if (signedIn && settings.spreadsheetId != null) {
         final syncEngine = ref.read(syncEngineProvider);
         await syncEngine.initialize(settings.spreadsheetId!);
         // Full sync if never synced or last sync >24h stale

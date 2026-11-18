@@ -96,12 +96,19 @@ class BudgetAlertService {
   ) async {
     final budgetPrefix = '$_keyPrefix${budget.id}.';
     for (final old in prefs.getKeys().where(
-          (k) => k.startsWith(budgetPrefix) && k != key,
+          // Only this budget's own keys: the rest after the id is a date,
+          // so the id "a" does not also match the budget "a.b".
+          (k) =>
+              k.startsWith(budgetPrefix) &&
+              k != key &&
+              _periodDay.hasMatch(k.substring(budgetPrefix.length)),
         )) {
       await prefs.remove(old);
     }
     await prefs.setInt(key, level.index);
   }
+
+  static final _periodDay = RegExp(r'^\d+-\d+-\d+$');
 
   String _sentKey(Budget budget, DateTime now) {
     final start = switch (budget.period) {
@@ -124,7 +131,10 @@ class BudgetAlertService {
   }
 
   static String _title(Budget budget, BudgetAlertLevel level) {
-    final name = budget.name.trim().isEmpty ? 'Your' : budget.name.trim();
+    // The name comes from a spreadsheet cell: keep it short and printable.
+    var name = budget.name.replaceAll(RegExp(r'[\x00-\x1F\x7F]'), ' ').trim();
+    if (name.length > 40) name = '${name.substring(0, 40)}…';
+    if (name.isEmpty) name = 'Your';
     if (level == BudgetAlertLevel.nearLimit) {
       final percent = (budget.percentUsed * 100).floor();
       return '$name budget at $percent%';

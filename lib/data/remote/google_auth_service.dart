@@ -55,6 +55,14 @@ class GoogleAuthService {
       }
       return _currentUser;
     } catch (e) {
+      // The account may already be chosen. Without this, it would stay
+      // signed in and be restored on the next start although this sign-in
+      // never completed.
+      _currentUser = null;
+      _authClient = null;
+      try {
+        await _googleSignIn.signOut();
+      } catch (_) {}
       throw AuthException.signInFailed(e);
     }
   }
@@ -91,30 +99,6 @@ class GoogleAuthService {
     return _authClient!;
   }
 
-  Future<Map<String, String>> getAuthHeaders() async {
-    if (_currentUser == null) {
-      throw AuthException.notAuthenticated();
-    }
-
-    final authentication = await _currentUser!.authentication;
-    return {
-      'Authorization': 'Bearer ${authentication.accessToken}',
-      'Content-Type': 'application/json',
-    };
-  }
-
-  Future<String?> getAccessToken() async {
-    if (_currentUser == null) return null;
-
-    try {
-      final authentication = await _currentUser!.authentication;
-      return authentication.accessToken;
-    } catch (e) {
-      debugPrint('Failed to get access token: $e');
-      return null;
-    }
-  }
-
   Future<void> _createAuthClient() async {
     if (_currentUser == null) return;
 
@@ -141,19 +125,6 @@ class GoogleAuthService {
       http.Client(),
       credentials,
     );
-  }
-
-  Future<void> refreshToken() async {
-    if (_currentUser == null) {
-      throw AuthException.notAuthenticated();
-    }
-
-    try {
-      await _currentUser!.clearAuthCache();
-      await _createAuthClient();
-    } catch (e) {
-      throw AuthException.tokenExpired();
-    }
   }
 
   Future<void> _saveUserInfo() async {

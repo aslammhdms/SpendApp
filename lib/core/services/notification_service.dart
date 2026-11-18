@@ -30,6 +30,8 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: _smallIcon,
+      // Amounts stay off a locked screen that hides sensitive content.
+      visibility: NotificationVisibility.private,
       // Tints the icon in the notification shade.
       color: AppColorSchemes.seed,
     ),

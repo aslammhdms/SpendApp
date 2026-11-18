@@ -61,7 +61,7 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
           if (person != null && person.netBalance != 0)
             TextButton(
               onPressed: () async {
-                await context.push('/loans/add/${widget.personId}?settle=true');
+                await context.push('/loans/add/${Uri.encodeComponent(widget.personId)}?settle=true');
                 if (mounted) _loadData();
               },
               child: const Text('Settle Up'),
@@ -187,7 +187,7 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
                 ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          await context.push('/loans/add/${widget.personId}');
+          await context.push('/loans/add/${Uri.encodeComponent(widget.personId)}');
           if (mounted) _loadData();
         },
         icon: const Icon(Icons.add),

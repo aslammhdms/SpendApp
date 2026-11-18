@@ -1,10 +1,12 @@
 # SpendSheet - Flutter Setup Script for Windows
-# Run this script in PowerShell as Administrator
+# Run this script in a normal PowerShell window (not as Administrator).
+# Flutter is installed inside your own user folder, where other accounts on
+# this computer cannot change it.
 
 $ErrorActionPreference = "Stop"
 $FlutterVersion = "3.50.0"
 $FlutterUrl = "https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_$FlutterVersion-stable.zip"
-$FlutterPath = "C:\flutter"
+$FlutterPath = Join-Path $env:LOCALAPPDATA "flutter"
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "SpendSheet - Flutter Setup" -ForegroundColor Cyan
@@ -74,7 +76,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
 Write-Host "1. Restart your terminal"
-Write-Host "2. Run: cd C:\Personal\Spendapp\spendsheet"
+Write-Host "2. Run: cd to the folder you cloned SpendSheet into"
 Write-Host "3. Run: flutter pub get"
 Write-Host "4. Run: flutter pub run build_runner build"
 Write-Host ""

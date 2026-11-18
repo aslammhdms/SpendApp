@@ -143,7 +143,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
           budget: budget,
           categoryIcon: category.id.isNotEmpty ? category.icon : null,
           currency: currency,
-          onEdit: () => context.push('/budgets/edit/${budget.id}'),
+          onEdit: () => context.push('/budgets/edit/${Uri.encodeComponent(budget.id)}'),
           onDelete: () => _confirmDelete(budget.id),
         );
       },

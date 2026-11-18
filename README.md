@@ -54,6 +54,10 @@ flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 ```
 
+`pubspec.lock` is part of the repository, so `flutter pub get` installs the
+same package versions the app was last built and tested with. To be strict
+about it, use `flutter pub get --enforce-lockfile`.
+
 The last command generates the model files (`*.freezed.dart`, `*.g.dart`).
 They are not stored in the repository, so the app will not compile without
 it.
@@ -122,6 +126,10 @@ Or build an APK and install it with `adb`:
 flutter build apk --release
 adb install -r build/app/outputs/flutter-apk/app-release.apk
 ```
+
+When the app is installed, turn **USB debugging** off again: a computer the
+phone trusts for debugging can reach more of the phone than you need day to
+day.
 
 Install with `adb` (or `flutter run`) rather than by opening the APK file on
 the phone. Because the app can ask for notification access (for Google Wallet

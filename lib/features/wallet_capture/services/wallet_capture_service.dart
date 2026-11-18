@@ -50,6 +50,8 @@ class WalletCaptureService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_enabledKey, enabled);
     await _channel.setEnabled(enabled);
+    // Turning capture off also removes what it has collected.
+    if (!enabled) await _dao.deleteAll();
   }
 
   Future<bool> hasAccess() => _channel.hasAccess();
@@ -94,6 +96,13 @@ class WalletCaptureService {
     required String categoryId,
     required String accountId,
   }) async {
+    // Added or dismissed in the meantime (a second tap, another screen):
+    // do not record the same payment twice.
+    final current = await _dao.getById(payment.id);
+    if (current == null || current.status != CaptureStatus.pending) {
+      throw StateError('This payment was already handled.');
+    }
+
     final transaction = await _transactions.create(
       amount: payment.amount,
       type: TransactionType.expense,

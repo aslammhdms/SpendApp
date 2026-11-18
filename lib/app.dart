@@ -418,7 +418,8 @@ class _BiometricLockGuardState extends State<_BiometricLockGuard>
       textDirection: TextDirection.ltr,
       child: Stack(
         children: [
-          widget.child,
+          // Nothing under the lock is read out by a screen reader.
+          ExcludeSemantics(excluding: _isLocked, child: widget.child),
           if (_isLocked)
             MaterialApp(
               debugShowCheckedModeBanner: false,

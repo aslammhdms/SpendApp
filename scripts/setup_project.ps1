@@ -2,7 +2,8 @@
 # Run this after Flutter is installed
 
 $ErrorActionPreference = "Stop"
-$ProjectPath = "C:\Personal\Spendapp\spendsheet"
+# The project this script belongs to, wherever it was cloned.
+$ProjectPath = Split-Path -Parent $PSScriptRoot
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "SpendSheet - Project Setup" -ForegroundColor Cyan
@@ -12,7 +13,7 @@ Write-Host ""
 # Check Flutter
 $flutterPath = (Get-Command flutter -ErrorAction SilentlyContinue).Source
 if (-not $flutterPath) {
-    $flutterPath = "C:\flutter\bin\flutter.bat"
+    $flutterPath = Join-Path $env:LOCALAPPDATA "flutter\bin\flutter.bat"
     if (-not (Test-Path $flutterPath)) {
         Write-Host "Flutter not found! Please run setup_flutter.ps1 first." -ForegroundColor Red
         exit 1

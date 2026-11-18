@@ -118,4 +118,21 @@ void main() {
       expect(parse('Transit', r'$0.00 with Visa ••1234'), isNull);
     });
   });
+
+  group('amounts that only look like the payment', () {
+    test('an amount in the merchant name does not replace the paid amount',
+        () {
+      final payment = parse('USD 1 SHOP', r'$54.20 with Visa ••1234');
+      expect(payment?.amount, 54.20);
+    });
+
+    test('an absurdly long number is not a payment', () {
+      final digits = '9' * 400;
+      expect(parse('Shop', 'USD $digits with Visa ••1234'), isNull);
+    });
+
+    test('cashback notices are not payments', () {
+      expect(parse('Google Wallet', r'You earned $2.00 cashback'), isNull);
+    });
+  });
 }

@@ -34,7 +34,7 @@ class AccountSession {
   /// was saved by a version that did not record owners, so it cannot be
   /// shown to belong to this account. When the app merely restores the
   /// previous session, such data is left alone, because nobody else has
-  /// signed in since it was saved.
+  /// signed in since it was saved; the account is recorded as its owner.
   ///
   /// Returns whether local data was removed.
   Future<bool> onSignedIn(
@@ -43,7 +43,12 @@ class AccountSession {
   }) async {
     final owner = await _data.ownerId();
     if (owner == accountId) return false;
-    if (owner == null && !interactive) return false;
+    if (owner == null && !interactive) {
+      // From here on the data has a known owner, so a different account
+      // is always noticed.
+      await _data.setOwnerId(accountId);
+      return false;
+    }
 
     await _stopSync();
     await _discardCapturedNotifications();

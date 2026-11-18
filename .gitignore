@@ -7,6 +7,8 @@
 .pub/
 build/
 *.lock
+# The package lockfile is tracked: it pins the versions a build uses.
+!pubspec.lock
 
 # Android
 **/android/**/gradle-wrapper.jar
@@ -20,6 +22,10 @@ build/
 **/android/key.properties
 *.jks
 *.keystore
+*.p12
+*.pem
+*.key
+**/google-services.json
 
 # iOS
 **/ios/**/*.mode1v3

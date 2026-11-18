@@ -383,9 +383,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onPressed: () async {
               Navigator.pop(dialogContext);
               await ref.read(authProvider.notifier).signOut();
-              if (context.mounted) {
-                context.go('/welcome');
+              if (!context.mounted) return;
+              if (ref.read(authProvider) == AuthState.error) {
+                // Still signed in: stay here instead of showing the
+                // welcome screen for an account that never left.
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Could not sign out. Please try again.'),
+                  ),
+                );
+                return;
               }
+              context.go('/welcome');
             },
             style: TextButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.error),
