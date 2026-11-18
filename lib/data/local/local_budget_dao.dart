@@ -31,10 +31,50 @@ class LocalBudgetDao {
     return rows.map((row) => row['category_id'] as String).toSet();
   }
 
+  /// Live budgets that track [categoryId].
+  Future<List<Budget>> getByCategory(String categoryId) async {
+    final db = await _db;
+    final maps = await db.query(
+      'budgets',
+      where: 'category_id = ? AND deleted_at IS NULL',
+      whereArgs: [categoryId],
+    );
+    return maps.map(_fromMap).toList();
+  }
+
+  Future<int> update(Budget budget) async {
+    final db = await _db;
+    return db.update(
+      'budgets',
+      _toMap(budget),
+      where: 'id = ?',
+      whereArgs: [budget.id],
+    );
+  }
+
   /// Deletes every row, except those whose ID is in [except].
   Future<int> deleteAll({Set<String> except = const {}}) async {
     final db = await _db;
     return DatabaseHelper.deleteAllExcept(db, 'budgets', except);
+  }
+
+  Budget _fromMap(Map<String, dynamic> map) {
+    return Budget(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      amount: (map['amount'] as num).toDouble(),
+      period: BudgetPeriod.values.firstWhere(
+        (e) => e.name == map['period'],
+        orElse: () => BudgetPeriod.monthly,
+      ),
+      categoryId: map['category_id'] as String?,
+      startDate: DateTime.parse(map['start_date'] as String),
+      createdAt: DateTime.parse(map['created_at'] as String),
+      updatedAt: DateTime.parse(map['updated_at'] as String),
+      deletedAt: map['deleted_at'] != null
+          ? DateTime.parse(map['deleted_at'] as String)
+          : null,
+    );
   }
 
   Map<String, dynamic> _toMap(Budget budget) {

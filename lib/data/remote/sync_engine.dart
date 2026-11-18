@@ -205,7 +205,8 @@ class SyncEngine {
       final remote = await _pullAll();
       final restored = await _restoreMissingDefaults(remote);
       await _applyRemote(remote, replace: false);
-      if (restored > 0) await _pushPendingChanges();
+      final merged = await _mergeBuiltInTwins(remote);
+      if (restored > 0 || merged > 0) await _pushPendingChanges();
 
       // Only update last sync time if all pulls succeeded
       if (remote.isComplete) {
@@ -251,7 +252,8 @@ class SyncEngine {
       final remote = await _pullAll();
       final restored = await _restoreMissingDefaults(remote);
       await _applyRemote(remote, replace: true);
-      if (restored > 0) await _pushPendingChanges();
+      final merged = await _mergeBuiltInTwins(remote);
+      if (restored > 0 || merged > 0) await _pushPendingChanges();
 
       // Only set last_sync_at if ALL pulls succeeded — so next startup retries
       if (remote.isComplete) {
@@ -526,6 +528,10 @@ class SyncEngine {
         }
         final builtIn = _builtInCategory(id, now);
         if (builtIn == null) continue; // only built-ins can be restored
+        // The sheet already has this category under another ID. Uploading
+        // the built-in as well would show it twice; [_mergeBuiltInTwins]
+        // moves the data onto the sheet's row instead.
+        if (_categoryTwin(builtIn, remoteCategories) != null) continue;
         var category = await _categoryDao.getById(id);
         if (category == null) {
           category = builtIn;
@@ -557,6 +563,12 @@ class SyncEngine {
         final builtIn = _builtInAccount(id, now);
         if (builtIn == null) continue; // only built-ins can be restored
         var account = await _accountDao.getById(id);
+        // As for categories, unless the built-in was given an opening
+        // balance, which merging would lose.
+        if (_canMergeAccount(account) &&
+            _accountTwin(builtIn, remoteAccounts) != null) {
+          continue;
+        }
         if (account == null) {
           account = builtIn;
           await _accountDao.insert(account);
@@ -577,6 +589,189 @@ class SyncEngine {
     }
     return restored;
   }
+
+  /// Folds each built-in category and account into an older row of the same
+  /// name and type, and returns how many were folded.
+  ///
+  /// Spreadsheets created by earlier versions hold the built-ins under random
+  /// IDs, while this version creates them locally under fixed ones. Where
+  /// both exist the same name shows twice ("Food & Dining", "Food & Dining").
+  /// The spreadsheet's row has the history, so it is kept: transactions and
+  /// budgets on the built-in move to it and the built-in is removed.
+  ///
+  /// Only built-ins are folded. Two categories the user made with the same
+  /// name are left as they are.
+  Future<int> _mergeBuiltInTwins(_RemoteData remote) async {
+    final now = DateTime.now();
+    var merged = 0;
+
+    final remoteCategories = remote.categories;
+    if (remoteCategories != null) {
+      final onSheet = {for (final c in remoteCategories) c.id: c};
+      final local = await _categoryDao.getAll();
+      for (final builtIn in _builtInCategories(now)) {
+        final twin = _categoryTwin(builtIn, local);
+        if (twin == null) continue;
+        var changed = false;
+
+        for (final t in await _transactionDao.getByCategory(builtIn.id)) {
+          final moved = t.copyWith(categoryId: twin.id, updatedAt: now);
+          await _transactionDao.update(moved);
+          await _syncQueueDao.enqueue(
+            entityType: 'transaction',
+            entityId: moved.id,
+            operation: 'update',
+            data: moved.toJson(),
+          );
+          changed = true;
+        }
+        for (final b in await _budgetDao.getByCategory(builtIn.id)) {
+          final moved = b.copyWith(categoryId: twin.id, updatedAt: now);
+          await _budgetDao.update(moved);
+          await _syncQueueDao.enqueue(
+            entityType: 'budget',
+            entityId: moved.id,
+            operation: 'update',
+            data: moved.toJson(),
+          );
+          changed = true;
+        }
+
+        final row = await _categoryDao.getById(builtIn.id);
+        if (row != null && !row.isDeleted) {
+          // Whatever was waiting to be sent for it is no longer wanted.
+          await _syncQueueDao.deleteByEntity('category', builtIn.id);
+          final sheetRow = onSheet[builtIn.id];
+          if (sheetRow != null && !sheetRow.isDeleted) {
+            final deleted = row.copyWithDelete();
+            await _categoryDao.update(deleted);
+            await _syncQueueDao.enqueue(
+              entityType: 'category',
+              entityId: builtIn.id,
+              operation: 'delete',
+              data: deleted.toJson(),
+            );
+          } else {
+            await _categoryDao.delete(builtIn.id);
+          }
+          changed = true;
+        }
+        if (changed) merged++;
+      }
+    }
+
+    final remoteAccounts = remote.accounts;
+    if (remoteAccounts != null) {
+      final onSheet = {for (final a in remoteAccounts) a.id: a};
+      final local = await _accountDao.getAll();
+      for (final builtIn in _builtInAccounts(now)) {
+        final twin = _accountTwin(builtIn, local);
+        if (twin == null) continue;
+        final row = await _accountDao.getById(builtIn.id);
+        if (!_canMergeAccount(row)) continue;
+        var changed = false;
+
+        for (final t in await _transactionDao.getByAccount(builtIn.id)) {
+          final moved = t.copyWith(
+            accountId: t.accountId == builtIn.id ? twin.id : t.accountId,
+            toAccountId:
+                t.toAccountId == builtIn.id ? twin.id : t.toAccountId,
+            updatedAt: now,
+          );
+          await _transactionDao.update(moved);
+          await _syncQueueDao.enqueue(
+            entityType: 'transaction',
+            entityId: moved.id,
+            operation: 'update',
+            data: moved.toJson(),
+          );
+          changed = true;
+        }
+
+        if (row != null && !row.isDeleted) {
+          await _syncQueueDao.deleteByEntity('account', builtIn.id);
+          final sheetRow = onSheet[builtIn.id];
+          if (sheetRow != null && !sheetRow.isDeleted) {
+            final deleted = row.copyWith(deletedAt: now);
+            await _accountDao.update(deleted);
+            await _syncQueueDao.enqueue(
+              entityType: 'account',
+              entityId: builtIn.id,
+              operation: 'delete',
+              data: deleted.toJson(),
+            );
+          } else {
+            await _accountDao.delete(builtIn.id);
+          }
+          changed = true;
+        }
+        if (changed) merged++;
+      }
+    }
+
+    if (merged > 0) {
+      debugPrint('SyncEngine: folded $merged built-in rows into same-named '
+          'rows from the sheet');
+    }
+    return merged;
+  }
+
+  static final _builtInCategoryIds = {
+    for (final d in CategoryDefaults.expenseCategories) d.id,
+    for (final d in CategoryDefaults.incomeCategories) d.id,
+  };
+  static final _builtInAccountIds = {
+    for (final d in CategoryDefaults.defaultAccounts) d.id,
+  };
+
+  static String _nameKey(String name) =>
+      name.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
+  /// The live category in [rows] that is the same category as [builtIn]
+  /// under another, non-built-in ID: same type and same name. The oldest one
+  /// if there are several.
+  static Category? _categoryTwin(Category builtIn, List<Category> rows) {
+    final twins = rows
+        .where((c) =>
+            !c.isDeleted &&
+            !_builtInCategoryIds.contains(c.id) &&
+            c.type == builtIn.type &&
+            _nameKey(c.name) == _nameKey(builtIn.name))
+        .toList()
+      ..sort((a, b) {
+        final byAge = a.createdAt.compareTo(b.createdAt);
+        return byAge != 0 ? byAge : a.id.compareTo(b.id);
+      });
+    return twins.isEmpty ? null : twins.first;
+  }
+
+  static Account? _accountTwin(Account builtIn, List<Account> rows) {
+    final twins = rows
+        .where((a) =>
+            a.deletedAt == null &&
+            !_builtInAccountIds.contains(a.id) &&
+            a.type == builtIn.type &&
+            _nameKey(a.name) == _nameKey(builtIn.name))
+        .toList()
+      ..sort((a, b) {
+        final byAge = a.createdAt.compareTo(b.createdAt);
+        return byAge != 0 ? byAge : a.id.compareTo(b.id);
+      });
+    return twins.isEmpty ? null : twins.first;
+  }
+
+  /// A built-in account may be folded into its twin unless it was given an
+  /// opening balance, which would be lost.
+  static bool _canMergeAccount(Account? builtInRow) =>
+      builtInRow == null || builtInRow.initialBalance == 0;
+
+  static List<Category> _builtInCategories(DateTime now) => [
+        for (final id in _builtInCategoryIds) _builtInCategory(id, now)!,
+      ];
+
+  static List<Account> _builtInAccounts(DateTime now) => [
+        for (final id in _builtInAccountIds) _builtInAccount(id, now)!,
+      ];
 
   static Category? _builtInCategory(String id, DateTime now) {
     for (final (type, defaults) in [

@@ -345,9 +345,12 @@ void main() {
       });
     });
 
-    test('sync uploads the built-ins an old spreadsheet lacks, if used',
+    test('sync uploads a used built-in when the sheet has nothing like it',
         () async {
       seedSheetLikeOldVersion();
+      // This old spreadsheet has no "Food & Dining" and no "Cash".
+      sheet.categories.rows.removeWhere((c) => c.id == 'old-cat_food');
+      sheet.accounts.rows.removeWhere((a) => a.id == 'old-acc_cash');
       await recordExpense(categoryId: 'cat_food', accountId: 'acc_cash');
 
       await engine.sync();
@@ -359,9 +362,11 @@ void main() {
       expect(await queuedCount(), 0);
     });
 
-    test('full sync brings back built-ins an earlier full sync removed',
+    test('full sync brings back a built-in an earlier full sync removed',
         () async {
       seedSheetLikeOldVersion();
+      sheet.categories.rows.removeWhere((c) => c.id == 'old-cat_food');
+      sheet.accounts.rows.removeWhere((a) => a.id == 'old-acc_cash');
       // An earlier version pushed this expense but never the built-in
       // category and account it uses...
       final now = DateTime(2026, 10, 1);
@@ -410,6 +415,170 @@ void main() {
 
       expect(await categoryDao.getById('deleted-on-sheet'), isNull);
       expect(sheet.categories.byId('deleted-on-sheet'), isNull);
+    });
+  });
+
+  group('a built-in and an old spreadsheet row with the same name', () {
+    Future<List<String>> liveCategoryNames() async =>
+        [for (final c in await categoryDao.getAll()) c.name]..sort();
+
+    test('an expense on the built-in moves to the spreadsheet\'s row',
+        () async {
+      seedSheetLikeOldVersion();
+      final expense =
+          await recordExpense(categoryId: 'cat_food', accountId: 'acc_cash');
+
+      await engine.sync();
+
+      final local = await transactionDao.getById(expense.id);
+      expect(local?.categoryId, 'old-cat_food');
+      expect(local?.accountId, 'old-acc_cash');
+      expect(sheet.transactions.byId(expense.id)?.categoryId, 'old-cat_food');
+      expect(sheet.transactions.byId(expense.id)?.accountId, 'old-acc_cash');
+      expect(sheet.categories.byId('cat_food'), isNull,
+          reason: 'no second "Food & Dining" is uploaded');
+      expect(sheet.accounts.byId('acc_cash'), isNull);
+      expect(await queuedCount(), 0);
+    });
+
+    test('each name is listed once afterwards', () async {
+      seedSheetLikeOldVersion();
+      await recordExpense(categoryId: 'cat_food', accountId: 'acc_cash');
+
+      await engine.sync();
+
+      final names = await liveCategoryNames();
+      expect(names.where((n) => n == 'Food & Dining'), hasLength(1));
+      // "Investments" exists once as an expense and once as an income
+      // category, so compare within a type.
+      final typed = [
+        for (final c in await categoryDao.getAll()) '${c.type.name}/${c.name}',
+      ];
+      expect(typed.toSet().length, typed.length, reason: 'no name repeats');
+      final accounts = [for (final a in await accountDao.getAll()) a.name];
+      expect(accounts.where((n) => n == 'Cash'), hasLength(1));
+    });
+
+    test('a duplicate already on the spreadsheet is removed there too',
+        () async {
+      seedSheetLikeOldVersion();
+      // An earlier version of this fix uploaded the built-in next to the
+      // spreadsheet's own row, with an expense on each.
+      final now = DateTime(2026, 11, 1);
+      sheet.categories.rows.add((await categoryDao.getById('cat_food'))!);
+      for (final (id, category) in [
+        ('on-built-in', 'cat_food'),
+        ('on-old-row', 'old-cat_food'),
+      ]) {
+        sheet.transactions.rows.add(Transaction(
+          id: id,
+          date: now,
+          amount: 10,
+          type: TransactionType.expense,
+          categoryId: category,
+          accountId: 'old-acc_cash',
+          createdAt: now,
+          updatedAt: now,
+        ));
+      }
+
+      await engine.fullSync();
+
+      expect(sheet.categories.byId('cat_food')?.isDeleted, isTrue);
+      expect(sheet.categories.byId('old-cat_food')?.isDeleted, isFalse);
+      expect(sheet.transactions.byId('on-built-in')?.categoryId,
+          'old-cat_food');
+      expect(sheet.transactions.byId('on-old-row')?.categoryId,
+          'old-cat_food');
+      final names = await liveCategoryNames();
+      expect(names.where((n) => n == 'Food & Dining'), hasLength(1));
+      expect(await queuedCount(), 0);
+
+      // And it stays that way.
+      await engine.fullSync();
+      expect((await liveCategoryNames()).where((n) => n == 'Food & Dining'),
+          hasLength(1));
+      expect(sheet.categories.countOf('cat_food'), 1);
+    });
+
+    test('a transfer between two built-in accounts moves both ends',
+        () async {
+      seedSheetLikeOldVersion();
+      final transfer = await transactions.create(
+        amount: 40,
+        type: TransactionType.transfer,
+        categoryId: '',
+        accountId: 'acc_cash',
+        toAccountId: 'acc_bank',
+      );
+
+      await engine.sync();
+
+      final local = await transactionDao.getById(transfer.id);
+      expect(local?.accountId, 'old-acc_cash');
+      expect(local?.toAccountId, 'old-acc_bank');
+    });
+
+    test('a built-in the spreadsheet\'s copy was deleted from is kept',
+        () async {
+      seedSheetLikeOldVersion();
+      final i = sheet.categories.rows.indexWhere((c) => c.id == 'old-cat_food');
+      sheet.categories.rows[i] = sheet.categories.rows[i].copyWithDelete();
+      final expense = await recordExpense(categoryId: 'cat_food');
+
+      await engine.sync();
+
+      expect((await transactionDao.getById(expense.id))?.categoryId,
+          'cat_food');
+      expect(sheet.categories.byId('cat_food')?.isDeleted, isFalse);
+    });
+
+    test('a renamed copy is not treated as the same category', () async {
+      seedSheetLikeOldVersion();
+      final i = sheet.categories.rows.indexWhere((c) => c.id == 'old-cat_food');
+      sheet.categories.rows[i] =
+          sheet.categories.rows[i].copyWith(name: 'Eating out');
+      final expense = await recordExpense(categoryId: 'cat_food');
+
+      await engine.sync();
+
+      expect((await transactionDao.getById(expense.id))?.categoryId,
+          'cat_food');
+    });
+
+    test('two categories the user made with one name are left alone',
+        () async {
+      await seedSheetWithDefaults();
+      final now = DateTime(2026, 11, 1);
+      for (final id in ['mine-1', 'mine-2']) {
+        sheet.categories.rows.add(Category(
+          id: id,
+          name: 'Coffee',
+          type: CategoryType.expense,
+          icon: '☕',
+          color: 0xFF795548,
+          sortOrder: 50,
+          createdAt: now,
+          updatedAt: now,
+        ));
+      }
+
+      await engine.fullSync();
+
+      final names = await liveCategoryNames();
+      expect(names.where((n) => n == 'Coffee'), hasLength(2));
+    });
+
+    test('a spreadsheet made by this version is left as it is', () async {
+      await seedSheetWithDefaults();
+      final expense = await recordExpense(categoryId: 'cat_food');
+
+      await engine.sync();
+
+      expect((await transactionDao.getById(expense.id))?.categoryId,
+          'cat_food');
+      expect(sheet.categories.byId('cat_food')?.isDeleted, isFalse);
+      expect(await queuedCount(), 0);
     });
   });
 }
