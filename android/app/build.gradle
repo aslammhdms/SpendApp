@@ -13,6 +13,18 @@ if (localPropertiesFile.exists()) {
     }
 }
 
+// The release signing key. android/key.properties is not in the repository:
+// it names a keystore that only the person building the app has. See
+// "Building for Production" in the README.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+def hasReleaseKey = keystorePropertiesFile.exists()
+if (hasReleaseKey) {
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
+}
+
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
     flutterVersionCode = '1'
@@ -52,18 +64,26 @@ android {
 
     signingConfigs {
         release {
-            // Configure your release signing here
-            // keyAlias keystoreProperties['keyAlias']
-            // keyPassword keystoreProperties['keyPassword']
-            // storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-            // storePassword keystoreProperties['storePassword']
+            if (hasReleaseKey) {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            }
         }
     }
 
     buildTypes {
         release {
-            // signingConfig signingConfigs.release
-            signingConfig signingConfigs.debug
+            if (hasReleaseKey) {
+                signingConfig signingConfigs.release
+            } else {
+                // No key.properties: fall back to this computer's debug key
+                // so the project still builds. Do not share such a build.
+                logger.warn('SpendSheet: android/key.properties not found; ' +
+                        'signing the release build with the debug key.')
+                signingConfig signingConfigs.debug
+            }
             minifyEnabled false
             shrinkResources false
         }

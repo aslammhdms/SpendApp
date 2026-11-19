@@ -253,10 +253,47 @@ restricted settings** on the app's App info page.
 flutter build apk --release
 ```
 
-The release build is signed with the debug key until you add your own. To
-publish, create a keystore, fill in the commented-out `signingConfigs.release`
-block in `android/app/build.gradle`, and register that key's SHA-1 in Google
-Cloud as well.
+Without a key of your own, the release build is signed with your computer's
+debug key. That is fine for trying the app on your own phone, but do not give
+such a build to other people: the debug key has a well-known password. Before
+you share the app, give it its own key.
+
+1. Create the key once. Choose your own passwords, and keep the file outside
+   the project folder:
+
+   ```bash
+   keytool -genkeypair -v -keystore spendsheet-release.jks -alias spendsheet -keyalg RSA -keysize 2048 -validity 10000
+   ```
+
+2. Create the file `android/key.properties` (it is ignored by Git):
+
+   ```properties
+   storeFile=C:/Users/you/keys/spendsheet-release.jks
+   storePassword=your store password
+   keyAlias=spendsheet
+   keyPassword=your key password
+   ```
+
+   Use forward slashes in the path, also on Windows.
+
+3. Get the new key's SHA-1 and add it in Google Cloud: create a second
+   Android OAuth client with the same package name and this fingerprint
+   (step 4 above). Sign-in fails until this is done.
+
+   ```bash
+   keytool -list -v -keystore spendsheet-release.jks -alias spendsheet
+   ```
+
+4. Build as before. The build now uses your key.
+
+Android does not let an app signed with one key replace the same app signed
+with another. Uninstall the debug-signed copy from the phone once before
+installing the new one; your records come back from the spreadsheet when you
+sign in.
+
+Back the keystore file and its passwords up somewhere safe. If you lose them
+you cannot update the installed app; you would have to uninstall and start
+again with a new key.
 
 ## License
 
