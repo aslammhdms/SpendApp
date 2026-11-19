@@ -81,6 +81,14 @@ class WalletCaptureNotifier extends StateNotifier<WalletCaptureState> {
 
   Future<void> openAccessSettings() => _service.openAccessSettings();
 
+  /// Turns capture on and, if Android has not granted notification access
+  /// yet, opens the screen where the person grants it. Call only after the
+  /// person agreed to the disclosure.
+  Future<void> enableAfterConsent() async {
+    await setEnabled(true);
+    if (state.needsAccess) await openAccessSettings();
+  }
+
   Future<void> confirm(
     CapturedPayment payment, {
     required String categoryId,

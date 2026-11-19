@@ -97,9 +97,9 @@ its own fingerprint registered (step 4.5) before sign-in will work.
    **Google Drive API**.
 3. Set up the **OAuth consent screen**: user type **External**, and fill in
    the app name and your email address.
-4. On the consent screen, add the scopes `.../auth/spreadsheets` and
-   `.../auth/drive.file`, and add your own Google account under **Test
-   users**. While the app is in testing, only the accounts listed there can
+4. On the consent screen, add the scope `.../auth/drive.file` (access only
+   to files SpendSheet creates), and add your own Google account under
+   **Test users**. While the app is in testing, only the accounts listed there can
    sign in.
 5. Under **APIs & Services → Credentials**, choose **Create credentials →
    OAuth client ID** with:
@@ -285,6 +285,28 @@ you share the app, give it its own key.
    ```
 
 4. Build as before. The build now uses your key.
+
+### Publishing on Google Play
+
+Google Play takes an app bundle, not an APK:
+
+```bash
+flutter build appbundle
+```
+
+The bundle is in `build/app/outputs/bundle/release/app-release.aab`. The
+build refuses to make one without `android/key.properties`, so a Play upload
+can never be signed with the debug key. Raise the number after `+` in
+`version:` in `pubspec.yaml` for every upload.
+
+Google Play signs the app again with its own key before users download it,
+so sign-in needs one more fingerprint: after the first upload, copy the
+**App signing key certificate** SHA-1 from Play Console → **Test and
+release → App integrity**, and add it as another Android OAuth client in
+Google Cloud.
+
+Everything else for the store (listing text, Data safety answers, icon,
+feature graphic and screenshots) is in [`docs/play-store`](docs/play-store/).
 
 Android does not let an app signed with one key replace the same app signed
 with another. Uninstall the debug-signed copy from the phone once before

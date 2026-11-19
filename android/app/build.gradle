@@ -25,6 +25,16 @@ if (hasReleaseKey) {
     }
 }
 
+// An app bundle is what goes to Google Play. Never let one be signed with
+// the debug key: Play would accept it, and every later update would then
+// have to be signed with that machine's debug key too.
+def buildingBundle = gradle.startParameter.taskNames.any { it.toLowerCase().contains('bundle') }
+if (buildingBundle && !hasReleaseKey) {
+    throw new GradleException('SpendSheet: android/key.properties is missing. ' +
+            'App bundles for Google Play must be signed with your release key; ' +
+            'see "Building for Production" in the README.')
+}
+
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
     flutterVersionCode = '1'

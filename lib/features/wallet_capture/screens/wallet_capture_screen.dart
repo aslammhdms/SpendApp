@@ -13,6 +13,7 @@ import '../providers/wallet_capture_provider.dart';
 import '../widgets/captured_payment_card.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../../shared/widgets/glass_app_bar.dart';
+import '../../../shared/widgets/glass_dialog.dart';
 
 final _captureAccountsProvider =
     FutureProvider.autoDispose<List<Account>>((ref) async {
@@ -196,7 +197,17 @@ class _SetupCard extends StatelessWidget {
               'Payments you make with Google Wallet are listed here to add as expenses.',
             ),
             value: capture.isEnabled,
-            onChanged: notifier.setEnabled,
+            onChanged: (value) async {
+              if (value) {
+                // Google Play asks for this disclosure, and an explicit yes,
+                // before an app reads notifications.
+                final agreed = await showWalletCaptureDisclosure(context);
+                if (!agreed) return;
+                await notifier.enableAfterConsent();
+              } else {
+                await notifier.setEnabled(false);
+              }
+            },
           ),
           if (capture.needsAccess)
             Padding(
@@ -254,4 +265,37 @@ class _SetupCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Explains what turning on capture reads and keeps, and asks for consent.
+/// Returns true only when the person agrees.
+Future<bool> showWalletCaptureDisclosure(BuildContext context) async {
+  final agreed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AppAlertDialog(
+      title: const Text('Read Google Wallet notifications?'),
+      content: const Text(
+        'To list your Google Wallet payments here, SpendSheet needs '
+        'notification access on this phone.\n\n'
+        'Android grants this access for all notifications, but SpendSheet '
+        'only looks at notifications from Google Wallet and ignores the '
+        'rest. From a Wallet payment it keeps the amount, the merchant, '
+        'the last four digits of the card and the time, on this phone '
+        'only. Nothing is added to your spreadsheet until you tap Add.\n\n'
+        'You can turn this off at any time here or in Android settings. '
+        'Turning it off deletes the payments collected so far.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: const Text('Not now'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: const Text('Agree'),
+        ),
+      ],
+    ),
+  );
+  return agreed ?? false;
 }

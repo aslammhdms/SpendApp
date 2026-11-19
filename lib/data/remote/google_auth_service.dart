@@ -6,8 +6,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/errors/app_exceptions.dart';
 
 class GoogleAuthService {
+  /// Only files this app created or was given. drive.file also covers the
+  /// Sheets API for those files, and unlike the full `spreadsheets` scope
+  /// it does not reach the user's other spreadsheets (nor need Google's
+  /// review for sensitive scopes).
   static const List<String> _scopes = [
-    'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive.file',
   ];
 
