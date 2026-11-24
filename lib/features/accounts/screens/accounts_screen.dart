@@ -13,9 +13,8 @@ import '../../../data/remote/sync_engine.dart';
 import '../providers/accounts_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
-import '../../../shared/widgets/glass_dialog.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/screen_insets.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
 
 class AccountsScreen extends ConsumerStatefulWidget {
   const AccountsScreen({super.key});
@@ -54,8 +53,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: const GlassAppBar(
-        title: Text('Accounts'),
+      appBar: AppBar(
+        title: const Text('Accounts'),
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())

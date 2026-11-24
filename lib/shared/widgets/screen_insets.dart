@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import '../../core/theme/tokens.dart';
 
-/// Padding for a scrollable that runs under the glass bars.
+/// Padding for a scrollable that runs under the bars.
 ///
 /// Content scrolls behind the app bar and the bottom navigation, so the
 /// scrollable itself fills the screen and its padding is what keeps the

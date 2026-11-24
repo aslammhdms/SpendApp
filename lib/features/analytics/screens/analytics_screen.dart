@@ -15,7 +15,6 @@ import '../widgets/spending_line_chart.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../../shared/widgets/segmented_control.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
 
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
@@ -54,7 +53,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen>
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: GlassAppBar(
+      appBar: AppBar(
         title: const Text('Analytics'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(periodBarHeight),

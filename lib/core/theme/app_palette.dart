@@ -30,9 +30,6 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.raisedSurface,
     required this.cardShadow,
     required this.cardBorder,
-    required this.glassBarTint,
-    required this.glassSheetTint,
-    required this.glassBorder,
     required this.hero,
     required this.heroGlow,
     required this.heroShade,
@@ -83,13 +80,6 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// what separates a card from the page.
   final Color cardBorder;
 
-  /// Tint laid over the blur on glass bars and on glass sheets, before the
-  /// opacity in [Glass] is applied. See `GlassSurface`.
-  final Color glassBarTint;
-  final Color glassSheetTint;
-
-  /// Hairline on the edge of a glass surface that faces the content.
-  final Color glassBorder;
 
   /// The Home hero card: the one place the primary color fills a surface.
   /// One flat color from the scheme (primary in light mode, its container
@@ -141,9 +131,6 @@ class AppPalette extends ThemeExtension<AppPalette> {
         raisedSurface: scheme.surfaceContainerLowest,
         cardShadow: Colors.transparent,
         cardBorder: Colors.transparent,
-        glassBarTint: scheme.surfaceContainer,
-        glassSheetTint: scheme.surfaceContainerLow,
-        glassBorder: Colors.transparent,
         hero: scheme.primary,
         heroGlow: _heroGlow,
         heroShade: _heroShade,
@@ -182,9 +169,6 @@ class AppPalette extends ThemeExtension<AppPalette> {
         raisedSurface: scheme.surfaceContainerHigh,
         cardShadow: Colors.transparent,
         cardBorder: Colors.transparent,
-        glassBarTint: scheme.surfaceContainer,
-        glassSheetTint: scheme.surfaceContainerLow,
-        glassBorder: Colors.transparent,
         hero: scheme.primaryContainer,
         heroGlow: _heroGlow,
         heroShade: _heroShade,
@@ -228,9 +212,6 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? raisedSurface,
     Color? cardShadow,
     Color? cardBorder,
-    Color? glassBarTint,
-    Color? glassSheetTint,
-    Color? glassBorder,
     Color? hero,
     Color? heroGlow,
     Color? heroShade,
@@ -259,9 +240,6 @@ class AppPalette extends ThemeExtension<AppPalette> {
       raisedSurface: raisedSurface ?? this.raisedSurface,
       cardShadow: cardShadow ?? this.cardShadow,
       cardBorder: cardBorder ?? this.cardBorder,
-      glassBarTint: glassBarTint ?? this.glassBarTint,
-      glassSheetTint: glassSheetTint ?? this.glassSheetTint,
-      glassBorder: glassBorder ?? this.glassBorder,
       hero: hero ?? this.hero,
       heroGlow: heroGlow ?? this.heroGlow,
       heroShade: heroShade ?? this.heroShade,
@@ -299,9 +277,6 @@ class AppPalette extends ThemeExtension<AppPalette> {
       raisedSurface: c(raisedSurface, other.raisedSurface),
       cardShadow: c(cardShadow, other.cardShadow),
       cardBorder: c(cardBorder, other.cardBorder),
-      glassBarTint: c(glassBarTint, other.glassBarTint),
-      glassSheetTint: c(glassSheetTint, other.glassSheetTint),
-      glassBorder: c(glassBorder, other.glassBorder),
       hero: c(hero, other.hero),
       heroGlow: c(heroGlow, other.heroGlow),
       heroShade: c(heroShade, other.heroShade),

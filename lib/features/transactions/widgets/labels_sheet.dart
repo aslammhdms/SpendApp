@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../data/models/transaction.dart';
-import '../../../shared/widgets/glass_sheet.dart';
+import '../../../shared/widgets/app_sheet.dart';
 
 /// Lets the user pick labels for a transaction: type a new one or tap one
 /// used before. Returns the new list, or null when dismissed.

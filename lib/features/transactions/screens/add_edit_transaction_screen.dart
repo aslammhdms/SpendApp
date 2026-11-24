@@ -22,10 +22,9 @@ import '../../../shared/widgets/money_text.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../loans/providers/loans_provider.dart';
-import '../../../shared/widgets/glass_sheet.dart';
-import '../../../shared/widgets/glass_dialog.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
-import '../../../shared/widgets/glass_bottom_bar.dart';
+import '../../../shared/widgets/app_sheet.dart';
+import '../../../shared/widgets/app_dialog.dart';
+import '../../../shared/widgets/bottom_action_bar.dart';
 import '../../../shared/widgets/segmented_control.dart';
 
 class AddEditTransactionScreen extends ConsumerStatefulWidget {
@@ -297,7 +296,7 @@ class _AddEditTransactionScreenState
     final (typeContainer, onTypeContainer) = _typeColors();
 
     return Scaffold(
-      appBar: GlassAppBar(
+      appBar: AppBar(
         title: Text(isEditing ? 'Edit Transaction' : 'Add Transaction'),
         actions: [
           if (isEditing)
@@ -349,7 +348,7 @@ class _AddEditTransactionScreenState
                       currency,
                     ),
             ),
-      bottomNavigationBar: GlassBottomBar(
+      bottomNavigationBar: BottomActionBar(
         child: FilledButton(
           onPressed: _isLoading ? null : _saveTransaction,
           style: FilledButton.styleFrom(

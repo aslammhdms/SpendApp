@@ -9,8 +9,7 @@ import '../providers/budgets_provider.dart';
 import '../../transactions/providers/transactions_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
-import '../../../shared/widgets/glass_dialog.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/screen_insets.dart';
 
 class AddEditBudgetScreen extends ConsumerStatefulWidget {
@@ -139,7 +138,7 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: GlassAppBar(
+      appBar: AppBar(
         title: Text(isEditing ? 'Edit Budget' : 'New Budget'),
         actions: [
           if (isEditing)

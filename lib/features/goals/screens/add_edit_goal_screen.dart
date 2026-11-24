@@ -8,8 +8,7 @@ import '../../../core/utils/currency_utils.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../data/models/goal.dart';
 import '../../../shared/widgets/category_icon.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
-import '../../../shared/widgets/glass_dialog.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../providers/goals_provider.dart';
@@ -183,7 +182,7 @@ class _AddEditGoalScreenState extends ConsumerState<AddEditGoalScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: GlassAppBar(
+      appBar: AppBar(
         title: Text(isEditing ? 'Edit goal' : 'New goal'),
         actions: [
           if (isEditing)

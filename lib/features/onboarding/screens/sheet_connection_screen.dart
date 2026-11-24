@@ -4,7 +4,6 @@ import '../../../core/theme/app_palette.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/sheet_setup_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
 
 class SheetConnectionScreen extends ConsumerStatefulWidget {
   const SheetConnectionScreen({super.key});
@@ -67,8 +66,8 @@ class _SheetConnectionScreenState extends ConsumerState<SheetConnectionScreen> {
         setupData.state == SheetSetupState.searchingExisting;
 
     return Scaffold(
-      appBar: const GlassAppBar(
-        title: Text('Connect to Sheets'),
+      appBar: AppBar(
+        title: const Text('Connect to Sheets'),
       ),
       body: SafeArea(
         child: Padding(

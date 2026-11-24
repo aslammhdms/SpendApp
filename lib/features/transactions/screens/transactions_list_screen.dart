@@ -21,9 +21,8 @@ import '../../../shared/widgets/segmented_list.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/screen_insets.dart';
-import '../../../shared/widgets/glass_sheet.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
-import '../../../shared/widgets/glass_dialog.dart';
+import '../../../shared/widgets/app_sheet.dart';
+import '../../../shared/widgets/app_dialog.dart';
 
 class TransactionsListScreen extends ConsumerStatefulWidget {
   const TransactionsListScreen({super.key});
@@ -119,7 +118,7 @@ class _TransactionsListScreenState
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: GlassAppBar(
+      appBar: AppBar(
         title: _showSearch
             ? TextField(
                 controller: _searchController,

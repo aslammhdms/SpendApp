@@ -10,9 +10,8 @@ import '../providers/loans_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../widgets/loan_tile.dart';
 import '../../settings/providers/settings_provider.dart';
-import '../../../shared/widgets/glass_dialog.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/screen_insets.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
 
 class PersonLoansScreen extends ConsumerStatefulWidget {
   final String personId;
@@ -55,7 +54,7 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: GlassAppBar(
+      appBar: AppBar(
         title: Text(person?.name ?? 'Loading...'),
         actions: [
           if (person != null && person.netBalance != 0)

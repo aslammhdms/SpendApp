@@ -2,10 +2,8 @@ import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spendsheet/core/constants/category_defaults.dart';
 import 'package:spendsheet/core/theme/app_color_schemes.dart';
 import 'package:spendsheet/core/theme/app_palette.dart';
-import 'package:spendsheet/core/theme/tokens.dart';
 
 /// WCAG 2 relative luminance of an opaque color.
 double _luminance(Color c) {
@@ -20,10 +18,6 @@ double contrast(Color a, Color b) {
   return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05);
 }
 
-/// What is seen where [tint] at [opacity] lies over [backdrop].
-Color glassOver(Color tint, double opacity, Color backdrop) =>
-    Color.alphaBlend(tint.withValues(alpha: opacity), backdrop);
-
 const _textAA = 4.5;
 const _iconAA = 3.0;
 
@@ -36,37 +30,8 @@ void main() {
   for (final MapEntry(key: name, value: (scheme, palette)) in themes.entries) {
     /// Everything that can pass behind glass: the two extremes, every
     /// color the app draws, and every color a category or account can be.
-    final backdrops = <Color>[
-      const Color(0xFF000000),
-      const Color(0xFFFFFFFF),
-      scheme.surface,
-      scheme.surfaceContainerLow,
-      scheme.onSurface,
-      scheme.primary,
-      scheme.error,
-      palette.hero,
-      ...palette.chart,
-      palette.chartOther,
-      palette.income,
-      palette.expense,
-      palette.loan,
-      palette.budgetWarning,
-      ...CategoryDefaults.pickerColors,
-      for (final c in CategoryDefaults.expenseCategories) Color(c.color),
-      for (final c in CategoryDefaults.incomeCategories) Color(c.color),
-      for (final a in CategoryDefaults.defaultAccounts) Color(a.color),
-    ];
-
-    double worst(Color foreground, Color tint, double opacity) => backdrops
-        .map((b) => contrast(foreground, glassOver(tint, opacity, b)))
-        .reduce(math.min);
-
     group('$name theme', () {
-      test('text and icons on glass bars meet AA over any backdrop', () {
-        final text = {
-          'onSurface': scheme.onSurface,
-          'onSurfaceVariant': scheme.onSurfaceVariant,
-        };
+      test('status icons stand out on the bars', () {
         // The sync indicator in the app bar.
         final icons = {
           'income': palette.income,
@@ -74,39 +39,14 @@ void main() {
           'error': scheme.error,
           'budgetWarning': palette.budgetWarning,
         };
-        for (final e in text.entries) {
-          expect(
-            worst(e.value, palette.glassBarTint, Glass.barTintOpacity),
-            greaterThanOrEqualTo(_textAA),
-            reason: '${e.key} text on a glass bar',
-          );
-        }
-        for (final e in icons.entries) {
-          expect(
-            worst(e.value, palette.glassBarTint, Glass.barTintOpacity),
-            greaterThanOrEqualTo(_iconAA),
-            reason: '${e.key} icon on a glass bar',
-          );
-        }
-      });
-
-      test('any text color on glass sheets meets AA over any backdrop', () {
-        final text = {
-          'onSurface': scheme.onSurface,
-          'onSurfaceVariant': scheme.onSurfaceVariant,
-          'primary': scheme.primary,
-          'error': scheme.error,
-          'income': palette.income,
-          'expense': palette.expense,
-          'loan': palette.loan,
-          'budgetWarning': palette.budgetWarning,
-        };
-        for (final e in text.entries) {
-          expect(
-            worst(e.value, palette.glassSheetTint, Glass.sheetTintOpacity),
-            greaterThanOrEqualTo(_textAA),
-            reason: '${e.key} text on a glass sheet',
-          );
+        for (final bar in [scheme.surface, scheme.surfaceContainer]) {
+          for (final e in icons.entries) {
+            expect(
+              contrast(e.value, bar),
+              greaterThanOrEqualTo(_iconAA),
+              reason: '${e.key} icon on a bar',
+            );
+          }
         }
       });
 

@@ -5,7 +5,7 @@ import '../../../core/theme/tokens.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../data/models/budget.dart';
 import '../../../shared/widgets/category_icon.dart';
-import '../../../shared/widgets/glass_menu.dart';
+import '../../../shared/widgets/app_menu.dart';
 
 class BudgetCard extends StatelessWidget {
   final Budget budget;
@@ -75,19 +75,19 @@ class BudgetCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  GlassMenuButton<String>(
+                  AppMenuButton<String>(
                     tooltip: 'Budget options',
                     onSelected: (value) {
                       if (value == 'edit') onEdit?.call();
                       if (value == 'delete') onDelete?.call();
                     },
                     items: const [
-                      GlassMenuItem(
+                      AppMenuItem(
                         value: 'edit',
                         label: 'Edit',
                         icon: Icons.edit_outlined,
                       ),
-                      GlassMenuItem(
+                      AppMenuItem(
                         value: 'delete',
                         label: 'Delete',
                         icon: Icons.delete_outline,

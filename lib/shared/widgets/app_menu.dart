@@ -1,12 +1,10 @@
 import 'package:material_ui/material_ui.dart';
-import '../../core/theme/app_palette.dart';
 import '../../core/theme/tokens.dart';
-import 'glass_surface.dart';
 
-/// One entry of a [GlassMenuButton].
+/// One entry of a [AppMenuButton].
 @immutable
-class GlassMenuItem<T> {
-  const GlassMenuItem({
+class AppMenuItem<T> {
+  const AppMenuItem({
     required this.value,
     required this.label,
     this.icon,
@@ -21,14 +19,10 @@ class GlassMenuItem<T> {
   final bool destructive;
 }
 
-/// An icon button that opens a small menu on frosted glass, next to the
-/// button. The app's replacement for [PopupMenuButton], whose menu cannot
-/// be given a blurred background.
-///
-/// The glass belongs to the menu's own route, above the page, so the
-/// button itself is safe to use inside list items.
-class GlassMenuButton<T> extends StatelessWidget {
-  const GlassMenuButton({
+/// An icon button that opens a small menu next to the button, placed so it
+/// stays on screen.
+class AppMenuButton<T> extends StatelessWidget {
+  const AppMenuButton({
     super.key,
     required this.items,
     required this.onSelected,
@@ -36,7 +30,7 @@ class GlassMenuButton<T> extends StatelessWidget {
     this.icon = Icons.more_vert,
   });
 
-  final List<GlassMenuItem<T>> items;
+  final List<AppMenuItem<T>> items;
   final ValueChanged<T> onSelected;
   final String tooltip;
   final IconData icon;
@@ -51,7 +45,7 @@ class GlassMenuButton<T> extends StatelessWidget {
       button.localToGlobal(button.size.bottomRight(Offset.zero),
           ancestor: overlay),
     );
-    final value = await navigator.push(_GlassMenuRoute<T>(
+    final value = await navigator.push(_AppMenuRoute<T>(
       anchor: anchor,
       items: items,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -69,15 +63,15 @@ class GlassMenuButton<T> extends StatelessWidget {
   }
 }
 
-class _GlassMenuRoute<T> extends PopupRoute<T> {
-  _GlassMenuRoute({
+class _AppMenuRoute<T> extends PopupRoute<T> {
+  _AppMenuRoute({
     required this.anchor,
     required this.items,
     required this.barrierLabel,
   });
 
   final Rect anchor;
-  final List<GlassMenuItem<T>> items;
+  final List<AppMenuItem<T>> items;
 
   @override
   final String barrierLabel;
@@ -99,10 +93,8 @@ class _GlassMenuRoute<T> extends PopupRoute<T> {
   ) {
     final media = MediaQuery.of(context);
     final animate = !media.disableAnimations;
-    Widget menu = _GlassMenu<T>(items: items);
+    Widget menu = _AppMenu<T>(items: items);
     if (animate) {
-      // Scale only. Fading would put the blur inside a transparent layer,
-      // where it has nothing to blur until the fade ends.
       menu = ScaleTransition(
         alignment: Alignment.topRight,
         scale: CurvedAnimation(parent: animation, curve: Motion.standard)
@@ -151,68 +143,48 @@ class _MenuLayout extends SingleChildLayoutDelegate {
       anchor != oldDelegate.anchor || safeArea != oldDelegate.safeArea;
 }
 
-class _GlassMenu<T> extends StatelessWidget {
-  const _GlassMenu({required this.items});
+class _AppMenu<T> extends StatelessWidget {
+  const _AppMenu({required this.items});
 
-  final List<GlassMenuItem<T>> items;
+  final List<AppMenuItem<T>> items;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final palette = context.palette;
 
     return Semantics(
       scopesRoute: true,
       namesRoute: true,
       explicitChildNodes: true,
       label: MaterialLocalizations.of(context).popupMenuLabel,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: Radii.mdAll,
-          boxShadow: [
-            BoxShadow(
-              color: palette.cardShadow,
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
+      child: Material(
+        color: scheme.surfaceContainerHigh,
+        elevation: 3,
+        shadowColor: scheme.shadow,
+        surfaceTintColor: Colors.transparent,
+        clipBehavior: Clip.antiAlias,
+        shape: const RoundedRectangleBorder(borderRadius: Radii.lgAll),
+        child: IntrinsicWidth(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: Space.xs),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final item in items)
+              _buildItem(context, item, theme),
           ],
         ),
-        child: GlassSurface(
-          level: GlassLevel.sheet,
-          solidColor: scheme.surfaceContainerHigh,
-          borderRadius: Radii.mdAll,
-          child: DecoratedBox(
-            position: DecorationPosition.foreground,
-            decoration: BoxDecoration(
-              borderRadius: Radii.mdAll,
-              border: Border.all(color: palette.glassBorder),
-            ),
-            child: Material(
-              type: MaterialType.transparency,
-              child: IntrinsicWidth(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: Space.xs),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (final item in items)
-                        _buildItem(context, item, theme),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
+      ),
+    ),
       ),
     );
   }
 
   Widget _buildItem(
     BuildContext context,
-    GlassMenuItem<T> item,
+    AppMenuItem<T> item,
     ThemeData theme,
   ) {
     final color = item.destructive

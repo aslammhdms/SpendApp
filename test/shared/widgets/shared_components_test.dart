@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:spendsheet/core/theme/app_theme.dart';
 import 'package:spendsheet/core/theme/tokens.dart';
 import 'package:spendsheet/features/transactions/widgets/amount_input_pad.dart';
-import 'package:spendsheet/shared/widgets/glass_bottom_bar.dart';
-import 'package:spendsheet/shared/widgets/glass_dialog.dart';
-import 'package:spendsheet/shared/widgets/glass_menu.dart';
-import 'package:spendsheet/shared/widgets/glass_sheet.dart';
+import 'package:spendsheet/shared/widgets/bottom_action_bar.dart';
+import 'package:spendsheet/shared/widgets/app_dialog.dart';
+import 'package:spendsheet/shared/widgets/app_menu.dart';
+import 'package:spendsheet/shared/widgets/app_sheet.dart';
 import 'package:spendsheet/shared/widgets/segmented_control.dart';
 
 Widget _host(Widget home, {bool highContrast = false, double textScale = 1}) {
@@ -90,18 +90,18 @@ void main() {
     });
   });
 
-  group('GlassMenuButton', () {
+  group('AppMenuButton', () {
     Widget menu(ValueChanged<String> onSelected, {bool highContrast = false}) =>
         _host(
           Scaffold(
             body: Align(
               alignment: Alignment.topRight,
-              child: GlassMenuButton<String>(
+              child: AppMenuButton<String>(
                 tooltip: 'Options',
                 onSelected: onSelected,
                 items: const [
-                  GlassMenuItem(value: 'edit', label: 'Edit'),
-                  GlassMenuItem(
+                  AppMenuItem(value: 'edit', label: 'Edit'),
+                  AppMenuItem(
                       value: 'delete', label: 'Delete', destructive: true),
                 ],
               ),
@@ -110,13 +110,12 @@ void main() {
           highContrast: highContrast,
         );
 
-    testWidgets('opens on glass and reports the choice', (tester) async {
+    testWidgets('opens and reports the choice', (tester) async {
       final chosen = <String>[];
       await tester.pumpWidget(menu(chosen.add));
 
       await tester.tap(find.byTooltip('Options'));
       await tester.pumpAndSettle();
-      expect(find.byType(BackdropFilter), findsOneWidget);
       expect(find.text('Edit'), findsOneWidget);
 
       await tester.tap(find.text('Delete'));
@@ -151,16 +150,6 @@ void main() {
       expect(item.right, lessThanOrEqualTo(screen.width));
       expect(item.left, greaterThanOrEqualTo(0));
     });
-
-    testWidgets('is solid when high contrast is on', (tester) async {
-      await tester.pumpWidget(menu((_) {}, highContrast: true));
-
-      await tester.tap(find.byTooltip('Options'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Edit'), findsOneWidget);
-      expect(find.byType(BackdropFilter), findsNothing);
-    });
   });
 
   group('AppAlertDialog', () {
@@ -190,14 +179,13 @@ void main() {
           textScale: textScale,
         );
 
-    testWidgets('shows title, message and actions on glass', (tester) async {
+    testWidgets('shows title, message and actions', (tester) async {
       await tester.pumpWidget(opener());
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
       expect(find.text('Delete Budget'), findsOneWidget);
       expect(find.textContaining('Are you sure'), findsOneWidget);
-      expect(find.byType(BackdropFilter), findsOneWidget);
 
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
@@ -219,7 +207,7 @@ void main() {
   });
 
   group('showAppSheet', () {
-    testWidgets('shows the content on glass with a drag handle',
+    testWidgets('shows the content with a drag handle',
         (tester) async {
       await tester.pumpWidget(_host(
         Scaffold(
@@ -238,17 +226,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('In the sheet'), findsOneWidget);
-      expect(find.byType(BackdropFilter), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
 
-  group('GlassBottomBar', () {
+  group('BottomActionBar', () {
     testWidgets('holds its action clear of the screen edge', (tester) async {
       await tester.pumpWidget(_host(
         Scaffold(
           body: const SizedBox.expand(),
-          bottomNavigationBar: GlassBottomBar(
+          bottomNavigationBar: BottomActionBar(
             child: FilledButton(onPressed: () {}, child: const Text('Save')),
           ),
         ),
@@ -275,7 +262,7 @@ void main() {
             onAmountChanged: (_) {},
             middle: const SizedBox(height: 130, child: Placeholder()),
           ),
-          bottomNavigationBar: GlassBottomBar(
+          bottomNavigationBar: BottomActionBar(
             child: FilledButton(onPressed: () {}, child: const Text('Save')),
           ),
         ),

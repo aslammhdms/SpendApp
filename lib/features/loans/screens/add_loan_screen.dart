@@ -7,7 +7,6 @@ import '../../../data/models/person.dart';
 import '../providers/loans_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../../core/theme/tokens.dart';
 
@@ -160,7 +159,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: GlassAppBar(
+      appBar: AppBar(
         title: Text(widget.isSettlement ? 'Settle Up' : 'Add Loan'),
       ),
       body: Form(

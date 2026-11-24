@@ -321,7 +321,7 @@ class _MainShellState extends ConsumerState<_MainShell>
   Widget build(BuildContext context) {
     return Scaffold(
       // Tab content runs under the navigation bar, so there is something
-      // behind the glass. Each tab pads its scrollable with ScreenInsets.
+      // behind the bars. Each tab pads its scrollable with ScreenInsets.
       extendBody: true,
       body: Builder(
         builder: (context) {

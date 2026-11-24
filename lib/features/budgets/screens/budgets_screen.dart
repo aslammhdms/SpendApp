@@ -12,8 +12,7 @@ import '../../home/providers/dashboard_provider.dart';
 import '../../transactions/providers/transactions_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/screen_insets.dart';
-import '../../../shared/widgets/glass_dialog.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
+import '../../../shared/widgets/app_dialog.dart';
 
 class BudgetsScreen extends ConsumerStatefulWidget {
   const BudgetsScreen({super.key});
@@ -52,8 +51,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: const GlassAppBar(
-        title: Text('Budgets'),
+      appBar: AppBar(
+        title: const Text('Budgets'),
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())

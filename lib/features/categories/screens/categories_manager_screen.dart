@@ -7,9 +7,8 @@ import '../../../data/models/category.dart';
 import '../providers/categories_provider.dart';
 import '../../transactions/providers/transactions_provider.dart'
     show expenseCategoriesProvider, incomeCategoriesProvider;
-import '../../../shared/widgets/glass_app_bar.dart';
-import '../../../shared/widgets/glass_dialog.dart';
-import '../../../shared/widgets/glass_sheet.dart';
+import '../../../shared/widgets/app_dialog.dart';
+import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/screen_insets.dart';
 
 class CategoriesManagerScreen extends ConsumerStatefulWidget {
@@ -46,7 +45,7 @@ class _CategoriesManagerScreenState
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: GlassAppBar(
+      appBar: AppBar(
         title: const Text('Categories'),
         // The lists sit inside the tab view, one scrollable deeper than
         // the app bar looks by default.

@@ -5,8 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../data/models/account.dart';
 import '../providers/accounts_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
-import '../../../shared/widgets/glass_dialog.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
+import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../../core/theme/tokens.dart';
 
@@ -148,7 +147,7 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: GlassAppBar(
+      appBar: AppBar(
         title: Text(isEditing ? 'Edit Account' : 'New Account'),
         actions: [
           if (isEditing)

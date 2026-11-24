@@ -10,9 +10,8 @@ import '../../../data/models/recurring_rule.dart';
 import '../../../data/models/transaction.dart';
 import '../../../shared/widgets/category_icon.dart';
 import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
-import '../../../shared/widgets/glass_dialog.dart';
-import '../../../shared/widgets/glass_sheet.dart';
+import '../../../shared/widgets/app_dialog.dart';
+import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/money_text.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../home/providers/dashboard_provider.dart';
@@ -35,7 +34,7 @@ class RecurringScreen extends ConsumerWidget {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: const GlassAppBar(title: Text('Repeating payments')),
+      appBar: AppBar(title: const Text('Repeating payments')),
       body: rulesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Could not load: $e')),

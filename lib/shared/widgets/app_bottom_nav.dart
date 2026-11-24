@@ -1,7 +1,5 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/app_palette.dart';
-import 'glass_surface.dart';
 
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
@@ -13,18 +11,7 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Frosted glass: the shell extends each tab's content under this bar.
-    return GlassSurface(
-      solidColor: Theme.of(context).colorScheme.surfaceContainer,
-      border: Border(top: BorderSide(color: context.palette.glassBorder)),
-      child: _buildBar(context),
-    );
-  }
-
-  Widget _buildBar(BuildContext context) {
     return NavigationBar(
-      // The glass behind it is the background.
-      backgroundColor: Colors.transparent,
       selectedIndex: currentIndex,
       onDestinationSelected: (index) {
         switch (index) {

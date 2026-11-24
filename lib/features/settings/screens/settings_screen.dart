@@ -11,9 +11,8 @@ import '../../wallet_capture/providers/wallet_capture_provider.dart';
 import '../../notices/scheduled_notices_service.dart';
 import '../widgets/sync_status_tile.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../../shared/widgets/glass_sheet.dart';
-import '../../../shared/widgets/glass_dialog.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
+import '../../../shared/widgets/app_sheet.dart';
+import '../../../shared/widgets/app_dialog.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -118,8 +117,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       // The list has no padding of its own, so it picks up the bars'
       // insets by itself.
       extendBodyBehindAppBar: true,
-      appBar: const GlassAppBar(
-        title: Text('Settings'),
+      appBar: AppBar(
+        title: const Text('Settings'),
       ),
       body: ListView(
         children: [

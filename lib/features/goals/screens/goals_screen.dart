@@ -6,8 +6,7 @@ import '../../../core/theme/tokens.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../data/models/goal.dart';
 import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/glass_app_bar.dart';
-import '../../../shared/widgets/glass_sheet.dart';
+import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../providers/goals_provider.dart';
@@ -23,7 +22,7 @@ class GoalsScreen extends ConsumerWidget {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: const GlassAppBar(title: Text('Savings goals')),
+      appBar: AppBar(title: const Text('Savings goals')),
       body: goalsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Could not load goals: $e')),
