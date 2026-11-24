@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/theme/wallpaper_colors.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../core/services/notification_service.dart';
@@ -171,6 +172,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showThemePicker(context, settings.themeMode),
           ),
+          if (ref.watch(wallpaperColorProvider).valueOrNull != null)
+            SwitchListTile(
+              secondary: const Icon(Icons.wallpaper_outlined),
+              title: const Text('Use wallpaper colours'),
+              subtitle: const Text("Match your phone's colours instead of teal"),
+              value: ref.watch(useWallpaperColorsProvider),
+              onChanged: (value) =>
+                  ref.read(useWallpaperColorsProvider.notifier).set(value),
+            ),
           const Divider(),
 
           // Notifications

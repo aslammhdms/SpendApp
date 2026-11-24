@@ -30,7 +30,7 @@ class MonthlySummaryCard extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: Radii.xlAll,
+        borderRadius: Radii.xxlAll,
         boxShadow: [
           BoxShadow(
             color: palette.heroShadow,
@@ -41,7 +41,7 @@ class MonthlySummaryCard extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: Radii.xlAll,
+        borderRadius: Radii.xxlAll,
         child: ColoredBox(
           // One flat color: no gradient, no highlights.
           color: palette.hero,
@@ -70,7 +70,7 @@ class MonthlySummaryCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: palette.raisedSurface,
-                        borderRadius: Radii.lgAll,
+                        borderRadius: Radii.xlAll,
                       ),
                       child: Row(
                         children: [
@@ -143,7 +143,7 @@ class MonthlySummaryCard extends StatelessWidget {
           balance,
           currency: currency,
           semanticLabel: isSaving ? 'Net savings' : 'Over budget',
-          style: text.displaySmall?.copyWith(color: palette.onHero),
+          style: text.displayMedium?.copyWith(color: palette.onHero),
         ),
         const SizedBox(height: Space.xs),
         if (isSaving)

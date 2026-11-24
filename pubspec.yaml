@@ -59,6 +59,7 @@ dependencies:
   cupertino_icons: ^1.0.6
   flutter_slidable: ^5.2.0
   material_ui: ^1.11.1
+  dynamic_color: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -86,13 +87,9 @@ flutter:
     - assets/icons/
 
   fonts:
-    - family: Inter
+    - family: Roboto Flex
       fonts:
-        - asset: assets/fonts/inter/Inter-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/inter/Inter-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/inter/Inter-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/inter/Inter-Bold.ttf
-          weight: 700
+        - asset: assets/fonts/roboto_flex/RobotoFlex-Latin.ttf
+    - family: Roboto Flex Ext
+      fonts:
+        - asset: assets/fonts/roboto_flex/RobotoFlex-LatinExt.ttf

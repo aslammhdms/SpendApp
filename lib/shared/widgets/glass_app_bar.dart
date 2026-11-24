@@ -97,7 +97,7 @@ class _GlassAppBarState extends State<GlassAppBar> {
         duration: animate ? Motion.medium : Duration.zero,
         curve: Motion.standard,
         builder: (context, t, _) => GlassSurface(
-          solidColor: scheme.surface,
+          solidColor: scheme.surfaceContainer,
           intensity: t,
           border: Border(bottom: BorderSide(color: palette.glassBorder)),
           child: const SizedBox.expand(),

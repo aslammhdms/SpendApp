@@ -17,15 +17,26 @@ abstract final class AppTheme {
   static ThemeData get dark =>
       _build(AppColorSchemes.dark, AppPalette.dark(AppColorSchemes.dark));
 
+  /// The theme for a scheme other than the brand's, such as one built on
+  /// the phone's wallpaper color.
+  static ThemeData fromScheme(ColorScheme scheme) => _build(
+        scheme,
+        scheme.brightness == Brightness.dark
+            ? AppPalette.dark(scheme)
+            : AppPalette.light(scheme),
+      );
+
   static ThemeData _build(ColorScheme scheme, AppPalette palette) {
     final isDark = scheme.brightness == Brightness.dark;
     final text = AppTypography.textTheme.apply(
       fontFamily: AppTypography.fontFamily,
+      fontFamilyFallback: AppTypography.fontFamilyFallback,
       bodyColor: scheme.onSurface,
       displayColor: scheme.onSurface,
     );
 
-    const buttonShape = RoundedRectangleBorder(borderRadius: Radii.mdAll);
+    // Buttons are fully rounded.
+    const buttonShape = StadiumBorder();
     const buttonSize = Size(64, Sizes.touchTarget);
     const buttonPadding = EdgeInsets.symmetric(horizontal: Space.xl);
 
@@ -33,6 +44,7 @@ abstract final class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       fontFamily: AppTypography.fontFamily,
+      fontFamilyFallback: AppTypography.fontFamilyFallback,
       textTheme: text,
       scaffoldBackgroundColor: scheme.surface,
       extensions: [palette],
@@ -42,32 +54,27 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        centerTitle: true,
-        titleTextStyle: text.titleLarge,
+        centerTitle: false,
+        titleSpacing: Space.xl,
+        titleTextStyle: text.headlineSmall,
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
           statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
           // Where Android still draws its own navigation strip, match the
-          // glass bar above it (its tint over the page color).
-          systemNavigationBarColor: Color.alphaBlend(
-            palette.glassBarTint.withValues(alpha: Glass.barTintOpacity),
-            scheme.surface,
-          ),
+          // navigation bar above it.
+          systemNavigationBarColor: scheme.surfaceContainer,
           systemNavigationBarIconBrightness:
               isDark ? Brightness.light : Brightness.dark,
         ),
       ),
-      // Cards: a solid surface set off from the neutral page by its tone
-      // and a hairline. No elevation shadow.
+      // Cards: a surface set off from the page by its tone alone. No
+      // border and no elevation shadow.
       cardTheme: CardThemeData(
         color: scheme.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: Radii.lgAll,
-          side: BorderSide(color: palette.cardBorder),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: Radii.xlAll),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -117,23 +124,23 @@ abstract final class AppTheme {
           vertical: Space.md + 2,
         ),
         border: const OutlineInputBorder(
-          borderRadius: Radii.mdAll,
+          borderRadius: Radii.lgAll,
           borderSide: BorderSide.none,
         ),
         enabledBorder: const OutlineInputBorder(
-          borderRadius: Radii.mdAll,
+          borderRadius: Radii.lgAll,
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: Radii.mdAll,
+          borderRadius: Radii.lgAll,
           borderSide: BorderSide(color: scheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: Radii.mdAll,
+          borderRadius: Radii.lgAll,
           borderSide: BorderSide(color: scheme.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: Radii.mdAll,
+          borderRadius: Radii.lgAll,
           borderSide: BorderSide(color: scheme.error, width: 2),
         ),
         hintStyle: text.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
@@ -143,10 +150,10 @@ abstract final class AppTheme {
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,
-        elevation: 2,
-        focusElevation: 2,
-        hoverElevation: 3,
-        highlightElevation: 3,
+        elevation: 3,
+        focusElevation: 3,
+        hoverElevation: 4,
+        highlightElevation: 4,
         shape: const RoundedRectangleBorder(borderRadius: Radii.lgAll),
         extendedTextStyle: text.labelLarge,
       ),
@@ -156,7 +163,7 @@ abstract final class AppTheme {
         indicatorColor: scheme.secondaryContainer,
         indicatorShape: const StadiumBorder(),
         elevation: 0,
-        height: 72,
+        height: 68,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => text.labelMedium?.copyWith(
@@ -164,8 +171,12 @@ abstract final class AppTheme {
                 ? scheme.onSurface
                 : scheme.onSurfaceVariant,
             fontWeight: states.contains(WidgetState.selected)
-                ? FontWeight.w600
+                ? FontWeight.w700
                 : FontWeight.w500,
+            fontVariations: [
+              FontVariation(
+                  'wght', states.contains(WidgetState.selected) ? 700 : 500),
+            ],
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -230,6 +241,8 @@ abstract final class AppTheme {
         linearTrackColor: scheme.surfaceContainerHighest,
         linearMinHeight: Sizes.progressBar,
         borderRadius: Radii.smAll,
+        // The current Material look: a gap between the bar and its track.
+        year2023: false,
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: scheme.surfaceContainerLow,
@@ -249,7 +262,7 @@ abstract final class AppTheme {
       popupMenuTheme: PopupMenuThemeData(
         color: scheme.surfaceContainerHigh,
         surfaceTintColor: Colors.transparent,
-        shape: const RoundedRectangleBorder(borderRadius: Radii.mdAll),
+        shape: const RoundedRectangleBorder(borderRadius: Radii.lgAll),
         textStyle: text.bodyMedium,
       ),
       snackBarTheme: SnackBarThemeData(
@@ -257,7 +270,7 @@ abstract final class AppTheme {
         contentTextStyle:
             text.bodyMedium?.copyWith(color: scheme.onInverseSurface),
         actionTextColor: scheme.inversePrimary,
-        shape: const RoundedRectangleBorder(borderRadius: Radii.mdAll),
+        shape: const RoundedRectangleBorder(borderRadius: Radii.lgAll),
         behavior: SnackBarBehavior.floating,
       ),
       tooltipTheme: TooltipThemeData(

@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'core/theme/app_theme.dart';
+import 'core/theme/wallpaper_colors.dart';
 import 'core/theme/tokens.dart';
 import 'core/services/biometric_service.dart';
 import 'core/services/window_protection_service.dart';
@@ -357,6 +357,7 @@ class SpendSheetApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final settings = ref.watch(settingsProvider);
+    final themes = ref.watch(appThemesProvider);
 
     ThemeMode themeMode;
     switch (settings.themeMode) {
@@ -376,12 +377,14 @@ class SpendSheetApp extends ConsumerWidget {
       isLockEnabled: settings.biometricLockEnabled,
       startLocked: ref.watch(startLockedProvider),
       themeMode: themeMode,
+      theme: themes.light,
+      darkTheme: themes.dark,
       child: SyncListRefresher(
         child: MaterialApp.router(
           title: 'SpendSheet',
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
+          theme: themes.light,
+          darkTheme: themes.dark,
           themeMode: themeMode,
           routerConfig: router,
           builder: (context, child) {
@@ -406,6 +409,8 @@ class _BiometricLockGuard extends StatefulWidget {
   final bool isLockEnabled;
   final bool startLocked;
   final ThemeMode themeMode;
+  final ThemeData theme;
+  final ThemeData darkTheme;
 
   const _BiometricLockGuard({
     required this.child,
@@ -414,6 +419,8 @@ class _BiometricLockGuard extends StatefulWidget {
     required this.isLockEnabled,
     required this.startLocked,
     required this.themeMode,
+    required this.theme,
+    required this.darkTheme,
   });
 
   @override
@@ -510,8 +517,8 @@ class _BiometricLockGuardState extends State<_BiometricLockGuard>
           if (_isLocked)
             MaterialApp(
               debugShowCheckedModeBanner: false,
-              theme: AppTheme.light,
-              darkTheme: AppTheme.dark,
+              theme: widget.theme,
+              darkTheme: widget.darkTheme,
               themeMode: widget.themeMode,
               home: Builder(builder: (context) {
                 final scheme = Theme.of(context).colorScheme;

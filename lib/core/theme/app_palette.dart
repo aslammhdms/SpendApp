@@ -91,9 +91,9 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// Hairline on the edge of a glass surface that faces the content.
   final Color glassBorder;
 
-  /// The Home hero card: the one place the brand color fills a surface.
-  /// One flat color. [onHero] and [onHeroMuted] meet AA (4.5:1) on it,
-  /// with [heroGlow] over it too. The same in light and dark mode.
+  /// The Home hero card: the one place the primary color fills a surface.
+  /// One flat color from the scheme (primary in light mode, its container
+  /// in dark). [onHero] and [onHeroMuted] meet AA (4.5:1) on it.
   final Color hero;
 
   /// The month chip on the hero: [heroShade] darkens its fill, which only
@@ -104,26 +104,27 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color onHeroMuted;
   final Color heroShadow;
 
-  static const _hero = Color(0xFF0D4F58);
   static const _heroGlow = Color(0x14FFFFFF);
-  static const _onHero = Color(0xFFFFFFFF);
-  static const _onHeroMuted = Color(0xFFE6F2F3);
   static const _heroShade = Color(0x14000000);
 
+  /// [on] toned a little towards [background], for secondary text.
+  static Color _muted(Color on, Color background) =>
+      Color.alphaBlend(on.withValues(alpha: 0.86), background);
+
   static AppPalette light(ColorScheme scheme) => AppPalette(
-        income: const Color(0xFF047552),
+        income: const Color(0xFF03694A),
         incomeContainer: const Color(0xFFD1FAE5),
         onIncomeContainer: const Color(0xFF065F46),
         expense: const Color(0xFFB91C1C),
         expenseContainer: const Color(0xFFFEE2E2),
         onExpenseContainer: const Color(0xFF991B1B),
         transfer: scheme.primary,
-        transferContainer: const Color(0xFFD3ECEF),
-        onTransferContainer: const Color(0xFF0A3F47),
+        transferContainer: scheme.secondaryContainer,
+        onTransferContainer: scheme.onSecondaryContainer,
         loan: const Color(0xFF6D28D9),
         loanContainer: const Color(0xFFEDE9FE),
         onLoanContainer: const Color(0xFF5B21B6),
-        budgetSafe: const Color(0xFF047552),
+        budgetSafe: const Color(0xFF03694A),
         budgetWarning: const Color(0xFFA14A07),
         budgetDanger: const Color(0xFFB91C1C),
         chart: const [
@@ -138,17 +139,17 @@ class AppPalette extends ThemeExtension<AppPalette> {
         ],
         chartOther: const Color(0xFF64748B),
         raisedSurface: scheme.surfaceContainerLowest,
-        cardShadow: const Color(0x12101828),
-        cardBorder: const Color(0xFFE6E6EB),
-        glassBarTint: const Color(0xFFFFFFFF),
-        glassSheetTint: const Color(0xFFFFFFFF),
-        glassBorder: const Color(0x1F17181C),
-        hero: _hero,
+        cardShadow: Colors.transparent,
+        cardBorder: Colors.transparent,
+        glassBarTint: scheme.surfaceContainer,
+        glassSheetTint: scheme.surfaceContainerLow,
+        glassBorder: Colors.transparent,
+        hero: scheme.primary,
         heroGlow: _heroGlow,
         heroShade: _heroShade,
-        onHero: _onHero,
-        onHeroMuted: _onHeroMuted,
-        heroShadow: const Color(0x4D0D4F58),
+        onHero: scheme.onPrimary,
+        onHeroMuted: _muted(scheme.onPrimary, scheme.primary),
+        heroShadow: Colors.transparent,
       );
 
   static AppPalette dark(ColorScheme scheme) => AppPalette(
@@ -159,8 +160,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
         expenseContainer: const Color(0xFF7F1D1D),
         onExpenseContainer: const Color(0xFFFECACA),
         transfer: scheme.primary,
-        transferContainer: const Color(0xFF103E45),
-        onTransferContainer: const Color(0xFFC6EEF2),
+        transferContainer: scheme.secondaryContainer,
+        onTransferContainer: scheme.onSecondaryContainer,
         loan: const Color(0xFFC4B5FD),
         loanContainer: const Color(0xFF4C1D95),
         onLoanContainer: const Color(0xFFDDD6FE),
@@ -179,17 +180,19 @@ class AppPalette extends ThemeExtension<AppPalette> {
         ],
         chartOther: const Color(0xFF64748B),
         raisedSurface: scheme.surfaceContainerHigh,
-        cardShadow: const Color(0x66000000),
-        cardBorder: const Color(0xFF24252B),
-        glassBarTint: const Color(0xFF17181D),
-        glassSheetTint: const Color(0xFF1C1D23),
-        glassBorder: const Color(0x1FFFFFFF),
-        hero: _hero,
+        cardShadow: Colors.transparent,
+        cardBorder: Colors.transparent,
+        glassBarTint: scheme.surfaceContainer,
+        glassSheetTint: scheme.surfaceContainerLow,
+        glassBorder: Colors.transparent,
+        hero: scheme.primaryContainer,
         heroGlow: _heroGlow,
         heroShade: _heroShade,
-        onHero: _onHero,
-        onHeroMuted: _onHeroMuted,
-        heroShadow: const Color(0x66000000),
+        // Lighter than onPrimaryContainer, which is too close to the
+        // container for small text.
+        onHero: Colors.white,
+        onHeroMuted: scheme.onSurface,
+        heroShadow: Colors.transparent,
       );
 
   /// Budget color for a fraction of the budget used (0.85 = 85%).

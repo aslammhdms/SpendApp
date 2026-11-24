@@ -294,8 +294,6 @@ class _AddEditTransactionScreenState
     final incomeCategoriesAsync = ref.watch(incomeCategoriesProvider);
     final accountsAsync = ref.watch(accountsWithBalanceProvider);
     final currency = ref.watch(settingsProvider).currency;
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
     final (typeContainer, onTypeContainer) = _typeColors();
 
     return Scaffold(
@@ -318,35 +316,17 @@ class _AddEditTransactionScreenState
               Space.lg,
               Space.sm,
             ),
-            // Same shape as SegmentedControl: a rounded block in a track.
-            child: Container(
-              height: SegmentedControl.height,
-              padding: const EdgeInsets.all(Space.xs),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHigh,
-                borderRadius: Radii.mdAll,
-              ),
-              child: TabBar(
-                controller: _tabController,
-                tabs: [
-                  const Tab(text: 'Expense'),
-                  const Tab(text: 'Income'),
-                  const Tab(text: 'Transfer'),
-                  if (!isEditing) const Tab(text: 'Loan'),
-                ],
-                indicator: BoxDecoration(
-                  color: typeContainer,
-                  borderRadius: Radii.smAll,
-                ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                dividerHeight: 0,
-                labelColor: onTypeContainer,
-                unselectedLabelColor: scheme.onSurfaceVariant,
-                labelStyle: text.labelLarge,
-                unselectedLabelStyle: text.labelLarge,
-                splashBorderRadius: Radii.smAll,
-                labelPadding: EdgeInsets.zero,
-              ),
+            child: SegmentedControl<int>(
+              segments: {
+                0: 'Expense',
+                1: 'Income',
+                2: 'Transfer',
+                if (!isEditing) 3: 'Loan',
+              },
+              selected: _tabController.index,
+              onChanged: (index) => _tabController.index = index,
+              selectedColor: typeContainer,
+              selectedForeground: onTypeContainer,
             ),
           ),
         ),

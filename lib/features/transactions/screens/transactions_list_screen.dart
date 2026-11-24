@@ -17,6 +17,7 @@ import '../../../shared/widgets/auto_hide_fab.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/money_text.dart';
 import '../../../shared/widgets/section_header.dart';
+import '../../../shared/widgets/segmented_list.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/screen_insets.dart';
@@ -258,25 +259,14 @@ class _TransactionsListScreenState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             OverlineHeader(dateKey),
-            Card(
-              margin: EdgeInsets.zero,
-              clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: Space.xs),
-                child: Column(
-                  children: [
-                    ...items.map((item) {
-                      if (item is Transaction) {
-                        return _buildTransactionItem(
-                            item, categories, currency);
-                      } else if (item is Loan) {
-                        return _buildLoanItem(item, state, currency);
-                      }
-                      return const SizedBox.shrink();
-                    }),
-                  ],
-                ),
-              ),
+            SegmentedList(
+              children: [
+                for (final item in items)
+                  if (item is Transaction)
+                    _buildTransactionItem(item, categories, currency)
+                  else if (item is Loan)
+                    _buildLoanItem(item, state, currency),
+              ],
             ),
           ],
         );
