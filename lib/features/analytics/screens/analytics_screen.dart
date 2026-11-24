@@ -202,7 +202,7 @@ class _SummaryCard extends StatelessWidget {
               style: text.labelMedium?.copyWith(color: scheme.onSurfaceVariant),
             ),
             Semantics(
-              label: 'Net, $net',
+              label: CurrencyUtils.spoken('Net, $net'),
               excludeSemantics: true,
               child: Text(
                 net,

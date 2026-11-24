@@ -151,7 +151,7 @@ class BudgetAlertService {
 
   static String _body(Budget budget, String currency) {
     String money(double value) =>
-        CurrencyUtils.format(value, currencyCode: currency);
+        CurrencyUtils.format(value, currencyCode: currency, plain: true);
     final period = switch (budget.period) {
       BudgetPeriod.weekly => 'this week',
       BudgetPeriod.monthly => 'this month',

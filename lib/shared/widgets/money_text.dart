@@ -64,8 +64,12 @@ class MoneyText extends StatelessWidget {
         '$prefix${CurrencyUtils.format(amount, currencyCode: currency)}';
     final base = style ?? Theme.of(context).textTheme.titleSmall!;
     final label = semanticLabel ?? kind.spokenLabel;
+    // Spoken with the currency's code where its sign is too new for a
+    // screen reader to know.
+    final spoken = '$prefix'
+        '${CurrencyUtils.format(amount, currencyCode: currency, plain: true)}';
     return Semantics(
-      label: label.isEmpty ? text : '$label, $text',
+      label: label.isEmpty ? spoken : '$label, $spoken',
       excludeSemantics: true,
       child: Text(
         text,
@@ -98,7 +102,8 @@ class AnimatedMoney extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-    final finalText = CurrencyUtils.format(amount, currencyCode: currency);
+    final finalText =
+        CurrencyUtils.format(amount, currencyCode: currency, plain: true);
     return Semantics(
       label: semanticLabel == null ? finalText : '$semanticLabel, $finalText',
       excludeSemantics: true,

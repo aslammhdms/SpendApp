@@ -85,7 +85,8 @@ class _BudgetProgressItem extends StatelessWidget {
     final limit = CurrencyUtils.format(budget.amount, currencyCode: currency);
 
     return Semantics(
-      label: '${budget.name} budget, $percentLabel used, $spent of $limit',
+      label: CurrencyUtils.spoken(
+          '${budget.name} budget, $percentLabel used, $spent of $limit'),
       excludeSemantics: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

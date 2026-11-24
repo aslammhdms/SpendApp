@@ -69,6 +69,10 @@ void main() {
     test('currency code before or after', () {
       expect(parse('Carrefour', 'AED 45.00 with Visa ••1111')!.amount, 45.0);
       expect(parse('Carrefour', 'AED 45.00 with Visa ••1111')!.currency, 'AED');
+      // The dirham sign introduced in 2025.
+      final signed = parse('Carrefour', '\u20C345.00 with Visa ••1111')!;
+      expect(signed.amount, 45.0);
+      expect(signed.currency, '\u20C3');
       expect(parse('Lidl', '12,50 EUR')!.amount, 12.5);
       expect(parse('Lidl', '12,50 EUR')!.currency, 'EUR');
     });

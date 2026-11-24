@@ -29,14 +29,28 @@ void main() {
       );
     });
 
-    test('dirham and riyal are shown by code, with a space', () {
+    test('the riyal is shown by code, with a space', () {
       const space = '\u00A0'; // non-breaking
-      expect(CurrencyUtils.format(12.37, currencyCode: 'AED'),
-          'AED${space}12.37');
       expect(CurrencyUtils.format(1250, currencyCode: 'SAR'),
           'SAR${space}1,250.00');
+    });
+
+    test('the dirham uses its new sign, before the amount', () {
+      expect(CurrencyUtils.dirhamSign.runes.single, 0x20C3);
+      expect(CurrencyUtils.format(12.37, currencyCode: 'AED'), '\u20C312.37');
       expect(CurrencyUtils.formatWithSign(-12.37, currencyCode: 'AED'),
-          '-AED${space}12.37');
+          '-\u20C312.37');
+    });
+
+    test('outside the app\'s font the dirham falls back to its code', () {
+      const space = '\u00A0';
+      // Notifications and screen readers cannot show or say the new sign.
+      expect(CurrencyUtils.format(12.37, currencyCode: 'AED', plain: true),
+          'AED${space}12.37');
+      expect(CurrencyUtils.spoken('Net, +\u20C312.37'), 'Net, +AED 12.37');
+      // Other currencies are unchanged.
+      expect(CurrencyUtils.format(12.37, currencyCode: 'USD', plain: true),
+          '\$12.37');
     });
 
     test('no amount contains right-to-left characters', () {

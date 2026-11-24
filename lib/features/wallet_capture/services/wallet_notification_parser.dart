@@ -31,7 +31,7 @@ class ParsedPayment {
 class WalletNotificationParser {
   const WalletNotificationParser._();
 
-  static const _symbol = r'(?:[A-Z]{1,3})?[$€£¥₹₽₩₺₪₫฿₦₱₴₸₼₾]';
+  static const _symbol = r'(?:[A-Z]{1,3})?[$€£¥₹₽₩₺₪₫฿₦₱₴₸₼₾\u20C3]';
   static const _code =
       'USD|EUR|GBP|INR|AED|SAR|QAR|KWD|BHD|OMR|JOD|EGP|CAD|AUD|NZD|SGD|HKD|'
       'JPY|CNY|KRW|CHF|SEK|NOK|DKK|PLN|CZK|HUF|RON|TRY|ILS|ZAR|NGN|KES|BRL|'

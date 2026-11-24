@@ -101,8 +101,8 @@ class BudgetCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(right: Space.lg - Space.sm),
                 child: Semantics(
-                  label:
-                      '$percentLabel used, $spent of $limit, $remainingLabel',
+                  label: CurrencyUtils.spoken(
+                      '$percentLabel used, $spent of $limit, $remainingLabel'),
                   excludeSemantics: true,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

@@ -14,8 +14,9 @@ abstract final class AppTypography {
   static const String fontFamily = 'Roboto Flex';
 
   /// The second font file, holding the currency signs and accented letters
-  /// that the first leaves out.
-  static const List<String> fontFamilyFallback = ['Roboto Flex Ext'];
+  /// that the first leaves out, then a one-character font for the UAE
+  /// dirham sign, which is too new for either.
+  static const List<String> fontFamilyFallback = ['Roboto Flex Ext', 'Dirham'];
 
   /// Roboto Flex's digits are fixed-width by default, so amounts line up
   /// in columns and do not jitter while a number animates. The feature is

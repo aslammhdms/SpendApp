@@ -21,7 +21,7 @@ object WalletPaymentParser {
     // Dart's \s also covers Unicode spaces; Java's covers ASCII only.
     private const val WS = "[\\s\\u00A0\\u2007\\u2009\\u202F\\u3000\\uFEFF]"
 
-    private const val SYMBOL = "(?:[A-Z]{1,3})?[\$€£¥₹₽₩₺₪₫฿₦₱₴₸₼₾]"
+    private const val SYMBOL = "(?:[A-Z]{1,3})?[\$€£¥₹₽₩₺₪₫฿₦₱₴₸₼₾\u20C3]"
     private const val CODE =
         "USD|EUR|GBP|INR|AED|SAR|QAR|KWD|BHD|OMR|JOD|EGP|CAD|AUD|NZD|SGD|HKD|" +
             "JPY|CNY|KRW|CHF|SEK|NOK|DKK|PLN|CZK|HUF|RON|TRY|ILS|ZAR|NGN|KES|BRL|" +

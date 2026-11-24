@@ -229,7 +229,7 @@ class ScheduledNoticesService {
     required String currency,
   }) {
     String money(double v) =>
-        CurrencyUtils.format(v, currencyCode: currency);
+        CurrencyUtils.format(v, currencyCode: currency, plain: true);
     final title = period.frequency == SummaryFrequency.monthly
         ? 'Your ${DateFormat('MMMM').format(period.start)} spending'
         : 'Your spending, ${period.rangeLabel}';
@@ -275,7 +275,10 @@ class ScheduledNoticesService {
 
   @visibleForTesting
   static String reminderBody(RecurringRule rule, String currency) {
-    final amount = CurrencyUtils.format(rule.amount, currencyCode: currency);
+    final amount = CurrencyUtils.format(
+        rule.amount,
+        currencyCode: currency,
+        plain: true);
     return '$amount. SpendSheet adds it as an expense when it falls due.';
   }
 

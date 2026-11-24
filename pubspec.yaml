@@ -93,3 +93,7 @@ flutter:
     - family: Roboto Flex Ext
       fonts:
         - asset: assets/fonts/roboto_flex/RobotoFlex-LatinExt.ttf
+    # One character: the UAE dirham sign, which phone fonts do not have yet.
+    - family: Dirham
+      fonts:
+        - asset: assets/fonts/dirham/Dirham.ttf

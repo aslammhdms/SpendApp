@@ -88,7 +88,7 @@ class _AmountInputPadState extends State<AmountInputPad> {
       ),
       child: Semantics(
         liveRegion: true,
-        label: 'Amount, $formatted',
+        label: CurrencyUtils.spoken('Amount, $formatted'),
         excludeSemantics: true,
         child: Column(
           mainAxisSize: MainAxisSize.min,
