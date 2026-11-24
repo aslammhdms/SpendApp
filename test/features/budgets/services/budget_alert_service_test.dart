@@ -14,6 +14,10 @@ typedef ShownAlert = ({int id, String title, String body});
 class _RecordingNotifications extends NotificationService {
   final List<ShownAlert> shown = [];
   Object? failWith;
+  bool enabled = true;
+
+  @override
+  Future<bool> areEnabled() async => enabled;
 
   @override
   Future<void> showBudgetAlert({
@@ -194,5 +198,20 @@ void main() {
     await alerts.check([_budget(spent: 425)]);
 
     expect(notifications.shown, hasLength(1));
+  });
+
+  test('keeps an alert for later while the phone blocks notifications',
+      () async {
+    // Android drops a blocked notification without an error, so the alert
+    // must not count as sent until it can actually appear.
+    notifications.enabled = false;
+    await alerts.check([_budget(spent: 425)]);
+    expect(notifications.shown, isEmpty);
+
+    notifications.enabled = true;
+    await alerts.check([_budget(spent: 425)]);
+
+    expect(notifications.shown, hasLength(1));
+    expect(notifications.shown.single.title, 'Groceries budget at 85%');
   });
 }

@@ -62,6 +62,22 @@ class NotificationService {
     }
   }
 
+  /// Whether the system will display this app's notifications. Android
+  /// drops a blocked notification without any error, so callers check this
+  /// before treating an alert as shown.
+  Future<bool> areEnabled() async {
+    try {
+      await _ensureInitialized();
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (android == null) return true;
+      return await android.areNotificationsEnabled() ?? false;
+    } catch (e) {
+      debugPrint('Notification status check failed: $e');
+      return false;
+    }
+  }
+
   /// Shows a budget alert. A later alert with the same [id] replaces it.
   Future<void> showBudgetAlert({
     required int id,

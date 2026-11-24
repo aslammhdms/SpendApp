@@ -58,6 +58,7 @@ class BudgetAlertService {
 
     final prefs = await SharedPreferences.getInstance();
     final now = _now();
+    bool? canShow; // asked once, only when an alert is due
 
     for (final budget in budgets) {
       if (budget.isDeleted) continue;
@@ -67,6 +68,10 @@ class BudgetAlertService {
       final level = levelFor(budget);
 
       if (level.index > sent) {
+        // A blocked alert would vanish without an error. Leave it
+        // unrecorded so it shows once notifications are allowed.
+        canShow ??= await _notifications.areEnabled();
+        if (!canShow) continue;
         try {
           await _notifications.showBudgetAlert(
             id: _notificationId(budget.id),

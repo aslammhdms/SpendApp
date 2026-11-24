@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../data/remote/sync_engine.dart';
 import '../../../shared/widgets/auto_hide_fab.dart';
@@ -33,11 +34,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     // Load dashboard data on init
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(dashboardProvider.notifier).refresh();
-      ref.read(walletCaptureProvider.notifier).refresh();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _listenToSync();
+      ref.read(walletCaptureProvider.notifier).refresh();
+      await _askForAlertPermission();
+      if (mounted) await ref.read(dashboardProvider.notifier).refresh();
     });
+  }
+
+  /// Budget alerts are on by default, but Android 13 and later show nothing
+  /// until the user allows notifications. Ask once Home opens, when the
+  /// user has budgets to be alerted about. Android shows its dialog at most
+  /// twice in total, so this does not keep nagging after a refusal.
+  Future<void> _askForAlertPermission() async {
+    final settings = ref.read(settingsProvider);
+    if (!settings.notificationsEnabled || !settings.budgetAlertsEnabled) {
+      return;
+    }
+    try {
+      final budgets = await ref.read(budgetRepositoryProvider).getAll();
+      if (budgets.every((b) => b.isDeleted)) return;
+      final notifications = ref.read(notificationServiceProvider);
+      if (await notifications.areEnabled()) return;
+      await notifications.requestPermission();
+    } catch (e) {
+      debugPrint('Budget alert permission check failed: $e');
+    }
   }
 
   void _listenToSync() {
