@@ -44,7 +44,7 @@ void main() {
       scheme.onSurface,
       scheme.primary,
       scheme.error,
-      ...palette.heroGradient,
+      palette.hero,
       ...palette.chart,
       palette.chartOther,
       palette.income,
@@ -149,13 +149,12 @@ void main() {
         );
       });
 
-      test('hero text meets AA on the gradient, highlight included', () {
-        for (final stop in palette.heroGradient) {
-          final lit = Color.alphaBlend(palette.heroGlow, stop);
-          for (final on in [palette.onHero, palette.onHeroMuted]) {
-            expect(contrast(on, stop), greaterThanOrEqualTo(_textAA));
-            expect(contrast(on, lit), greaterThanOrEqualTo(_textAA));
-          }
+      test('hero text meets AA on the hero color, chip hairline included',
+          () {
+        final lit = Color.alphaBlend(palette.heroGlow, palette.hero);
+        for (final on in [palette.onHero, palette.onHeroMuted]) {
+          expect(contrast(on, palette.hero), greaterThanOrEqualTo(_textAA));
+          expect(contrast(on, lit), greaterThanOrEqualTo(_textAA));
         }
       });
 

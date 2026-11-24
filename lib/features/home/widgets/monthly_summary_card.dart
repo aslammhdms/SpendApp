@@ -42,28 +42,11 @@ class MonthlySummaryCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: Radii.xlAll,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: palette.heroGradient,
-            ),
-          ),
+        child: ColoredBox(
+          // One flat color: no gradient, no highlights.
+          color: palette.hero,
           child: Stack(
             children: [
-              // Decoration only: a soft highlight top right and a shade
-              // bottom left, drawn as gradients (no blur).
-              Positioned(
-                top: -110,
-                right: -90,
-                child: _HeroDisc(size: 320, color: palette.heroGlow),
-              ),
-              Positioned(
-                bottom: -120,
-                left: -90,
-                child: _HeroDisc(size: 300, color: palette.heroShade),
-              ),
               Padding(
                 padding: const EdgeInsets.all(Space.sm),
                 child: Column(
@@ -207,29 +190,5 @@ class MonthlySummaryCard extends StatelessWidget {
     ];
     final now = DateTime.now();
     return '${months[now.month - 1]} ${now.year}';
-  }
-}
-
-class _HeroDisc extends StatelessWidget {
-  const _HeroDisc({required this.size, required this.color});
-
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox.square(
-      dimension: size,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          // Strongest in the middle, fading out to nothing at the rim.
-          gradient: RadialGradient(
-            colors: [color, color, color.withValues(alpha: 0)],
-            stops: const [0, 0.45, 1],
-          ),
-        ),
-      ),
-    );
   }
 }

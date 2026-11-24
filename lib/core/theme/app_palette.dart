@@ -33,7 +33,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.glassBarTint,
     required this.glassSheetTint,
     required this.glassBorder,
-    required this.heroGradient,
+    required this.hero,
     required this.heroGlow,
     required this.heroShade,
     required this.onHero,
@@ -92,24 +92,22 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color glassBorder;
 
   /// The Home hero card: the one place the brand color fills a surface.
-  /// A diagonal gradient (top left to bottom right) with a soft highlight.
-  /// [onHero] and [onHeroMuted] meet AA (4.5:1) on every part of it,
-  /// highlight included. The same in light and dark mode.
-  final List<Color> heroGradient;
+  /// One flat color. [onHero] and [onHeroMuted] meet AA (4.5:1) on it,
+  /// with [heroGlow] over it too. The same in light and dark mode.
+  final Color hero;
 
-  /// Decoration on the hero: [heroGlow] lightens (the contrast figures
-  /// allow for one layer of it, so glows must not overlap); [heroShade]
-  /// darkens, which only helps contrast.
+  /// The month chip on the hero: [heroShade] darkens its fill, which only
+  /// helps contrast; [heroGlow] is its hairline.
   final Color heroGlow;
   final Color heroShade;
   final Color onHero;
   final Color onHeroMuted;
   final Color heroShadow;
 
-  static const _heroGradient = [Color(0xFF474AD8), Color(0xFF2E2B9C)];
+  static const _hero = Color(0xFF0D4F58);
   static const _heroGlow = Color(0x14FFFFFF);
   static const _onHero = Color(0xFFFFFFFF);
-  static const _onHeroMuted = Color(0xFFECEDFF);
+  static const _onHeroMuted = Color(0xFFE6F2F3);
   static const _heroShade = Color(0x14000000);
 
   static AppPalette light(ColorScheme scheme) => AppPalette(
@@ -120,8 +118,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
         expenseContainer: const Color(0xFFFEE2E2),
         onExpenseContainer: const Color(0xFF991B1B),
         transfer: scheme.primary,
-        transferContainer: const Color(0xFFE0E7FF),
-        onTransferContainer: const Color(0xFF3730A3),
+        transferContainer: const Color(0xFFD3ECEF),
+        onTransferContainer: const Color(0xFF0A3F47),
         loan: const Color(0xFF6D28D9),
         loanContainer: const Color(0xFFEDE9FE),
         onLoanContainer: const Color(0xFF5B21B6),
@@ -129,14 +127,14 @@ class AppPalette extends ThemeExtension<AppPalette> {
         budgetWarning: const Color(0xFFA14A07),
         budgetDanger: const Color(0xFFB91C1C),
         chart: const [
-          Color(0xFF4F46E5), // indigo
-          Color(0xFF0F766E), // teal
+          Color(0xFF0E6E7A), // brand teal
           Color(0xFFB45309), // amber
           Color(0xFFE11D48), // rose
           Color(0xFF0284C7), // sky
           Color(0xFF7C3AED), // violet
           Color(0xFF4D7C0F), // lime
           Color(0xFFC026D3), // fuchsia
+          Color(0xFF4F46E5), // indigo
         ],
         chartOther: const Color(0xFF64748B),
         raisedSurface: scheme.surfaceContainerLowest,
@@ -145,12 +143,12 @@ class AppPalette extends ThemeExtension<AppPalette> {
         glassBarTint: const Color(0xFFFFFFFF),
         glassSheetTint: const Color(0xFFFFFFFF),
         glassBorder: const Color(0x1F17181C),
-        heroGradient: _heroGradient,
+        hero: _hero,
         heroGlow: _heroGlow,
         heroShade: _heroShade,
         onHero: _onHero,
         onHeroMuted: _onHeroMuted,
-        heroShadow: const Color(0x524648D4),
+        heroShadow: const Color(0x4D0D4F58),
       );
 
   static AppPalette dark(ColorScheme scheme) => AppPalette(
@@ -161,8 +159,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
         expenseContainer: const Color(0xFF7F1D1D),
         onExpenseContainer: const Color(0xFFFECACA),
         transfer: scheme.primary,
-        transferContainer: const Color(0xFF312E81),
-        onTransferContainer: const Color(0xFFC7D2FE),
+        transferContainer: const Color(0xFF103E45),
+        onTransferContainer: const Color(0xFFC6EEF2),
         loan: const Color(0xFFC4B5FD),
         loanContainer: const Color(0xFF4C1D95),
         onLoanContainer: const Color(0xFFDDD6FE),
@@ -170,14 +168,14 @@ class AppPalette extends ThemeExtension<AppPalette> {
         budgetWarning: const Color(0xFFFBBF24),
         budgetDanger: const Color(0xFFF87171),
         chart: const [
-          Color(0xFF818CF8), // indigo
-          Color(0xFF2DD4BF), // teal
+          Color(0xFF5CC8D6), // brand teal
           Color(0xFFFBBF24), // amber
           Color(0xFFFB7185), // rose
           Color(0xFF38BDF8), // sky
           Color(0xFFA78BFA), // violet
           Color(0xFFA3E635), // lime
           Color(0xFFE879F9), // fuchsia
+          Color(0xFF818CF8), // indigo
         ],
         chartOther: const Color(0xFF64748B),
         raisedSurface: scheme.surfaceContainerHigh,
@@ -186,7 +184,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
         glassBarTint: const Color(0xFF17181D),
         glassSheetTint: const Color(0xFF1C1D23),
         glassBorder: const Color(0x1FFFFFFF),
-        heroGradient: _heroGradient,
+        hero: _hero,
         heroGlow: _heroGlow,
         heroShade: _heroShade,
         onHero: _onHero,
@@ -230,7 +228,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? glassBarTint,
     Color? glassSheetTint,
     Color? glassBorder,
-    List<Color>? heroGradient,
+    Color? hero,
     Color? heroGlow,
     Color? heroShade,
     Color? onHero,
@@ -261,7 +259,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       glassBarTint: glassBarTint ?? this.glassBarTint,
       glassSheetTint: glassSheetTint ?? this.glassSheetTint,
       glassBorder: glassBorder ?? this.glassBorder,
-      heroGradient: heroGradient ?? this.heroGradient,
+      hero: hero ?? this.hero,
       heroGlow: heroGlow ?? this.heroGlow,
       heroShade: heroShade ?? this.heroShade,
       onHero: onHero ?? this.onHero,
@@ -301,10 +299,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       glassBarTint: c(glassBarTint, other.glassBarTint),
       glassSheetTint: c(glassSheetTint, other.glassSheetTint),
       glassBorder: c(glassBorder, other.glassBorder),
-      heroGradient: [
-        for (var i = 0; i < heroGradient.length; i++)
-          c(heroGradient[i], other.heroGradient[i % other.heroGradient.length]),
-      ],
+      hero: c(hero, other.hero),
       heroGlow: c(heroGlow, other.heroGlow),
       heroShade: c(heroShade, other.heroShade),
       onHero: c(onHero, other.onHero),

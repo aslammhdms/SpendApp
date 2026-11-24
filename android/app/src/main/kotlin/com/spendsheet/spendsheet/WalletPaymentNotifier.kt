@@ -18,7 +18,7 @@ object WalletPaymentNotifier {
 
     private const val CHANNEL_ID = "wallet_payments"
     private const val TAG = "wallet_payment"
-    private const val SEED_COLOR = 0xFF6366F1.toInt() // AppColorSchemes.seed
+    private const val SEED_COLOR = 0xFF0E5A64.toInt() // AppColorSchemes.seed
 
     fun show(context: Context, key: String, payment: WalletPaymentParser.Payment) {
         val manager = NotificationManagerCompat.from(context)

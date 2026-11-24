@@ -6,7 +6,7 @@ live in `lib/core/theme/`; shared components live in `lib/shared/widgets/`.
 ## Principles
 
 - **Calm by default, color for meaning.** Surfaces are near-neutral greys.
-  Indigo marks primary actions, selection and the Home hero. Green and red
+  Teal marks primary actions, selection and the Home hero. Green and red
   mean money in and money out; amber means a budget is close to its limit.
   Nothing else gets those colors.
 - **Everything comes from the theme.** Widgets never use raw colors. Read
@@ -22,9 +22,9 @@ live in `lib/core/theme/`; shared components live in `lib/shared/widgets/`.
 ### Scheme
 
 `AppColorSchemes` (`app_color_schemes.dart`) builds both schemes. The accent
-roles come from `ColorScheme.fromSeed(seedColor: #6366F1, dynamicSchemeVariant:
-fidelity)`, which keeps the brand indigo saturated: primary is `#4648D4` in
-light mode and `#C0C1FF` in dark mode. To change the brand color, change the
+roles come from `ColorScheme.fromSeed(seedColor: #0E5A64, dynamicSchemeVariant:
+fidelity)`, which keeps the brand teal saturated: primary is `#004149` in
+light mode and `#91D1DC` in dark mode. To change the brand color, change the
 seed.
 
 The surface roles are set by hand to near-neutral greys. Seeded surfaces
@@ -47,8 +47,8 @@ Text on surfaces uses `onSurface`. Secondary text (dates, captions, hints)
 uses `onSurfaceVariant`.
 
 Selection (the navigation indicator, selected chips and segments) uses
-`secondaryContainer` with `onSecondaryContainer`: an indigo tint, `#E3E4FF` /
-`#2F31B0` in light mode and `#2E3070` / `#D9DAFF` in dark mode.
+`secondaryContainer` with `onSecondaryContainer`: a teal tint, `#D3ECEF` /
+`#0A3F47` in light mode and `#103E45` / `#C6EEF2` in dark mode.
 
 ### App palette
 
@@ -64,7 +64,7 @@ has no role for. Read it with `context.palette`.
 | `budgetSafe` / `Warning` / `Danger` | `#047552` / `#A14A07` / `#B91C1C` | `#34D399` / `#FBBF24` / `#F87171` | Budget under 80%, from 80%, at 100% or more. Use `palette.budgetColor(used)`. |
 | `*Container` / `on*Container` | soft tints | deep tints | Backgrounds of icon circles and tabs, with text on them |
 | `cardBorder` | `#E6E6EB` | `#24252B` | Hairline around cards and keypad keys |
-| `heroGradient`, `heroGlow`, `heroShade` | `#474AD8` → `#2E2B9C` | same | The Home hero card and its decoration |
+| `hero`, `heroGlow`, `heroShade` | `#0D4F58` | same | The Home hero card (one flat color) and its month chip |
 | `onHero`, `onHeroMuted` | `#FFFFFF`, `#ECEDFF` | same | Text on the hero |
 | `glassBarTint`, `glassSheetTint`, `glassBorder` | white | `#17181D`, `#1C1D23` | Glass surfaces; use them through `GlassSurface` |
 | `chart[0..7]`, `chartOther` | 8 hues + slate | lighter set | Chart series in order of size. Use `palette.chartColor(i)`. |
@@ -75,8 +75,8 @@ color meets 3:1 against cards. `test/core/theme/contrast_test.dart` checks
 all of this against the real theme, so add new colors to it.
 
 **The hero** is the one place the brand color fills a surface. Its text is
-`onHero` or `onHeroMuted`, which keep at least 4.76:1 on the lightest part
-of the gradient with the highlight on top. Green and red would not be
+`onHero` or `onHeroMuted`, which meet 4.5:1 on it. The card is one flat
+color: no gradient and no highlights. Green and red would not be
 readable there, so income and expense sit on a solid panel inside the card,
 and "Over budget" is a solid red-tinted badge.
 
@@ -243,7 +243,7 @@ also draw the sheet's drag handle; don't draw another.
   when the app bar has a `bottom`. A `RefreshIndicator` takes
   `edgeOffset: ScreenInsets.topOf(context)`. A screen that does not scroll
   (Add Transaction) keeps a normal body under the same app bar.
-- **Hero card (Home only):** `palette.heroGradient`, radius `xl`, text in
+- **Hero card (Home only):** `palette.hero` (flat), radius `xl`, text in
   `onHero` / `onHeroMuted`, signals on a solid `raisedSurface` panel.
 - **Summary card (Loans, Accounts):** `raisedSurface`, radius `xl`,
   `cardShadow`. A neutral headline amount, then `SignalStat`s.

@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 ///
 /// Accent roles (primary, secondary, tertiary, error) are generated from
 /// one brand seed with the fidelity variant, which keeps the seed's
-/// saturation: primary is a rich indigo (#4648D4 light, #C0C1FF dark).
+/// saturation: primary is a deep teal.
 ///
 /// Surfaces are set by hand to near-neutral greys. Seeded surfaces carry
 /// the brand hue, which made the page, cards, fields and bars all tints of
-/// the same lavender; with neutral surfaces indigo is left for what it
+/// the same lavender; with neutral surfaces teal is left for what it
 /// should mark: primary actions, selection and the hero.
 ///
 /// Use surfaces by depth:
@@ -20,9 +20,9 @@ import 'package:flutter/material.dart';
 ///   surfaceContainerLowest   deepest well in dark mode; white in light
 ///
 /// secondaryContainer / onSecondaryContainer are the selection colors
-/// (navigation indicator, selected chips and segments): an indigo tint.
+/// (navigation indicator, selected chips and segments): a teal tint.
 abstract final class AppColorSchemes {
-  static const Color seed = Color(0xFF6366F1);
+  static const Color seed = Color(0xFF0E5A64);
 
   static final ColorScheme light = ColorScheme.fromSeed(
     seedColor: seed,
@@ -40,8 +40,8 @@ abstract final class AppColorSchemes {
     onSurfaceVariant: const Color(0xFF484954),
     outline: const Color(0xFF767783),
     outlineVariant: const Color(0xFFC9CAD3),
-    secondaryContainer: const Color(0xFFE3E4FF),
-    onSecondaryContainer: const Color(0xFF2F31B0),
+    secondaryContainer: const Color(0xFFD3ECEF),
+    onSecondaryContainer: const Color(0xFF0A3F47),
     inverseSurface: const Color(0xFF2B2C33),
     onInverseSurface: const Color(0xFFF1F1F5),
   );
@@ -63,8 +63,8 @@ abstract final class AppColorSchemes {
     onSurfaceVariant: const Color(0xFFC4C5CF),
     outline: const Color(0xFF8E8F9A),
     outlineVariant: const Color(0xFF43444D),
-    secondaryContainer: const Color(0xFF2E3070),
-    onSecondaryContainer: const Color(0xFFD9DAFF),
+    secondaryContainer: const Color(0xFF103E45),
+    onSecondaryContainer: const Color(0xFFC6EEF2),
     inverseSurface: const Color(0xFFE5E5EA),
     onInverseSurface: const Color(0xFF2B2C33),
   );

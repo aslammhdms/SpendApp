@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Brand indigo, slightly deeper toward the bottom right. -->
+<!-- Brand teal, one flat color. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
     <gradient
         android:angle="315"
-        android:startColor="#6366F1"
-        android:endColor="#4648D4" />
+        android:startColor="#0E5A64"
+        android:endColor="#0E5A64" />
 </shape>
