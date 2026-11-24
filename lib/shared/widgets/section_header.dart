@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../core/theme/tokens.dart';
 
 /// Title row of a card or list section, with an optional action on the

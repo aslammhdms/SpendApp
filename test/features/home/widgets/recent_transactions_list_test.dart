@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spendsheet/data/models/transaction.dart';
 import 'package:spendsheet/features/home/widgets/recent_transactions_list.dart';

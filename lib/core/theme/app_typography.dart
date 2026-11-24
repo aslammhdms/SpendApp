@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Type scale for the app, set in Inter (bundled in assets/fonts/inter, so
 /// it renders the same offline).

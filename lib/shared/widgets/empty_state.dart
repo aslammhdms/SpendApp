@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../core/theme/tokens.dart';
 
 /// Placeholder for a screen or card with nothing to show yet.

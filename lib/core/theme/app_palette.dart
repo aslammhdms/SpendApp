@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// App-specific colors that Material's [ColorScheme] has no role for:
 /// money signals, budget states and the chart palette.

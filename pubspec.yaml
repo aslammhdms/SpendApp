@@ -36,13 +36,13 @@ dependencies:
   # Image Handling
 
   # Utilities
-  intl: ^0.18.1
+  intl: ^0.20.2
   uuid: ^4.2.1
   connectivity_plus: ^7.3.2
   path: ^1.8.3
 
   # Routing
-  go_router: ^12.1.3
+  go_router: ^18.1.4
 
   # Code Generation
   freezed_annotation: ^3.1.0
@@ -57,7 +57,8 @@ dependencies:
 
   # UI Components
   cupertino_icons: ^1.0.6
-  flutter_slidable: ^3.0.1
+  flutter_slidable: ^5.2.0
+  material_ui: ^1.11.1
 
 dev_dependencies:
   flutter_test:
