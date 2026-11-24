@@ -20,7 +20,9 @@ class DriveService {
       final api = await _api;
 
       final response = await api.files.list(
-        q: "mimeType='application/vnd.google-apps.spreadsheet' and name contains '${SheetConstants.spreadsheetTitle}' and trashed=false",
+        // Only sheets this account owns: a sheet someone else shares must
+        // never receive this phone's records.
+        q: "mimeType='application/vnd.google-apps.spreadsheet' and name contains '${SheetConstants.spreadsheetTitle}' and trashed=false and 'me' in owners",
         spaces: 'drive',
         $fields: 'files(id, name, modifiedTime, webViewLink)',
         orderBy: 'modifiedTime desc',

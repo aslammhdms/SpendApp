@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -68,5 +69,42 @@ void main() {
     expect(find.text(_locked), findsNothing);
     expect(find.text(_content), findsOneWidget);
     expect(authenticator.calls, 0);
+  });
+
+  testWidgets('leaving the app covers its content before it is resumed',
+      (tester) async {
+    final authenticator = await _start(tester, startLocked: true);
+    authenticator.allow = true;
+    await tester.tap(find.text('Tap to Unlock'));
+    await tester.pump();
+    expect(find.text(_locked), findsNothing);
+
+    for (final state in [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(state);
+    }
+    await tester.pump();
+
+    // Android saves the Recents picture here, before the app comes back.
+    expect(find.text(_locked), findsOneWidget);
+  });
+
+  testWidgets('App Lock keeps the screen out of Recents thumbnails',
+      (tester) async {
+    final calls = <Object?>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('spendsheet/app_lock'),
+      (call) async {
+        calls.add(call.arguments);
+        return null;
+      },
+    );
+
+    await _start(tester, startLocked: true);
+
+    expect(calls, [true]);
   });
 }

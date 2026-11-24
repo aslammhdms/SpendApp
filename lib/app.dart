@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/tokens.dart';
 import 'core/services/biometric_service.dart';
+import 'core/services/window_protection_service.dart';
 import 'features/auth/screens/splash_screen.dart';
 import 'features/auth/screens/welcome_screen.dart';
 import 'features/auth/screens/sign_in_screen.dart';
@@ -346,6 +347,7 @@ class SpendSheetApp extends ConsumerWidget {
 
     return _BiometricLockGuard(
       biometricService: ref.watch(biometricServiceProvider),
+      windowProtection: ref.watch(windowProtectionServiceProvider),
       isLockEnabled: settings.biometricLockEnabled,
       startLocked: ref.watch(startLockedProvider),
       themeMode: themeMode,
@@ -375,6 +377,7 @@ class SpendSheetApp extends ConsumerWidget {
 class _BiometricLockGuard extends StatefulWidget {
   final Widget child;
   final BiometricService biometricService;
+  final WindowProtectionService windowProtection;
   final bool isLockEnabled;
   final bool startLocked;
   final ThemeMode themeMode;
@@ -382,6 +385,7 @@ class _BiometricLockGuard extends StatefulWidget {
   const _BiometricLockGuard({
     required this.child,
     required this.biometricService,
+    required this.windowProtection,
     required this.isLockEnabled,
     required this.startLocked,
     required this.themeMode,
@@ -396,14 +400,35 @@ class _BiometricLockGuardState extends State<_BiometricLockGuard>
   late bool _isLocked = widget.startLocked;
   bool _wasPaused = false;
 
+  /// Android's own credential screen pauses the app while the person
+  /// unlocks it; those lifecycle changes must not lock it again.
+  bool _authenticating = false;
+
+  /// Whether the loaded settings have shown App Lock on yet. Until they
+  /// load, [_BiometricLockGuard.isLockEnabled] reads false, so the value
+  /// stored at start-up decides.
+  bool _settingsShowedLock = false;
+
+  bool get _lockActive =>
+      widget.isLockEnabled ||
+      _isLocked ||
+      (widget.startLocked && !_settingsShowedLock);
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _syncWindowProtection();
     if (_isLocked) {
       // A fresh start is locked like a return from the background.
       WidgetsBinding.instance.addPostFrameCallback((_) => _authenticate());
     }
+  }
+
+  @override
+  void didUpdateWidget(covariant _BiometricLockGuard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncWindowProtection();
   }
 
   @override
@@ -412,13 +437,21 @@ class _BiometricLockGuardState extends State<_BiometricLockGuard>
     super.dispose();
   }
 
+  /// Keeps the screen out of Recents thumbnails whenever App Lock is on.
+  void _syncWindowProtection() {
+    if (widget.isLockEnabled) _settingsShowedLock = true;
+    widget.windowProtection.setProtected(_lockActive);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!widget.isLockEnabled && !_isLocked) return;
+    if (!_lockActive || _authenticating) return;
 
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
       _wasPaused = true;
+      // Cover the content as the app leaves, not only when it returns.
+      if (!_isLocked) setState(() => _isLocked = true);
     } else if (state == AppLifecycleState.resumed && _wasPaused) {
       _wasPaused = false;
       if (!_isLocked) setState(() => _isLocked = true);
@@ -427,11 +460,17 @@ class _BiometricLockGuardState extends State<_BiometricLockGuard>
   }
 
   Future<void> _authenticate() async {
-    final success = await widget.biometricService.authenticate(
-      'Unlock SpendSheet',
-    );
-    if (success && mounted) {
-      setState(() => _isLocked = false);
+    if (_authenticating) return;
+    _authenticating = true;
+    try {
+      final success = await widget.biometricService.authenticate(
+        'Unlock SpendSheet',
+      );
+      if (success && mounted) {
+        setState(() => _isLocked = false);
+      }
+    } finally {
+      _authenticating = false;
     }
   }
 

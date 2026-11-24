@@ -1,8 +1,10 @@
 package com.spendsheet.spendsheet
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.WindowManager
 import androidx.core.app.NotificationManagerCompat
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -44,6 +46,18 @@ class MainActivity : FlutterFragmentActivity() {
             "spendsheet/wallet_capture",
         )
         walletChannel = channel
+
+        // App Lock: keep the screen out of Recents thumbnails while it is on.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "spendsheet/app_lock")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "setProtected" -> {
+                        setRecentsProtection(call.arguments == true)
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
         channel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "hasAccess" -> result.success(
@@ -78,6 +92,21 @@ class MainActivity : FlutterFragmentActivity() {
                 "drain" -> result.success(WalletCaptureStore.drain(this))
                 else -> result.notImplemented()
             }
+        }
+    }
+
+    /**
+     * Android 13 and later can leave just the Recents thumbnail blank.
+     * Earlier versions only offer FLAG_SECURE, which also blocks screenshots
+     * of the app while App Lock is on.
+     */
+    private fun setRecentsProtection(protect: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            setRecentsScreenshotEnabled(!protect)
+        } else if (protect) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
     }
 

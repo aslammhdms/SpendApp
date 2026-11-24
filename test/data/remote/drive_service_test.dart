@@ -42,4 +42,19 @@ void main() {
 
     expect(seen, ['Bearer token-a', 'Bearer token-b']);
   });
+
+  test('only spreadsheets owned by the signed-in account are listed',
+      () async {
+    String? query;
+    final backend = MockClient((request) async {
+      query = request.url.queryParameters['q'];
+      return http.Response(jsonEncode({'files': []}), 200,
+          headers: {'content-type': 'application/json'});
+    });
+
+    await DriveService(_Auth(backend)).searchForSpendSheets();
+
+    expect(query, contains("'me' in owners"));
+    expect(query, contains('trashed=false'));
+  });
 }
