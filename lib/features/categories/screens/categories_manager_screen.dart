@@ -8,6 +8,9 @@ import '../providers/categories_provider.dart';
 import '../../transactions/providers/transactions_provider.dart'
     show expenseCategoriesProvider, incomeCategoriesProvider;
 import '../../../shared/widgets/app_dialog.dart';
+import '../../../shared/widgets/app_menu.dart';
+import '../../../shared/widgets/segmented_control.dart';
+import '../../../shared/widgets/segmented_list.dart';
 import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../../shared/widgets/app_loader.dart';
@@ -29,6 +32,10 @@ class _CategoriesManagerScreenState
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    // Keeps the Expense / Income buttons in step with a swipe.
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(categoriesManagerProvider.notifier).loadCategories();
     });
@@ -39,6 +46,9 @@ class _CategoriesManagerScreenState
     _tabController.dispose();
     super.dispose();
   }
+
+  /// The type buttons under the title, with a little air below them.
+  static const double _typeBarHeight = SegmentedControl.height + Space.sm;
 
   @override
   Widget build(BuildContext context) {
@@ -51,12 +61,17 @@ class _CategoriesManagerScreenState
         // The lists sit inside the tab view, one scrollable deeper than
         // the app bar looks by default.
         notificationPredicate: (notification) => notification.depth == 1,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Expense'),
-            Tab(text: 'Income'),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(_typeBarHeight),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+                Space.lg, 0, Space.lg, Space.sm),
+            child: SegmentedControl<int>(
+              segments: const {0: 'Expense', 1: 'Income'},
+              selected: _tabController.index,
+              onChanged: _tabController.animateTo,
+            ),
+          ),
         ),
       ),
       body: state.isLoading
@@ -80,8 +95,9 @@ class _CategoriesManagerScreenState
               ? CategoryType.expense
               : CategoryType.income,
         ),
+        tooltip: 'Add category',
         icon: const Icon(Icons.add),
-        label: const Text('Add'),
+        label: const Text('Add category'),
       ),
     );
   }
@@ -102,12 +118,19 @@ class _CategoriesManagerScreenState
       );
     }
 
+    final scheme = Theme.of(context).colorScheme;
+    const outer = Radius.circular(Radii.lg);
+    const inner = Radius.circular(Radii.xs);
+
     return ReorderableListView.builder(
       padding: ScreenInsets.of(
         context,
-        appBarBottom: kTextTabBarHeight,
+        appBarBottom: _typeBarHeight,
         bottom: Space.fabClearance,
       ),
+      // Each row has its own handle; a long press anywhere would get in
+      // the way of scrolling.
+      buildDefaultDragHandles: false,
       itemCount: categories.length,
       onReorderItem: (oldIndex, newIndex) {
         final reordered = List<Category>.from(categories);
@@ -119,34 +142,64 @@ class _CategoriesManagerScreenState
       },
       itemBuilder: (context, index) {
         final category = categories[index];
-        return Card(
+        // Connected tiles: the group's outer corners are large, the
+        // corners between rows small.
+        return Padding(
           key: ValueKey(category.id),
-          margin: const EdgeInsets.only(bottom: Space.sm),
-          child: ListTile(
-            leading: CategoryIcon(
-              emoji: category.icon,
-              color: Color(category.color),
+          padding: const EdgeInsets.only(bottom: SegmentedList.gap),
+          child: Material(
+            color: scheme.surfaceContainerLow,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(
+                top: index == 0 ? outer : inner,
+                bottom: index == categories.length - 1 ? outer : inner,
+              ),
             ),
-            title: Text(category.name),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 20),
-                  tooltip: 'Edit ${category.name}',
-                  onPressed: () => _showEditCategoryDialog(category),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20),
-                  tooltip: 'Delete ${category.name}',
-                  onPressed: () => _confirmDelete(category),
-                ),
-                Icon(
-                  Icons.drag_indicator,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  semanticLabel: 'Drag to reorder',
-                ),
-              ],
+            child: ListTile(
+              contentPadding:
+                  const EdgeInsets.only(left: Space.lg, right: Space.xs),
+              leading: CategoryIcon(
+                emoji: category.icon,
+                color: Color(category.color),
+              ),
+              title: Text(category.name),
+              onTap: () => _showEditCategoryDialog(category),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppMenuButton<String>(
+                    tooltip: 'More for ${category.name}',
+                    items: const [
+                      AppMenuItem(
+                        value: 'edit',
+                        label: 'Edit',
+                        icon: Icons.edit_outlined,
+                      ),
+                      AppMenuItem(
+                        value: 'delete',
+                        label: 'Delete',
+                        icon: Icons.delete_outline,
+                        destructive: true,
+                      ),
+                    ],
+                    onSelected: (action) => action == 'edit'
+                        ? _showEditCategoryDialog(category)
+                        : _confirmDelete(category),
+                  ),
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: SizedBox.square(
+                      dimension: Sizes.touchTarget,
+                      child: Icon(
+                        Icons.drag_handle_rounded,
+                        color: scheme.onSurfaceVariant,
+                        semanticLabel: 'Drag to reorder ${category.name}',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

@@ -110,12 +110,17 @@ class _AddMenuRoute extends PopupRoute<AddChoice> {
                   const SizedBox(height: Space.sm),
                 ],
                 const SizedBox(height: Space.xs),
-                FloatingActionButton(
-                  heroTag: null,
-                  tooltip: 'Close',
-                  shape: const CircleBorder(),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Icon(Icons.close),
+                // The same size as the Add button, which it covers.
+                SizedBox(
+                  width: anchor.width,
+                  height: anchor.height,
+                  child: FloatingActionButton.extended(
+                    heroTag: null,
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                    label: const Text('Close'),
+                  ),
                 ),
               ],
             ),

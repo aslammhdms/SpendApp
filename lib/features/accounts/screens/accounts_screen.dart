@@ -121,6 +121,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                               padding: const EdgeInsets.only(bottom: Space.sm),
                               child: _AccountCard(
                                 account: account,
+                                currency: currency,
                                 onTap: () => context
                                     .push('/accounts/edit/${account.id}'),
                                 onDelete: () => _confirmDelete(account.id),
@@ -174,8 +175,13 @@ class _AccountCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
 
+  /// The app's currency. Every account is shown in it; the currency saved
+  /// on the account itself is not used for display.
+  final String currency;
+
   const _AccountCard({
     required this.account,
+    required this.currency,
     this.onTap,
     this.onDelete,
   });
@@ -216,7 +222,7 @@ class _AccountCard extends StatelessWidget {
               ),
               MoneyText(
                 account.currentBalance,
-                currency: account.currency,
+                currency: currency,
                 semanticLabel: '${account.name} balance',
                 // Positive balances are neutral; only a negative one is a
                 // warning signal.

@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/wallpaper_colors.dart';
+import '../../../core/theme/tokens.dart';
 import '../../../core/utils/currency_utils.dart';
+import '../../../shared/widgets/screen_insets.dart';
+import '../../../shared/widgets/segmented_list.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../providers/settings_provider.dart';
@@ -32,8 +35,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _loadNoticeSettings();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(settingsProvider.notifier).loadSettings();
-      final count =
-          await ref.read(settingsProvider.notifier).getPendingSyncCount();
+      final count = await ref
+          .read(settingsProvider.notifier)
+          .getPendingSyncCount();
       setState(() => _pendingCount = count);
     });
   }
@@ -59,10 +63,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   static String _summaryLabel(SummaryFrequency f) => switch (f) {
-        SummaryFrequency.off => 'Off',
-        SummaryFrequency.weekly => 'Every Monday morning',
-        SummaryFrequency.monthly => 'On the 1st of each month',
-      };
+    SummaryFrequency.off => 'Off',
+    SummaryFrequency.weekly => 'Every Monday morning',
+    SummaryFrequency.monthly => 'On the 1st of each month',
+  };
 
   void _showSummaryPicker() {
     showAppSheet(
@@ -86,8 +90,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ? null
                     : Text(_summaryLabel(f)),
                 trailing: _summary == f
-                    ? Icon(Icons.check,
-                        color: Theme.of(context).colorScheme.primary)
+                    ? Icon(
+                        Icons.check,
+                        color: Theme.of(context).colorScheme.primary,
+                      )
                     : null,
                 onTap: () async {
                   Navigator.pop(context);
@@ -117,231 +123,236 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       // The list has no padding of its own, so it picks up the bars'
       // insets by itself.
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
+        padding: ScreenInsets.of(context),
         children: [
-          // User Info
-          if (authNotifier.isSignedIn) ...[
-            ListTile(
-              leading: CircleAvatar(
-                backgroundImage: authNotifier.userPhotoUrl != null
-                    ? NetworkImage(authNotifier.userPhotoUrl!)
-                    : null,
-                child: authNotifier.userPhotoUrl == null
-                    ? const Icon(Icons.person)
-                    : null,
+          _group([
+            // User Info
+            if (authNotifier.isSignedIn) ...[
+              ListTile(
+                leading: CircleAvatar(
+                  backgroundImage: authNotifier.userPhotoUrl != null
+                      ? NetworkImage(authNotifier.userPhotoUrl!)
+                      : null,
+                  child: authNotifier.userPhotoUrl == null
+                      ? const Icon(Icons.person)
+                      : null,
+                ),
+                title: Text(authNotifier.userName ?? 'User'),
+                subtitle: Text(authNotifier.userEmail ?? ''),
               ),
-              title: Text(authNotifier.userName ?? 'User'),
-              subtitle: Text(authNotifier.userEmail ?? ''),
+            ],
+          ]),
+          _group([
+            // Sync Status
+            SyncStatusTile(
+              status: settingsNotifier.syncStatus,
+              lastSyncAt: settings.lastSyncAt,
+              pendingCount: _pendingCount,
+              onSync: () async {
+                await settingsNotifier.sync();
+                final count = await settingsNotifier.getPendingSyncCount();
+                setState(() => _pendingCount = count);
+              },
             ),
-            const Divider(),
-          ],
-
-          // Sync Status
-          SyncStatusTile(
-            status: settingsNotifier.syncStatus,
-            lastSyncAt: settings.lastSyncAt,
-            pendingCount: _pendingCount,
-            onSync: () async {
-              await settingsNotifier.sync();
-              final count = await settingsNotifier.getPendingSyncCount();
-              setState(() => _pendingCount = count);
-            },
-          ),
-          const Divider(),
-
-          // Currency
-          ListTile(
-            leading: const Icon(Icons.attach_money),
-            title: const Text('Currency'),
-            subtitle: Text(
-              CurrencyUtils.getCurrency(settings.currency).name,
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showCurrencyPicker(context, settings.currency),
-          ),
-
-          // Theme
-          ListTile(
-            leading: const Icon(Icons.palette),
-            title: const Text('Theme'),
-            subtitle: Text(_getThemeLabel(settings.themeMode)),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showThemePicker(context, settings.themeMode),
-          ),
-          if (ref.watch(wallpaperColorProvider).valueOrNull != null)
-            SwitchListTile(
-              secondary: const Icon(Icons.wallpaper_outlined),
-              title: const Text('Use wallpaper colours'),
-              subtitle: const Text("Match your phone's colours instead of teal"),
-              value: ref.watch(useWallpaperColorsProvider),
-              onChanged: (value) =>
-                  ref.read(useWallpaperColorsProvider.notifier).set(value),
-            ),
-          const Divider(),
-
-          // Notifications
-          SwitchListTile(
-            secondary: const Icon(Icons.notifications),
-            title: const Text('Notifications'),
-            subtitle: const Text('Enable push notifications'),
-            value: settings.notificationsEnabled,
-            onChanged: (value) async {
-              await settingsNotifier.setNotificationsEnabled(value);
-              // Google Wallet payment reminders follow this switch too.
-              await ref.read(walletCaptureProvider.notifier).syncNotify();
-              if (value) _requestNotificationPermission();
-              await _reschedule();
-            },
-          ),
-
-          SwitchListTile(
-            secondary: const Icon(Icons.warning),
-            title: const Text('Budget Alerts'),
-            subtitle: const Text('Notify when approaching budget limits'),
-            value: settings.budgetAlertsEnabled,
-            onChanged: (value) {
-              settingsNotifier.setBudgetAlertsEnabled(value);
-              if (value) _requestNotificationPermission();
-            },
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.summarize_outlined),
-            title: const Text('Spending summary'),
-            subtitle: Text(_summaryLabel(_summary)),
-            enabled: settings.notificationsEnabled,
-            trailing: const Icon(Icons.chevron_right),
-            onTap: _showSummaryPicker,
-          ),
-
-          SwitchListTile(
-            secondary: const Icon(Icons.event_repeat_outlined),
-            title: const Text('Payment reminders'),
-            subtitle: const Text('The day before a repeating payment'),
-            value: _reminders,
-            onChanged: settings.notificationsEnabled
-                ? (value) async {
-                    await ScheduledNoticesService.setRemindersEnabled(value);
-                    setState(() => _reminders = value);
-                    if (value) _requestNotificationPermission();
-                    await _reschedule();
-                  }
-                : null,
-          ),
-
-          SwitchListTile(
-            secondary: const Icon(Icons.fingerprint),
-            title: const Text('App Lock'),
-            subtitle: const Text('Require biometric authentication'),
-            value: settings.biometricLockEnabled,
-            onChanged: (value) async {
-              if (value) {
-                final biometricService = ref.read(biometricServiceProvider);
-                final canAuth = await biometricService.canAuthenticate();
-                if (!canAuth) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Biometric authentication is not available on this device',
-                        ),
-                      ),
-                    );
-                  }
-                  return;
-                }
-                final authenticated = await biometricService.authenticate(
-                  'Verify to enable App Lock',
-                );
-                if (!authenticated) return;
-              } else {
-                // Turning the lock off is as sensitive as passing it.
-                final authenticated = await ref
-                    .read(biometricServiceProvider)
-                    .authenticate('Verify to turn off App Lock');
-                if (!authenticated) return;
-              }
-              settingsNotifier.setBiometricLockEnabled(value);
-            },
-          ),
-          const Divider(),
-
-          // Spreadsheet
-          if (settings.spreadsheetUrl != null)
+          ]),
+          _group([
+            // Currency
             ListTile(
-              leading: const Icon(Icons.table_chart),
-              title: const Text('View Spreadsheet'),
-              subtitle: const Text('Open in Google Sheets'),
-              trailing: const Icon(Icons.open_in_new),
-              onTap: () {
-                launchUrl(
-                  Uri.parse(settings.spreadsheetUrl!),
-                  mode: LaunchMode.externalApplication,
-                );
+              leading: const Icon(Icons.attach_money),
+              title: const Text('Currency'),
+              subtitle: Text(CurrencyUtils.getCurrency(settings.currency).name),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showCurrencyPicker(context, settings.currency),
+            ),
+
+            // Theme
+            ListTile(
+              leading: const Icon(Icons.palette),
+              title: const Text('Theme'),
+              subtitle: Text(_getThemeLabel(settings.themeMode)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showThemePicker(context, settings.themeMode),
+            ),
+            if (ref.watch(wallpaperColorProvider).valueOrNull != null)
+              SwitchListTile(
+                secondary: const Icon(Icons.wallpaper_outlined),
+                title: const Text('Use wallpaper colours'),
+                subtitle: const Text(
+                  "Match your phone's colours instead of teal",
+                ),
+                value: ref.watch(useWallpaperColorsProvider),
+                onChanged: (value) =>
+                    ref.read(useWallpaperColorsProvider.notifier).set(value),
+              ),
+          ]),
+          _group([
+            // Notifications
+            SwitchListTile(
+              secondary: const Icon(Icons.notifications),
+              title: const Text('Notifications'),
+              subtitle: const Text('Enable push notifications'),
+              value: settings.notificationsEnabled,
+              onChanged: (value) async {
+                await settingsNotifier.setNotificationsEnabled(value);
+                // Google Wallet payment reminders follow this switch too.
+                await ref.read(walletCaptureProvider.notifier).syncNotify();
+                if (value) _requestNotificationPermission();
+                await _reschedule();
               },
             ),
 
-          // Categories
-          ListTile(
-            leading: const Icon(Icons.category),
-            title: const Text('Manage Categories'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/categories'),
-          ),
+            SwitchListTile(
+              secondary: const Icon(Icons.warning),
+              title: const Text('Budget Alerts'),
+              subtitle: const Text('Notify when approaching budget limits'),
+              value: settings.budgetAlertsEnabled,
+              onChanged: (value) {
+                settingsNotifier.setBudgetAlertsEnabled(value);
+                if (value) _requestNotificationPermission();
+              },
+            ),
 
-          // Accounts
-          ListTile(
-            leading: const Icon(Icons.account_balance_wallet),
-            title: const Text('Manage Accounts'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/accounts'),
-          ),
+            ListTile(
+              leading: const Icon(Icons.summarize_outlined),
+              title: const Text('Spending summary'),
+              subtitle: Text(_summaryLabel(_summary)),
+              enabled: settings.notificationsEnabled,
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _showSummaryPicker,
+            ),
 
-          ListTile(
-            leading: const Icon(Icons.repeat_rounded),
-            title: const Text('Repeating payments'),
-            subtitle: const Text('Rent, subscriptions, salary'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/recurring'),
-          ),
+            SwitchListTile(
+              secondary: const Icon(Icons.event_repeat_outlined),
+              title: const Text('Payment reminders'),
+              subtitle: const Text('The day before a repeating payment'),
+              value: _reminders,
+              onChanged: settings.notificationsEnabled
+                  ? (value) async {
+                      await ScheduledNoticesService.setRemindersEnabled(value);
+                      setState(() => _reminders = value);
+                      if (value) _requestNotificationPermission();
+                      await _reschedule();
+                    }
+                  : null,
+            ),
 
-          ListTile(
-            leading: const Icon(Icons.savings_outlined),
-            title: const Text('Savings goals'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/goals'),
-          ),
-          const Divider(),
+            SwitchListTile(
+              secondary: const Icon(Icons.fingerprint),
+              title: const Text('App Lock'),
+              subtitle: const Text('Require biometric authentication'),
+              value: settings.biometricLockEnabled,
+              onChanged: (value) async {
+                if (value) {
+                  final biometricService = ref.read(biometricServiceProvider);
+                  final canAuth = await biometricService.canAuthenticate();
+                  if (!canAuth) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Biometric authentication is not available on this device',
+                          ),
+                        ),
+                      );
+                    }
+                    return;
+                  }
+                  final authenticated = await biometricService.authenticate(
+                    'Verify to enable App Lock',
+                  );
+                  if (!authenticated) return;
+                } else {
+                  // Turning the lock off is as sensitive as passing it.
+                  final authenticated = await ref
+                      .read(biometricServiceProvider)
+                      .authenticate('Verify to turn off App Lock');
+                  if (!authenticated) return;
+                }
+                settingsNotifier.setBiometricLockEnabled(value);
+              },
+            ),
+          ]),
+          _group([
+            // Spreadsheet
+            if (settings.spreadsheetUrl != null)
+              ListTile(
+                leading: const Icon(Icons.table_chart),
+                title: const Text('View Spreadsheet'),
+                subtitle: const Text('Open in Google Sheets'),
+                trailing: const Icon(Icons.open_in_new),
+                onTap: () {
+                  launchUrl(
+                    Uri.parse(settings.spreadsheetUrl!),
+                    mode: LaunchMode.externalApplication,
+                  );
+                },
+              ),
 
-          // Google Wallet capture
-          ListTile(
-            leading: const Icon(Icons.contactless_outlined),
-            title: const Text('Google Wallet payments'),
-            subtitle: const Text('Add tap-to-pay purchases as expenses'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/wallet-capture'),
-          ),
-          const Divider(),
+            // Categories
+            ListTile(
+              leading: const Icon(Icons.category),
+              title: const Text('Manage Categories'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/categories'),
+            ),
 
-          // Full Sync
-          ListTile(
-            leading: const Icon(Icons.sync),
-            title: const Text('Full Sync'),
-            subtitle: const Text('Re-download all data from Sheets'),
-            onTap: () => _confirmFullSync(context),
-          ),
+            // Accounts
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet),
+              title: const Text('Manage Accounts'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/accounts'),
+            ),
 
-          // Sign Out
-          ListTile(
-            leading:
-                Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
-            title: Text('Sign Out',
-                style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            onTap: () => _confirmSignOut(context),
-          ),
+            ListTile(
+              leading: const Icon(Icons.repeat_rounded),
+              title: const Text('Repeating payments'),
+              subtitle: const Text('Rent, subscriptions, salary'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/recurring'),
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.savings_outlined),
+              title: const Text('Savings goals'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/goals'),
+            ),
+          ]),
+          _group([
+            // Google Wallet capture
+            ListTile(
+              leading: const Icon(Icons.contactless_outlined),
+              title: const Text('Google Wallet payments'),
+              subtitle: const Text('Add tap-to-pay purchases as expenses'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/wallet-capture'),
+            ),
+          ]),
+          _group([
+            // Full Sync
+            ListTile(
+              leading: const Icon(Icons.sync),
+              title: const Text('Full Sync'),
+              subtitle: const Text('Re-download all data from Sheets'),
+              onTap: () => _confirmFullSync(context),
+            ),
+
+            // Sign Out
+            ListTile(
+              leading: Icon(
+                Icons.logout,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                'Sign Out',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+              onTap: () => _confirmSignOut(context),
+            ),
+          ]),
           const SizedBox(height: 32),
 
           // App Version
@@ -349,8 +360,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Text(
               'SpendSheet v1.0.0',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -359,6 +370,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  /// One group of settings: rows drawn as connected tiles.
+  static Widget _group(List<Widget> rows) => Padding(
+    padding: const EdgeInsets.only(bottom: Space.lg),
+    child: SegmentedList(children: rows),
+  );
+
   void _showCurrencyPicker(BuildContext context, String currentCurrency) {
     showAppSheet(
       context: context,
@@ -366,13 +383,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         shrinkWrap: true,
         children: CurrencyUtils.allCurrencies.map((currency) {
           return ListTile(
-            leading:
-                Text(currency.symbol, style: const TextStyle(fontSize: 20)),
+            leading: Text(
+              currency.symbol,
+              style: const TextStyle(fontSize: 20),
+            ),
             title: Text(currency.name),
             subtitle: Text(currency.code),
             trailing: currentCurrency == currency.code
-                ? Icon(Icons.check,
-                    color: Theme.of(context).colorScheme.primary)
+                ? Icon(
+                    Icons.check,
+                    color: Theme.of(context).colorScheme.primary,
+                  )
                 : null,
             onTap: () async {
               await ref
@@ -398,8 +419,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             leading: const Icon(Icons.brightness_auto),
             title: const Text('System'),
             trailing: currentTheme == 'system'
-                ? Icon(Icons.check,
-                    color: Theme.of(context).colorScheme.primary)
+                ? Icon(
+                    Icons.check,
+                    color: Theme.of(context).colorScheme.primary,
+                  )
                 : null,
             onTap: () {
               ref.read(settingsProvider.notifier).setThemeMode('system');
@@ -410,8 +433,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             leading: const Icon(Icons.light_mode),
             title: const Text('Light'),
             trailing: currentTheme == 'light'
-                ? Icon(Icons.check,
-                    color: Theme.of(context).colorScheme.primary)
+                ? Icon(
+                    Icons.check,
+                    color: Theme.of(context).colorScheme.primary,
+                  )
                 : null,
             onTap: () {
               ref.read(settingsProvider.notifier).setThemeMode('light');
@@ -422,8 +447,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             leading: const Icon(Icons.dark_mode),
             title: const Text('Dark'),
             trailing: currentTheme == 'dark'
-                ? Icon(Icons.check,
-                    color: Theme.of(context).colorScheme.primary)
+                ? Icon(
+                    Icons.check,
+                    color: Theme.of(context).colorScheme.primary,
+                  )
                 : null,
             onTap: () {
               ref.read(settingsProvider.notifier).setThemeMode('dark');
@@ -447,13 +474,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _requestNotificationPermission() async {
-    final allowed =
-        await ref.read(notificationServiceProvider).requestPermission();
+    final allowed = await ref
+        .read(notificationServiceProvider)
+        .requestPermission();
     if (!allowed && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-              "Notifications are blocked for SpendSheet. Allow them in your phone's settings to get alerts and reminders."),
+            "Notifications are blocked for SpendSheet. Allow them in your phone's settings to get alerts and reminders.",
+          ),
         ),
       );
     }
@@ -465,7 +494,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (dialogContext) => AppAlertDialog(
         title: const Text('Full Sync'),
         content: const Text(
-            'This will upload changes waiting to sync, then re-download all data from your Google Sheet. Anything that still can\'t be uploaded stays on this device and syncs later.'),
+          'This will upload changes waiting to sync, then re-download all data from your Google Sheet. Anything that still can\'t be uploaded stays on this device and syncs later.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -494,9 +524,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (dialogContext) => AppAlertDialog(
         title: const Text('Sign Out'),
         content: const Text(
-            'Your data stays in your Google Sheet. The copy on this device '
-            'is kept for when you sign in again, and is removed if a '
-            'different account signs in.'),
+          'Your data stays in your Google Sheet. The copy on this device '
+          'is kept for when you sign in again, and is removed if a '
+          'different account signs in.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -520,7 +551,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               context.go('/welcome');
             },
             style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error),
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Sign Out'),
           ),
         ],
