@@ -141,7 +141,15 @@ class TransactionTile extends StatelessWidget {
                             const SizedBox(width: 2),
                           ],
                           Text(
-                            AppDateUtils.formatDisplayTime(transaction.date),
+                            // Under "Today" and "Yesterday" the day is
+                            // known, so the time helps more. Anywhere
+                            // else the row says which day it is.
+                            AppDateUtils.isToday(transaction.date) ||
+                                    AppDateUtils.isYesterday(transaction.date)
+                                ? AppDateUtils.formatDisplayTime(
+                                    transaction.date)
+                                : AppDateUtils.formatDayMonth(
+                                    transaction.date),
                             style: secondary,
                           ),
                           if (transaction.labels.isNotEmpty) ...[

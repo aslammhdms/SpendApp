@@ -238,6 +238,9 @@ class _AddEditTransactionScreenState
       } else {
         // Save as transaction
         final repository = ref.read(transactionRepositoryProvider);
+        // The app's own messenger, so the message outlives this screen.
+        final messenger = ScaffoldMessenger.of(context);
+        String? repeatMessage;
 
         if (isEditing && _existingTransaction != null) {
           await repository.update(
@@ -275,6 +278,17 @@ class _AddEditTransactionScreenState
                   name: await _repeatName(created),
                 );
             await repository.update(created.copyWith(recurringId: rule.id));
+            // Payments already due (a first date in the past) are added
+            // now, and the user is told, so the extra rows are no surprise.
+            final recurring = ref.read(recurringRepositoryProvider);
+            final caughtUp = await recurring.addDueFor(rule.id, DateTime.now());
+            final next = (await recurring.getById(rule.id))?.nextDueDate;
+            repeatMessage = repeatSavedMessage(
+              frequency: repeat,
+              firstDate: created.date,
+              caughtUp: caughtUp,
+              next: next,
+            );
             ref.invalidate(recurringRulesProvider);
           }
         }
@@ -286,6 +300,12 @@ class _AddEditTransactionScreenState
               .read(transactionsProvider.notifier)
               .loadTransactions(refresh: true);
           if (mounted) context.pop();
+        }
+        if (repeatMessage != null) {
+          messenger.showSnackBar(SnackBar(
+            content: Text(repeatMessage),
+            duration: const Duration(seconds: 8),
+          ));
         }
       }
     } catch (e) {
@@ -1168,4 +1188,26 @@ String repeatLabel(RecurringFrequency? frequency) {
     case RecurringFrequency.yearly:
       return 'Every year';
   }
+}
+
+/// What to tell the user after saving a repeating payment: which rows were
+/// added and when the next one comes.
+String repeatSavedMessage({
+  required RecurringFrequency frequency,
+  required DateTime firstDate,
+  required List<DateTime> caughtUp,
+  required DateTime? next,
+}) {
+  String day(DateTime d) => AppDateUtils.formatDisplayDate(d);
+  final parts = <String>['Saved for ${day(firstDate)}.'];
+  if (caughtUp.length == 1) {
+    parts.add('The payment due on ${day(caughtUp.single)} was added too.');
+  } else if (caughtUp.length > 1) {
+    parts.add('${caughtUp.length} payments due since then were added too, '
+        'the latest on ${day(caughtUp.last)}.');
+  }
+  if (next != null) {
+    parts.add('${repeatLabel(frequency)}, next on ${day(next)}.');
+  }
+  return parts.join(' ');
 }

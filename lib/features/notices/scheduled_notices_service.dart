@@ -134,28 +134,90 @@ class ScheduledNoticesService {
     await prefs.remove(_scheduledKey);
   }
 
+  /// Two notices for each repeating expense: one the morning before it is
+  /// due, one on the morning itself.
+  ///
+  /// When the morning before has already passed (a payment set up today
+  /// for tomorrow), that reminder is sent a minute from now instead, once.
   Future<List<int>> _scheduleReminders(String currency) async {
     final now = _now();
+    final prefs = await SharedPreferences.getInstance();
     final rules = (await _recurring.getAll())
         .where((r) => r.isActive && !r.isDeleted)
         .where((r) => r.type == TransactionType.expense)
         .take(maxReminders);
     final ids = <int>[];
+    final lateKeys = <String>{};
     for (final rule in rules) {
       final due = rule.nextDueDate;
-      final when = DateTime(due.year, due.month, due.day - 1, hour);
-      if (!when.isAfter(now)) continue;
-      final id = reminderId(rule.id);
-      await _notifications.scheduleReminder(
-        id: id,
-        when: when,
-        title: reminderTitle(rule),
-        body: reminderBody(rule, currency),
-      );
-      ids.add(id);
+      final dueDay = DateTime(due.year, due.month, due.day);
+
+      var before = DateTime(due.year, due.month, due.day - 1, hour);
+      if (!before.isAfter(now) && dueDay.isAfter(now)) {
+        // Too late for 9am. Send it shortly, and keep to that time on
+        // later calls so it is neither lost nor sent twice.
+        final key = '$_lateKeyPrefix${rule.id}.${dueDay.toIso8601String()}';
+        lateKeys.add(key);
+        final stored = DateTime.tryParse(prefs.getString(key) ?? '');
+        before = stored ?? now.add(lateReminderDelay);
+        if (stored == null) {
+          await prefs.setString(key, before.toIso8601String());
+        }
+      }
+      if (before.isAfter(now)) {
+        final id = reminderId(rule.id);
+        await _notifications.scheduleReminder(
+          id: id,
+          when: before,
+          title: reminderTitle(rule),
+          body: reminderBody(rule, currency),
+        );
+        ids.add(id);
+      }
+
+      final onTheDay = DateTime(due.year, due.month, due.day, hour);
+      if (onTheDay.isAfter(now)) {
+        final id = dueTodayId(rule.id);
+        await _notifications.scheduleReminder(
+          id: id,
+          when: onTheDay,
+          title: dueTodayTitle(rule),
+          body: dueTodayBody(rule, currency),
+        );
+        ids.add(id);
+      }
+    }
+    // Forget late reminders of payments that have since moved on.
+    for (final key in prefs.getKeys()) {
+      if (key.startsWith(_lateKeyPrefix) && !lateKeys.contains(key)) {
+        await prefs.remove(key);
+      }
     }
     return ids;
   }
+
+  static const _lateKeyPrefix = 'notices.late_reminder.';
+
+  /// How soon a reminder that missed its morning is sent.
+  static const Duration lateReminderDelay = Duration(minutes: 1);
+
+  /// Sends a reminder about a minute from now, through the same scheduling
+  /// as the real ones, so the user can see that they arrive on this phone.
+  /// Returns false when notifications are off or blocked.
+  Future<bool> sendTestReminder() async {
+    final settings = await _settings.getSettings();
+    if (!settings.notificationsEnabled) return false;
+    if (!await _notifications.areEnabled()) return false;
+    await _notifications.scheduleReminder(
+      id: _testId,
+      when: _now().add(lateReminderDelay),
+      title: 'Test reminder',
+      body: 'Reminders from SpendSheet arrive on this phone.',
+    );
+    return true;
+  }
+
+  static const int _testId = 0x54000001;
 
   Future<List<int>> _scheduleSummaries(
     SummaryFrequency frequency,
@@ -281,6 +343,27 @@ class ScheduledNoticesService {
         plain: true);
     return '$amount. SpendSheet adds it as an expense when it falls due.';
   }
+
+  @visibleForTesting
+  static String dueTodayTitle(RecurringRule rule) {
+    final name = _clean(rule.name);
+    return '${name == null || name.isEmpty ? 'A repeating payment' : name} '
+        'is due today';
+  }
+
+  @visibleForTesting
+  static String dueTodayBody(RecurringRule rule, String currency) {
+    final amount = CurrencyUtils.format(
+        rule.amount,
+        currencyCode: currency,
+        plain: true);
+    return '$amount. Open SpendSheet and it is added as an expense.';
+  }
+
+  /// The ID of a rule's "due today" notice, in a block of its own.
+  @visibleForTesting
+  static int dueTodayId(String ruleId) =>
+      reminderId(ruleId) - 0x50000000 + 0x53000000;
 
   /// Reminder IDs sit in their own block, apart from the summaries.
   @visibleForTesting

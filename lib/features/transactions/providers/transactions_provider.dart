@@ -1,3 +1,4 @@
+import '../../../core/utils/date_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/transaction.dart';
 import '../../../data/models/category.dart';
@@ -234,16 +235,20 @@ class TransactionsState {
       }
     }
 
-    // Sort items within each group by date descending
+    DateTime dateOf(Object item) =>
+        item is Transaction ? item.date : (item as Loan).date;
+
+    // Newest first within each group.
     for (final items in grouped.values) {
-      items.sort((a, b) {
-        final dateA = a is Transaction ? a.date : (a as Loan).date;
-        final dateB = b is Transaction ? b.date : (b as Loan).date;
-        return dateB.compareTo(dateA);
-      });
+      items.sort((a, b) => dateOf(b).compareTo(dateOf(a)));
     }
 
-    return grouped;
+    // Groups newest first too. Loans join after the transactions, so
+    // without this an older month could come before "This Month".
+    final keys = grouped.keys.toList()
+      ..sort((a, b) =>
+          dateOf(grouped[b]!.first).compareTo(dateOf(grouped[a]!.first)));
+    return {for (final key in keys) key: grouped[key]!};
   }
 
   bool get isEmpty => transactions.isEmpty && loans.isEmpty;
@@ -257,8 +262,9 @@ class TransactionsState {
     if (difference == 0) return 'Today';
     if (difference == 1) return 'Yesterday';
     if (difference < 7) return 'This Week';
-    if (difference < 30) return 'This Month';
-    return '${date.month}/${date.year}';
+    if (date.year == now.year && date.month == now.month) return 'This Month';
+    // "October 2026"
+    return AppDateUtils.formatMonthYear(date);
   }
 }
 

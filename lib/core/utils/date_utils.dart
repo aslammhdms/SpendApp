@@ -20,6 +20,11 @@ class AppDateUtils {
 
   static String formatMonthYear(DateTime date) => _monthYearFormat.format(date);
 
+  /// "15 Nov", with the year added when it is not this year.
+  static String formatDayMonth(DateTime date) => DateFormat(
+          date.year == DateTime.now().year ? 'd MMM' : 'd MMM y')
+      .format(date);
+
   static DateTime parseDate(String dateStr) => _dateFormat.parse(dateStr);
 
   static DateTime parseDateTime(String dateTimeStr) => _dateTimeFormat.parse(dateTimeStr);

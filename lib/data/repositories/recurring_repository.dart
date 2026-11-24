@@ -79,8 +79,11 @@ class RecurringRepository {
     await _queue(deleted, 'delete');
   }
 
-  /// Adds a transaction for every occurrence that has come due by [now],
+  /// Adds a transaction for every occurrence whose day has come by [now],
   /// moves each rule on to its next date, and returns how many were added.
+  ///
+  /// A payment is due from the start of its day, whatever time of day the
+  /// first one was entered at.
   ///
   /// Each occurrence gets an ID made from the rule and its date, so a second
   /// phone that adds the same occurrence writes the same sheet row rather
@@ -91,7 +94,7 @@ class RecurringRepository {
     for (final rule in await _dao.getAll()) {
       if (!rule.isActive || rule.isDeleted) continue;
       try {
-        added += await _processRule(rule, now);
+        added += (await _processRule(rule, now)).length;
       } catch (e) {
         debugPrint('Repeating payment ${rule.id} failed: $e');
       }
@@ -99,11 +102,19 @@ class RecurringRepository {
     return added;
   }
 
-  Future<int> _processRule(RecurringRule rule, DateTime now) async {
+  /// Adds what has come due for one rule, as [processDue] does for all,
+  /// and returns the dates of the transactions it added.
+  Future<List<DateTime>> addDueFor(String ruleId, DateTime now) async {
+    final rule = await _dao.getById(ruleId);
+    if (rule == null || !rule.isActive || rule.isDeleted) return const [];
+    return _processRule(rule, now);
+  }
+
+  Future<List<DateTime>> _processRule(RecurringRule rule, DateTime now) async {
     var current = rule;
-    var added = 0;
+    final added = <DateTime>[];
     var steps = 0;
-    while (!current.nextDueDate.isAfter(now) && steps < maxCatchUp) {
+    while (!_dayOf(current.nextDueDate).isAfter(now) && steps < maxCatchUp) {
       if (_isPastEnd(current, current.nextDueDate)) break;
       final id = occurrenceId(rule.id, current.nextDueDate);
       if (await _transactionDao.getById(id) == null) {
@@ -127,7 +138,7 @@ class RecurringRepository {
           operation: 'create',
           data: transaction.toJson(),
         );
-        added++;
+        added.add(current.nextDueDate);
       }
       current = current.copyWith(nextDueDate: current.calculateNextDueDate());
       steps++;
@@ -139,6 +150,9 @@ class RecurringRepository {
     }
     return added;
   }
+
+  static DateTime _dayOf(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
 
   static bool _isPastEnd(RecurringRule rule, DateTime date) {
     final end = rule.endDate;

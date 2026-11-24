@@ -127,6 +127,31 @@ void main() {
           DateTime(2026, 4, 5, 10));
     });
 
+    test('a payment is due from the start of its day', () async {
+      // Entered at 6pm; a month later the app is opened in the morning.
+      final first = await rent(DateTime(2026, 1, 5, 18));
+      final rule = await recurring.createFrom(first,
+          frequency: RecurringFrequency.monthly, name: 'Rent');
+
+      expect(await recurring.processDue(DateTime(2026, 2, 4, 23, 59)), 0);
+      expect(await recurring.processDue(DateTime(2026, 2, 5, 7)), 1);
+      expect((await recurring.getById(rule.id))!.nextDueDate,
+          DateTime(2026, 3, 5, 18));
+    });
+
+    test('adding what is due for one rule reports the dates added',
+        () async {
+      final first = await rent(DateTime(2026, 1, 5, 10));
+      final rule = await recurring.createFrom(first,
+          frequency: RecurringFrequency.monthly, name: 'Rent');
+
+      expect(await recurring.addDueFor(rule.id, DateTime(2026, 3, 20)),
+          [DateTime(2026, 2, 5, 10), DateTime(2026, 3, 5, 10)]);
+      expect(await recurring.addDueFor(rule.id, DateTime(2026, 3, 20)), isEmpty);
+      expect(await recurring.addDueFor('no-such-rule', DateTime(2026, 3, 20)),
+          isEmpty);
+    });
+
     test('an occurrence the user deleted is not added again', () async {
       final first = await rent(DateTime(2026, 1, 5));
       final rule = await recurring.createFrom(first,

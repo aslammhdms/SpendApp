@@ -62,6 +62,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  /// Lets the user check that scheduled notifications reach this phone.
+  Future<void> _sendTestReminder() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final notifications = ref.read(notificationServiceProvider);
+    if (!await notifications.areEnabled()) {
+      await notifications.requestPermission();
+    }
+    bool sent;
+    try {
+      sent = await ref.read(scheduledNoticesServiceProvider).sendTestReminder();
+    } catch (e) {
+      debugPrint('Test reminder failed: $e');
+      sent = false;
+    }
+    messenger.showSnackBar(SnackBar(
+      content: Text(sent
+          ? 'A test reminder will arrive in a minute or two. '
+              'You can leave the app.'
+          : 'Notifications are blocked for SpendSheet. Allow them in your '
+              "phone's settings, then try again."),
+    ));
+  }
+
   static String _summaryLabel(SummaryFrequency f) => switch (f) {
     SummaryFrequency.off => 'Off',
     SummaryFrequency.weekly => 'Every Monday morning',
@@ -236,6 +259,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       await _reschedule();
                     }
                   : null,
+            ),
+            ListTile(
+              leading: const Icon(Icons.notifications_active_outlined),
+              title: const Text('Send a test reminder'),
+              subtitle: const Text('Arrives in a minute or two'),
+              enabled: settings.notificationsEnabled,
+              onTap: _sendTestReminder,
             ),
 
             SwitchListTile(

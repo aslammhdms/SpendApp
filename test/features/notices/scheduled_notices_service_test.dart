@@ -48,6 +48,9 @@ class _Notifications extends NotificationService {
 
   @override
   Future<void> cancel(int id) async => cancelled.add(id);
+
+  @override
+  Future<bool> areEnabled() async => true;
 }
 
 void main() {
@@ -238,14 +241,68 @@ void main() {
 
       await service.reschedule();
 
-      final r = notifications.reminders.single;
+      expect(notifications.reminders, hasLength(2));
+      final r = notifications.reminders.first;
       expect(r.when, DateTime(2026, 12, 4, 9));
       expect(r.title, 'Rent is due tomorrow');
       expect(r.body, startsWith('\$15,000.00.'));
 
+      final onTheDay = notifications.reminders.last;
+      expect(onTheDay.when, DateTime(2026, 12, 5, 9));
+      expect(onTheDay.title, 'Rent is due today');
+      expect(onTheDay.id, isNot(r.id));
+
       await ScheduledNoticesService.setRemindersEnabled(false);
       notifications.reminders.clear();
       await service.reschedule();
+      expect(notifications.reminders, isEmpty);
+    });
+
+    test('a payment set up for tomorrow still gets its reminder, once',
+        () async {
+      // 24 Nov, midday: the 9am reminder for the 25th has already passed.
+      final first = await transactions.create(
+        amount: 40,
+        type: TransactionType.expense,
+        categoryId: 'cat_fitness',
+        accountId: 'acc_cash',
+        date: DateTime(2026, 10, 25, 18),
+        note: 'Gym',
+      );
+      await recurring.createFrom(first,
+          frequency: RecurringFrequency.monthly, name: 'Gym');
+
+      await service.reschedule();
+      final late = notifications.reminders
+          .firstWhere((r) => r.title == 'Gym is due tomorrow');
+      expect(late.when, DateTime(2026, 11, 24, 12, 1));
+
+      // Home refreshes again before it has gone off: the same time is kept.
+      notifications.reminders.clear();
+      now = DateTime(2026, 11, 24, 12, 0, 30);
+      await service.reschedule();
+      expect(
+          notifications.reminders
+              .firstWhere((r) => r.title == 'Gym is due tomorrow')
+              .when,
+          DateTime(2026, 11, 24, 12, 1));
+
+      // After it has gone off it is not sent a second time.
+      notifications.reminders.clear();
+      now = DateTime(2026, 11, 24, 15);
+      await service.reschedule();
+      expect(notifications.reminders.map((r) => r.title),
+          ['Gym is due today']);
+    });
+
+    test('a test reminder goes out a minute from now', () async {
+      expect(await service.sendTestReminder(), isTrue);
+      expect(notifications.reminders.single.when, DateTime(2026, 11, 24, 12, 1));
+
+      when(() => settings.getSettings()).thenAnswer((_) async =>
+          const AppSettings(currency: 'USD', notificationsEnabled: false));
+      notifications.reminders.clear();
+      expect(await service.sendTestReminder(), isFalse);
       expect(notifications.reminders, isEmpty);
     });
 
