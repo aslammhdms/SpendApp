@@ -12,6 +12,7 @@ import '../widgets/loan_tile.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/screen_insets.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class PersonLoansScreen extends ConsumerStatefulWidget {
   final String personId;
@@ -68,7 +69,7 @@ class _PersonLoansScreenState extends ConsumerState<PersonLoansScreen> {
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader())
           : state.error != null
               ? Center(child: Text(state.error!))
               : ListView(

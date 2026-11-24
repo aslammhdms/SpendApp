@@ -9,6 +9,7 @@ import '../../../data/models/category.dart';
 import '../../../shared/widgets/category_icon.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../transactions/providers/transactions_provider.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 /// Donut of spending by category with a ranked list underneath.
 ///
@@ -56,7 +57,7 @@ class _CategoryPieChartState extends ConsumerState<CategoryPieChart> {
 
     return categoriesAsync.when(
       data: (categories) => _buildChart(context, categories),
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: AppLoader()),
       error: (_, __) => _buildChart(context, []),
     );
   }

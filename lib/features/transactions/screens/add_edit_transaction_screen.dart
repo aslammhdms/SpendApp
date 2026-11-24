@@ -26,13 +26,19 @@ import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/bottom_action_bar.dart';
 import '../../../shared/widgets/segmented_control.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class AddEditTransactionScreen extends ConsumerStatefulWidget {
   final String? transactionId;
 
+  /// The type a new transaction opens on: 'expense' (the default),
+  /// 'income', 'transfer' or 'loan'.
+  final String? initialType;
+
   const AddEditTransactionScreen({
     super.key,
     this.transactionId,
+    this.initialType,
   });
 
   @override
@@ -77,7 +83,15 @@ class _AddEditTransactionScreenState
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabCount, vsync: this);
+    final initialIndex = isEditing
+        ? 0
+        : const ['expense', 'income', 'transfer', 'loan']
+            .indexOf(widget.initialType ?? 'expense')
+            .clamp(0, 3);
+    _tabController = TabController(
+        length: _tabCount, vsync: this, initialIndex: initialIndex);
+    _isLoanTab = initialIndex == 3;
+    if (!_isLoanTab) _type = TransactionType.values[initialIndex];
     _tabController.addListener(_onTabChanged);
 
     if (isEditing) {
@@ -331,7 +345,7 @@ class _AddEditTransactionScreenState
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader())
           : AmountInputPad(
               initialAmount: _amount,
               currency: currency,

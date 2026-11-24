@@ -8,6 +8,7 @@ import '../../home/providers/dashboard_provider.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../../core/theme/tokens.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class AddEditAccountScreen extends ConsumerStatefulWidget {
   final String? accountId;
@@ -159,7 +160,7 @@ class _AddEditAccountScreenState extends ConsumerState<AddEditAccountScreen> {
         ],
       ),
       body: _isLoading && isEditing
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader())
           : Form(
               key: _formKey,
               child: ListView(

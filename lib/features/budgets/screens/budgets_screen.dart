@@ -13,6 +13,7 @@ import '../../transactions/providers/transactions_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../../shared/widgets/app_dialog.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class BudgetsScreen extends ConsumerStatefulWidget {
   const BudgetsScreen({super.key});
@@ -55,7 +56,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
         title: const Text('Budgets'),
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader())
           : state.error != null
               ? Center(
                   child: Column(
@@ -101,7 +102,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                           currency: currency,
                         ),
                         loading: () => const Center(
-                          child: CircularProgressIndicator(),
+                          child: AppLoader(),
                         ),
                         error: (_, __) => _buildBudgetsList(state, [], currency: currency),
                       ),

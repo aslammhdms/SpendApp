@@ -11,6 +11,7 @@ import '../../../shared/widgets/screen_insets.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../providers/goals_provider.dart';
 import '../widgets/goal_card.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class GoalsScreen extends ConsumerWidget {
   const GoalsScreen({super.key});
@@ -24,7 +25,7 @@ class GoalsScreen extends ConsumerWidget {
       extendBodyBehindAppBar: true,
       appBar: AppBar(title: const Text('Savings goals')),
       body: goalsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppLoader()),
         error: (e, _) => Center(child: Text('Could not load goals: $e')),
         data: (goals) {
           if (goals.isEmpty) {

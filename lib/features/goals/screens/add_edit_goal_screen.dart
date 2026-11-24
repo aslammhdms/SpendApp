@@ -12,6 +12,7 @@ import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../providers/goals_provider.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class AddEditGoalScreen extends ConsumerStatefulWidget {
   const AddEditGoalScreen({super.key, this.goalId});
@@ -194,7 +195,7 @@ class _AddEditGoalScreenState extends ConsumerState<AddEditGoalScreen> {
         ],
       ),
       body: _isLoading && isEditing && _existing == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader())
           : Form(
               key: _formKey,
               child: ListView(

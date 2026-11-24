@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import '../../core/theme/tokens.dart';
+import 'app_loader.dart';
 
 class LoadingOverlay extends StatelessWidget {
   final bool isLoading;
@@ -30,7 +31,7 @@ class LoadingOverlay extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const CircularProgressIndicator(),
+                      const AppLoader(),
                       if (message != null) ...[
                         const SizedBox(height: Space.lg),
                         Text(message!),

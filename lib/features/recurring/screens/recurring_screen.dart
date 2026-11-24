@@ -20,6 +20,7 @@ import '../../transactions/providers/transactions_provider.dart';
 import '../../transactions/screens/add_edit_transaction_screen.dart'
     show repeatLabel;
 import '../providers/recurring_provider.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 /// Rent, subscriptions, salary: payments SpendSheet adds by itself.
 class RecurringScreen extends ConsumerWidget {
@@ -36,7 +37,7 @@ class RecurringScreen extends ConsumerWidget {
       extendBodyBehindAppBar: true,
       appBar: AppBar(title: const Text('Repeating payments')),
       body: rulesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppLoader()),
         error: (e, _) => Center(child: Text('Could not load: $e')),
         data: (rules) {
           if (rules.isEmpty) {

@@ -14,6 +14,7 @@ import '../providers/wallet_capture_provider.dart';
 import '../widgets/captured_payment_card.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../../shared/widgets/app_dialog.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 final _captureAccountsProvider =
     FutureProvider.autoDispose<List<Account>>((ref) async {
@@ -124,7 +125,7 @@ class _WalletCaptureScreenState extends ConsumerState<WalletCaptureScreen>
       extendBodyBehindAppBar: true,
       appBar: AppBar(title: const Text('Google Wallet payments')),
       body: capture.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader())
           : !capture.isSupported
               ? const EmptyState(
                   icon: Icons.contactless_outlined,

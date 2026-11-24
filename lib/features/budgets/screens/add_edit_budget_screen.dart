@@ -11,6 +11,7 @@ import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/screen_insets.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class AddEditBudgetScreen extends ConsumerStatefulWidget {
   final String? budgetId;
@@ -150,7 +151,7 @@ class _AddEditBudgetScreenState extends ConsumerState<AddEditBudgetScreen> {
         ],
       ),
       body: _isLoading && isEditing
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader())
           : Form(
               key: _formKey,
               child: ListView(

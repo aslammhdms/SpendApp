@@ -13,6 +13,7 @@ import '../../../data/remote/sync_engine.dart';
 import '../providers/transactions_provider.dart';
 import '../widgets/transaction_tile.dart';
 import '../widgets/filter_sheet.dart';
+import '../../../shared/widgets/add_menu_fab.dart';
 import '../../../shared/widgets/auto_hide_fab.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/money_text.dart';
@@ -23,6 +24,7 @@ import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/app_dialog.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class TransactionsListScreen extends ConsumerStatefulWidget {
   const TransactionsListScreen({super.key});
@@ -158,7 +160,7 @@ class _TransactionsListScreenState
         ],
       ),
       body: state.isLoading && state.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader())
           : state.error != null && state.isEmpty
               ? Center(
                   child: Column(
@@ -208,7 +210,7 @@ class _TransactionsListScreenState
                             currency: currency,
                           ),
                           loading: () => const Center(
-                            child: CircularProgressIndicator(),
+                            child: AppLoader(),
                           ),
                           error: (_, __) =>
                               _buildList(state, [], currency: currency),
@@ -217,12 +219,7 @@ class _TransactionsListScreenState
                     ),
       floatingActionButton: AutoHideFab(
         visibility: _fabVisibility,
-        child: FloatingActionButton.extended(
-          onPressed: () => context.push('/transactions/add'),
-          tooltip: 'Add transaction',
-          icon: const Icon(Icons.add),
-          label: const Text('Add'),
-        ),
+        child: const AddMenuFab(),
       ),
     );
   }
@@ -247,7 +244,7 @@ class _TransactionsListScreenState
         if (index == dateKeys.length) {
           return const Padding(
             padding: EdgeInsets.all(16),
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(child: AppLoader()),
           );
         }
 

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../data/remote/sync_engine.dart';
+import '../../../shared/widgets/add_menu_fab.dart';
 import '../../../shared/widgets/auto_hide_fab.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../../shared/widgets/sync_indicator.dart';
@@ -20,6 +21,7 @@ import '../../recurring/providers/recurring_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../wallet_capture/providers/wallet_capture_provider.dart';
 import '../../wallet_capture/widgets/pending_captures_banner.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -108,12 +110,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: _buildBody(context, dashboardData, currency),
       floatingActionButton: AutoHideFab(
         visibility: _fabVisibility,
-        child: FloatingActionButton.extended(
-          onPressed: () => context.push('/transactions/add'),
-          tooltip: 'Add transaction',
-          icon: const Icon(Icons.add),
-          label: const Text('Add'),
-        ),
+        child: const AddMenuFab(),
       ),
     );
   }
@@ -130,7 +127,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Show the spinner below the app bar, not behind it.
           edgeOffset: ScreenInsets.topOf(context),
           child: dashboardData.isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: AppLoader())
               : dashboardData.error != null
                   ? Center(
                       child: Column(

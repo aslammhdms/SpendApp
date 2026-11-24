@@ -5,6 +5,7 @@ import '../../../core/theme/tokens.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../data/models/goal.dart';
 import '../../../shared/widgets/category_icon.dart';
+import '../../../shared/widgets/wavy_progress_bar.dart';
 
 /// A savings goal with its progress.
 class GoalCard extends StatelessWidget {
@@ -77,16 +78,11 @@ class GoalCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: Space.md),
-          ClipRRect(
-            borderRadius: Radii.smAll,
-            child: LinearProgressIndicator(
-              value: goal.progress,
-              minHeight: 8,
-              color: barColor,
-              backgroundColor: scheme.surfaceContainerHigh,
-              semanticsLabel: '${goal.name} progress',
-              semanticsValue: '$percent percent',
-            ),
+          WavyProgressBar(
+            value: goal.progress,
+            color: barColor,
+            semanticsLabel: '${goal.name} progress',
+            semanticsValue: '$percent percent',
           ),
           if (hint != null) ...[
             const SizedBox(height: Space.sm),

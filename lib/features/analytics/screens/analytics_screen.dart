@@ -15,6 +15,7 @@ import '../widgets/spending_line_chart.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/screen_insets.dart';
 import '../../../shared/widgets/segmented_control.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
@@ -77,7 +78,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen>
         ),
       ),
       body: analytics.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader())
           : analytics.error != null
               ? Center(
                   child: Column(

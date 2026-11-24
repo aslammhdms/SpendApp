@@ -10,6 +10,7 @@ import '../../transactions/providers/transactions_provider.dart'
 import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/screen_insets.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class CategoriesManagerScreen extends ConsumerStatefulWidget {
   const CategoriesManagerScreen({super.key});
@@ -59,7 +60,7 @@ class _CategoriesManagerScreenState
         ),
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader())
           : TabBarView(
               controller: _tabController,
               children: [

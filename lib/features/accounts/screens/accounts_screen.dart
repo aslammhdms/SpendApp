@@ -15,6 +15,7 @@ import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/screen_insets.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class AccountsScreen extends ConsumerStatefulWidget {
   const AccountsScreen({super.key});
@@ -57,7 +58,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
         title: const Text('Accounts'),
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader())
           : state.error != null
               ? Center(
                   child: Column(

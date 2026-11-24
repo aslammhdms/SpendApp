@@ -49,7 +49,12 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: scheme.surface,
       extensions: [palette],
       appBarTheme: AppBarThemeData(
-        backgroundColor: scheme.surface,
+        // The page color at rest; the bar tone once content is under it.
+        backgroundColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.scrolledUnder)
+              ? scheme.surfaceContainer
+              : scheme.surface,
+        ),
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,

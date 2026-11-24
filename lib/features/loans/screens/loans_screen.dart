@@ -16,6 +16,7 @@ import '../../home/providers/dashboard_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/app_dialog.dart';
 import '../../../shared/widgets/screen_insets.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class LoansScreen extends ConsumerStatefulWidget {
   const LoansScreen({super.key});
@@ -44,7 +45,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
         title: const Text('Loans & Debts'),
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader())
           : state.error != null
               ? Center(
                   child: Column(

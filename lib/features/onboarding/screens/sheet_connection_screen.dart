@@ -4,6 +4,7 @@ import '../../../core/theme/app_palette.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/sheet_setup_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class SheetConnectionScreen extends ConsumerStatefulWidget {
   const SheetConnectionScreen({super.key});
@@ -137,7 +138,7 @@ class _SheetConnectionScreenState extends ConsumerState<SheetConnectionScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(),
+                        AppLoader(),
                         SizedBox(height: 16),
                         Text('Searching for existing SpendSheets...'),
                       ],

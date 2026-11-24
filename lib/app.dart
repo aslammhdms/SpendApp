@@ -110,7 +110,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/transactions/add',
-        builder: (context, state) => const AddEditTransactionScreen(),
+        builder: (context, state) => AddEditTransactionScreen(
+          initialType: state.uri.queryParameters['type'],
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
