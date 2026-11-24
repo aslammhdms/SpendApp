@@ -100,4 +100,21 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('welcome page'), findsOneWidget);
   });
+
+  testWidgets('it shows the name and moves on within a second',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(
+      _splashApp(signedIn: false, syncEngine: syncEngine),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('SpendSheet'), findsOneWidget);
+    expect(find.text('welcome page'), findsNothing);
+
+    // There is no fixed wait for an animation any more.
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump();
+    expect(find.text('welcome page'), findsOneWidget);
+  });
 }

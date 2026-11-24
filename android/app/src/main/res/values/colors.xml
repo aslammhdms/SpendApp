@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The brand teal (AppColorSchemes.seed): background of the launch
+         screen, matching the app icon and the app's own splash screen. -->
+    <color name="splash_background">#0E5A64</color>
+</resources>

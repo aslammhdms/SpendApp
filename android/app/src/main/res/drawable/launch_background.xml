@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Shown by Android before the app has drawn anything (Android 11 and
+     earlier; later versions use the splash attributes in values-v31).
+     The same teal and wallet mark as the app's own splash screen, at the
+     same size and place, so one hands over to the other without a jump. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+    <item android:drawable="@color/splash_background" />
+    <item
+        android:width="288dp"
+        android:height="288dp"
+        android:drawable="@drawable/ic_launcher_foreground"
+        android:gravity="center" />
 </layer-list>

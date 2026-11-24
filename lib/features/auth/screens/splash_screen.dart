@@ -1,7 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_palette.dart';
+import 'package:flutter/services.dart';
+import '../../../core/theme/app_color_schemes.dart';
 import '../../../core/theme/tokens.dart';
+import '../../../shared/widgets/app_loader.dart';
 import 'package:go_router/go_router.dart';
 import '../../../data/repositories/settings_repository.dart';
 import '../providers/auth_provider.dart';
@@ -17,33 +19,37 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
+  /// The splash stays at least this long, so the name has appeared before
+  /// the next screen replaces it. Starting up usually takes longer anyway.
+  static const Duration _minimumTime = Duration(milliseconds: 700);
+
+  /// Runs once: the name rises into place, and if the app is still getting
+  /// ready near the end, the progress line fades in.
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1800),
+  );
+
+  late final Animation<double> _nameIn = CurvedAnimation(
+    parent: _controller,
+    curve: Interval(0, 0.4, curve: Motion.spatial),
+  );
+  late final Animation<double> _nameFade = CurvedAnimation(
+    parent: _controller,
+    curve: const Interval(0, 0.2),
+  );
+  late final Animation<double> _progressFade = CurvedAnimation(
+    parent: _controller,
+    curve: const Interval(0.75, 1),
+  );
+
+  final Stopwatch _shown = Stopwatch();
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
-      ),
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
-      ),
-    );
-
-    _animationController.forward();
+    _shown.start();
+    _controller.forward();
     // Start after the first frame: initialization updates providers, and
     // Riverpod rejects that while the widget tree is still building.
     WidgetsBinding.instance.addPostFrameCallback((_) => _initializeApp());
@@ -93,8 +99,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       debugPrint('Sync engine init error: $e');
     }
 
-    // Wait for animation
-    await Future.delayed(const Duration(milliseconds: 2000));
+    // No fixed wait: only what is left of the minimum time, if anything.
+    final remaining = _minimumTime - _shown.elapsed;
+    if (remaining > Duration.zero) await Future.delayed(remaining);
 
     if (!mounted) return;
 
@@ -124,73 +131,85 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
+  /// Width and height of the wallet mark: the size Android draws it on its
+  /// own launch screen, so the two line up.
+  static const double _markSize = 144;
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    return Scaffold(
-      backgroundColor: scheme.surface,
-      body: Center(
-        child: AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return FadeTransition(
-              opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 96,
-                      height: 96,
-                      decoration: BoxDecoration(
-                        color: scheme.primaryContainer,
-                        borderRadius: Radii.xlAll,
-                        boxShadow: [
-                          BoxShadow(
-                            color: context.palette.cardShadow,
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.account_balance_wallet_rounded,
-                        size: 48,
-                        color: scheme.onPrimaryContainer,
-                      ),
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    // The brand teal in every theme, like the app icon and Android's
+    // launch screen before this one.
+    const background = AppColorSchemes.seed;
+    const foreground = Colors.white;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: background,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: background,
+        body: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Dead center, where Android's launch screen had it.
+            const ExcludeSemantics(
+              child: Icon(
+                Icons.account_balance_wallet,
+                size: _markSize,
+                color: foreground,
+              ),
+            ),
+            Align(
+              alignment: Alignment.center,
+              child: Padding(
+                padding: const EdgeInsets.only(top: _markSize + Space.xxl * 2),
+                child: FadeTransition(
+                  opacity: _nameFade,
+                  child: AnimatedBuilder(
+                    animation: _nameIn,
+                    builder: (context, child) => Transform.translate(
+                      offset: Offset(
+                          0, reduceMotion ? 0 : Space.xl * (1 - _nameIn.value)),
+                      child: child,
                     ),
-                    const SizedBox(height: Space.xl),
-                    Text(
+                    child: Text(
                       'SpendSheet',
-                      style: text.headlineMedium
-                          ?.copyWith(color: scheme.onSurface),
+                      style: text.headlineLarge?.copyWith(color: foreground),
                     ),
-                    const SizedBox(height: Space.sm),
+                  ),
+                ),
+              ),
+            ),
+            // Only seen when starting up takes a while (the first sync).
+            Positioned(
+              left: Space.xl,
+              right: Space.xl,
+              bottom: MediaQuery.paddingOf(context).bottom + Space.xxl,
+              child: FadeTransition(
+                opacity: _progressFade,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const AppLoader(size: 40, color: foreground),
+                    const SizedBox(height: Space.md),
                     Text(
-                      'Track your expenses effortlessly',
-                      style: text.bodyLarge
-                          ?.copyWith(color: scheme.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: Space.xxl + Space.lg),
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: scheme.primary,
-                      ),
+                      'Getting your data ready',
+                      textAlign: TextAlign.center,
+                      style: text.bodyMedium?.copyWith(color: foreground),
                     ),
                   ],
                 ),
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
