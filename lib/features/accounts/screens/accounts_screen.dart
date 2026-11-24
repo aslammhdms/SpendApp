@@ -276,13 +276,6 @@ class _TotalBalanceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.raisedSurface,
         borderRadius: Radii.xlAll,
-        boxShadow: [
-          BoxShadow(
-            color: palette.cardShadow,
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

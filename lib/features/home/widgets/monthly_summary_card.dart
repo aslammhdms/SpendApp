@@ -28,77 +28,64 @@ class MonthlySummaryCard extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final isSaving = balance >= 0;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: Radii.xxlAll,
-        boxShadow: [
-          BoxShadow(
-            color: palette.heroShadow,
-            blurRadius: 28,
-            spreadRadius: -8,
-            offset: const Offset(0, 16),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: Radii.xxlAll,
-        child: ColoredBox(
-          // One flat color: no gradient, no highlights.
-          color: palette.hero,
-          child: Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(Space.sm),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        Space.lg,
-                        Space.lg,
-                        Space.lg,
-                        Space.xl - Space.xs,
-                      ),
-                      child: _buildHeadline(context, palette, text, isSaving),
+    return ClipRRect(
+      borderRadius: Radii.xxlAll,
+      child: ColoredBox(
+        // One flat color: no gradient, no highlights.
+        color: palette.hero,
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(Space.sm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      Space.lg,
+                      Space.lg,
+                      Space.lg,
+                      Space.xl - Space.xs,
                     ),
-                    // Income and expense sit on a solid panel, so the
-                    // green and red signals keep their contrast.
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Space.lg,
-                        vertical: Space.md + 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: palette.raisedSurface,
-                        borderRadius: Radii.xlAll,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: SignalStat(
-                              label: 'Income',
-                              amount: income,
-                              kind: MoneyKind.income,
-                              currency: currency,
-                            ),
-                          ),
-                          const SizedBox(width: Space.md),
-                          Expanded(
-                            child: SignalStat(
-                              label: 'Expense',
-                              amount: expense,
-                              kind: MoneyKind.expense,
-                              currency: currency,
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: _buildHeadline(context, palette, text, isSaving),
+                  ),
+                  // Income and expense sit on a solid panel, so the
+                  // green and red signals keep their contrast.
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Space.lg,
+                      vertical: Space.md + 2,
                     ),
-                  ],
-                ),
+                    decoration: BoxDecoration(
+                      color: palette.raisedSurface,
+                      borderRadius: Radii.xlAll,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SignalStat(
+                            label: 'Income',
+                            amount: income,
+                            kind: MoneyKind.income,
+                            currency: currency,
+                          ),
+                        ),
+                        const SizedBox(width: Space.md),
+                        Expanded(
+                          child: SignalStat(
+                            label: 'Expense',
+                            amount: expense,
+                            kind: MoneyKind.expense,
+                            currency: currency,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -165,8 +152,9 @@ class MonthlySummaryCard extends StatelessWidget {
             ),
             child: Text(
               'Over budget',
-              style: text.labelLarge
-                  ?.copyWith(color: palette.onExpenseContainer),
+              style: text.labelLarge?.copyWith(
+                color: palette.onExpenseContainer,
+              ),
             ),
           ),
       ],
@@ -186,7 +174,7 @@ class MonthlySummaryCard extends StatelessWidget {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     final now = DateTime.now();
     return '${months[now.month - 1]} ${now.year}';

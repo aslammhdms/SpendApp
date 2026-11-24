@@ -1,6 +1,5 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/utils/currency_utils.dart';
@@ -132,7 +131,6 @@ class _AmountInputPadState extends State<AmountInputPad> {
         decoration: BoxDecoration(
           color: scheme.surfaceContainerLow,
           borderRadius: Radii.lgAll,
-          border: Border.all(color: context.palette.cardBorder),
         ),
         child: Center(
           child: FittedBox(fit: BoxFit.scaleDown, child: amountText),
@@ -228,9 +226,6 @@ class _AmountInputPadState extends State<AmountInputPad> {
                     ? scheme.surfaceContainerHigh
                     : scheme.surfaceContainerLow,
                 borderRadius: Radii.mdAll,
-                border: isIcon
-                    ? null
-                    : Border.all(color: context.palette.cardBorder),
               ),
               child: Center(
                 child: isIcon

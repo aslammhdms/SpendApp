@@ -28,14 +28,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.chart,
     required this.chartOther,
     required this.raisedSurface,
-    required this.cardShadow,
-    required this.cardBorder,
     required this.hero,
     required this.heroGlow,
     required this.heroShade,
     required this.onHero,
     required this.onHeroMuted,
-    required this.heroShadow,
   });
 
   /// Money in: income amounts, "owed to you".
@@ -68,18 +65,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final List<Color> chart;
   final Color chartOther;
 
-  /// Background of raised cards (the hero card). White with a soft shadow
-  /// in light mode; a lighter tone in dark mode, where depth reads as
-  /// lightness rather than shadow.
+  /// Background of the panel inside the Home hero and of the summary cards
+  /// on Loans and Accounts: the brightest tone in light mode, a lighter
+  /// tone than cards in dark mode.
   final Color raisedSurface;
-
-  /// Soft shadow for raised cards (summary cards, sheets).
-  final Color cardShadow;
-
-  /// Hairline around cards. Together with the page-to-card tone step it is
-  /// what separates a card from the page.
-  final Color cardBorder;
-
 
   /// The Home hero card: the one place the primary color fills a surface.
   /// One flat color from the scheme (primary in light mode, its container
@@ -92,7 +81,6 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color heroShade;
   final Color onHero;
   final Color onHeroMuted;
-  final Color heroShadow;
 
   static const _heroGlow = Color(0x14FFFFFF);
   static const _heroShade = Color(0x14000000);
@@ -129,14 +117,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
         ],
         chartOther: const Color(0xFF64748B),
         raisedSurface: scheme.surfaceContainerLowest,
-        cardShadow: Colors.transparent,
-        cardBorder: Colors.transparent,
         hero: scheme.primary,
         heroGlow: _heroGlow,
         heroShade: _heroShade,
         onHero: scheme.onPrimary,
         onHeroMuted: _muted(scheme.onPrimary, scheme.primary),
-        heroShadow: Colors.transparent,
       );
 
   static AppPalette dark(ColorScheme scheme) => AppPalette(
@@ -167,8 +152,6 @@ class AppPalette extends ThemeExtension<AppPalette> {
         ],
         chartOther: const Color(0xFF64748B),
         raisedSurface: scheme.surfaceContainerHigh,
-        cardShadow: Colors.transparent,
-        cardBorder: Colors.transparent,
         hero: scheme.primaryContainer,
         heroGlow: _heroGlow,
         heroShade: _heroShade,
@@ -176,7 +159,6 @@ class AppPalette extends ThemeExtension<AppPalette> {
         // container for small text.
         onHero: Colors.white,
         onHeroMuted: scheme.onSurface,
-        heroShadow: Colors.transparent,
       );
 
   /// Budget color for a fraction of the budget used (0.85 = 85%).
@@ -210,14 +192,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
     List<Color>? chart,
     Color? chartOther,
     Color? raisedSurface,
-    Color? cardShadow,
-    Color? cardBorder,
     Color? hero,
     Color? heroGlow,
     Color? heroShade,
     Color? onHero,
     Color? onHeroMuted,
-    Color? heroShadow,
   }) {
     return AppPalette(
       income: income ?? this.income,
@@ -238,14 +217,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
       chart: chart ?? this.chart,
       chartOther: chartOther ?? this.chartOther,
       raisedSurface: raisedSurface ?? this.raisedSurface,
-      cardShadow: cardShadow ?? this.cardShadow,
-      cardBorder: cardBorder ?? this.cardBorder,
       hero: hero ?? this.hero,
       heroGlow: heroGlow ?? this.heroGlow,
       heroShade: heroShade ?? this.heroShade,
       onHero: onHero ?? this.onHero,
       onHeroMuted: onHeroMuted ?? this.onHeroMuted,
-      heroShadow: heroShadow ?? this.heroShadow,
     );
   }
 
@@ -275,14 +251,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
       ],
       chartOther: c(chartOther, other.chartOther),
       raisedSurface: c(raisedSurface, other.raisedSurface),
-      cardShadow: c(cardShadow, other.cardShadow),
-      cardBorder: c(cardBorder, other.cardBorder),
       hero: c(hero, other.hero),
       heroGlow: c(heroGlow, other.heroGlow),
       heroShade: c(heroShade, other.heroShade),
       onHero: c(onHero, other.onHero),
       onHeroMuted: c(onHeroMuted, other.onHeroMuted),
-      heroShadow: c(heroShadow, other.heroShadow),
     );
   }
 }
