@@ -13,6 +13,9 @@ import '../../transactions/providers/transactions_provider.dart';
 import '../../transactions/screens/add_edit_transaction_screen.dart'
     show accountsWithBalanceProvider;
 import '../../wallet_capture/providers/wallet_capture_provider.dart';
+import '../../goals/providers/goals_provider.dart';
+import '../../notices/scheduled_notices_service.dart';
+import '../../recurring/providers/recurring_provider.dart';
 import '../services/account_data_service.dart';
 import '../services/account_session.dart';
 
@@ -24,7 +27,15 @@ final accountSessionProvider = Provider<AccountSession>((ref) {
   return AccountSession(
     data: ref.watch(accountDataServiceProvider),
     pushPendingChanges: () => ref.read(syncEngineProvider).sync(),
-    stopSync: () => ref.read(syncEngineProvider).stop(),
+    stopSync: () async {
+      await ref.read(syncEngineProvider).stop();
+      // Summaries and reminders carry this account's amounts.
+      try {
+        await ref.read(scheduledNoticesServiceProvider).cancelScheduled();
+      } catch (e) {
+        debugPrint('Could not cancel scheduled notifications: $e');
+      }
+    },
     discardCapturedNotifications: () async {
       final channel = ref.read(walletCaptureChannelProvider);
       if (!channel.isSupported) return;
@@ -54,6 +65,8 @@ void _resetAppState(Ref ref) {
   ref.invalidate(loansProvider);
   ref.invalidate(analyticsProvider);
   ref.invalidate(walletCaptureProvider);
+  ref.invalidate(recurringRulesProvider);
+  ref.invalidate(goalsProvider);
   ref.invalidate(sheetSetupProvider);
   ref.invalidate(pendingSyncCountProvider);
   // Settings keep the device preferences; reloading them drops the

@@ -13,6 +13,8 @@ import '../models/account.dart';
 import '../models/budget.dart';
 import '../models/person.dart';
 import '../models/loan.dart';
+import '../models/goal.dart';
+import '../models/recurring_rule.dart';
 import '../models/app_settings.dart';
 import '../local/local_transaction_dao.dart';
 import '../local/local_category_dao.dart';
@@ -20,6 +22,8 @@ import '../local/local_account_dao.dart';
 import '../local/local_budget_dao.dart';
 import '../local/local_person_dao.dart';
 import '../local/local_loan_dao.dart';
+import '../local/local_goal_dao.dart';
+import '../local/local_recurring_dao.dart';
 import '../local/sync_queue_dao.dart';
 import 'sheets_service.dart';
 
@@ -40,6 +44,8 @@ class _RemoteData {
   final List<Budget>? budgets;
   final List<Person>? people;
   final List<Loan>? loans;
+  final List<RecurringRule>? recurringRules;
+  final List<Goal>? goals;
 
   const _RemoteData({
     required this.transactions,
@@ -48,6 +54,8 @@ class _RemoteData {
     required this.budgets,
     required this.people,
     required this.loans,
+    required this.recurringRules,
+    required this.goals,
   });
 
   bool get isComplete =>
@@ -56,7 +64,9 @@ class _RemoteData {
       accounts != null &&
       budgets != null &&
       people != null &&
-      loans != null;
+      loans != null &&
+      recurringRules != null &&
+      goals != null;
 }
 
 class SyncEngine {
@@ -67,6 +77,8 @@ class SyncEngine {
     'budget',
     'person',
     'loan',
+    'recurring',
+    'goal',
   ];
 
   final SheetsService _sheetsService;
@@ -76,6 +88,8 @@ class SyncEngine {
   final LocalBudgetDao _budgetDao;
   final LocalPersonDao _personDao;
   final LocalLoanDao _loanDao;
+  final LocalRecurringDao _recurringDao;
+  final LocalGoalDao _goalDao;
   final SyncQueueDao _syncQueueDao;
 
   final _statusController = StreamController<SyncStatus>.broadcast();
@@ -100,6 +114,8 @@ class SyncEngine {
     required LocalBudgetDao budgetDao,
     required LocalPersonDao personDao,
     required LocalLoanDao loanDao,
+    LocalRecurringDao? recurringDao,
+    LocalGoalDao? goalDao,
     required SyncQueueDao syncQueueDao,
   })  : _sheetsService = sheetsService,
         _transactionDao = transactionDao,
@@ -108,6 +124,8 @@ class SyncEngine {
         _budgetDao = budgetDao,
         _personDao = personDao,
         _loanDao = loanDao,
+        _recurringDao = recurringDao ?? LocalRecurringDao(),
+        _goalDao = goalDao ?? LocalGoalDao(),
         _syncQueueDao = syncQueueDao;
 
   Future<void> initialize(String spreadsheetId) async {
@@ -395,6 +413,25 @@ class SyncEngine {
           append: () => _sheetsService.appendLoan(sheetId, loan),
           update: (row) => _sheetsService.updateLoan(sheetId, loan, row),
         );
+      case 'recurring':
+        final rule = RecurringRule.fromJson(data);
+        await _pushRow(
+          operation: op,
+          sheetName: SheetConstants.recurringSheet,
+          id: rule.id,
+          append: () => _sheetsService.appendRecurringRule(sheetId, rule),
+          update: (row) =>
+              _sheetsService.updateRecurringRule(sheetId, rule, row),
+        );
+      case 'goal':
+        final goal = Goal.fromJson(data);
+        await _pushRow(
+          operation: op,
+          sheetName: SheetConstants.goalsSheet,
+          id: goal.id,
+          append: () => _sheetsService.appendGoal(sheetId, goal),
+          update: (row) => _sheetsService.updateGoal(sheetId, goal, row),
+        );
     }
   }
 
@@ -441,6 +478,10 @@ class SyncEngine {
           await _pullWithRetry(() => _sheetsService.getAllPeople(id), 'people'),
       loans:
           await _pullWithRetry(() => _sheetsService.getAllLoans(id), 'loans'),
+      recurringRules: await _pullWithRetry(
+          () => _sheetsService.getAllRecurringRules(id), 'recurring'),
+      goals:
+          await _pullWithRetry(() => _sheetsService.getAllGoals(id), 'goals'),
     );
   }
 
@@ -524,6 +565,13 @@ class SyncEngine {
     await apply<Loan>('loan', remote.loans, (l) => l.id, _loanDao.deleteAll,
         _loanDao.insertBatch,
         storable: (l) => l.amount.isFinite);
+    await apply<RecurringRule>('recurring', remote.recurringRules, (r) => r.id,
+        _recurringDao.deleteAll, _recurringDao.insertBatch,
+        storable: (r) => r.amount.isFinite && r.interval > 0);
+    await apply<Goal>('goal', remote.goals, (g) => g.id, _goalDao.deleteAll,
+        _goalDao.insertBatch,
+        storable: (g) =>
+            g.targetAmount.isFinite && g.savedAmount.isFinite);
 
     final error = firstError;
     if (error != null) throw error;

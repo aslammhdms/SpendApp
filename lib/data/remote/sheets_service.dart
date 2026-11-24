@@ -10,6 +10,7 @@ import '../models/budget.dart';
 import '../models/recurring_rule.dart';
 import '../models/person.dart';
 import '../models/loan.dart';
+import '../models/goal.dart';
 import 'google_auth_service.dart';
 
 class SheetsService {
@@ -43,6 +44,7 @@ class SheetsService {
           _createSheet(SheetConstants.metaSheet, 6),
           _createSheet(SheetConstants.peopleSheet, 7),
           _createSheet(SheetConstants.loansSheet, 8),
+          _createSheet(SheetConstants.goalsSheet, 9),
         ],
       );
 
@@ -113,6 +115,10 @@ class SheetsService {
       sheets.ValueRange(
         range: '${SheetConstants.loansSheet}!A1',
         values: [SheetConstants.loanHeaders],
+      ),
+      sheets.ValueRange(
+        range: '${SheetConstants.goalsSheet}!A1',
+        values: [SheetConstants.goalHeaders],
       ),
     ];
 
@@ -277,6 +283,7 @@ class SheetsService {
           row['created_at'],
           row['updated_at'],
           row['deleted_at'],
+          row['labels'],
         ]
       ];
 
@@ -314,6 +321,7 @@ class SheetsService {
           row['created_at'],
           row['updated_at'],
           row['deleted_at'],
+          row['labels'],
         ]
       ];
 
@@ -486,6 +494,79 @@ class SheetsService {
       return values.map((row) => RecurringRule.fromSheetRow(row)).toList();
     } catch (e) {
       throw SheetsException.readFailed(e);
+    }
+  }
+
+  Future<void> appendRecurringRule(
+      String spreadsheetId, RecurringRule rule) async {
+    await _appendRow(spreadsheetId, SheetConstants.recurringSheet,
+        _recurringValues(rule));
+  }
+
+  Future<void> updateRecurringRule(
+    String spreadsheetId,
+    RecurringRule rule,
+    int rowIndex,
+  ) async {
+    await updateRow(spreadsheetId, SheetConstants.recurringSheet,
+        _recurringValues(rule), rowIndex);
+  }
+
+  List<dynamic> _recurringValues(RecurringRule rule) {
+    final row = rule.toSheetRow();
+    return [
+      for (final header in SheetConstants.recurringHeaders) row[header],
+    ];
+  }
+
+  // Goal Operations
+  Future<List<Goal>> getAllGoals(String spreadsheetId) async {
+    try {
+      final api = await _api;
+      final response = await api.spreadsheets.values.get(
+        spreadsheetId,
+        SheetConstants.getDataRange(SheetConstants.goalsSheet),
+      );
+
+      final values = response.values;
+      if (values == null || values.isEmpty) return [];
+
+      return values.map((row) => Goal.fromSheetRow(row)).toList();
+    } catch (e) {
+      throw SheetsException.readFailed(e);
+    }
+  }
+
+  Future<void> appendGoal(String spreadsheetId, Goal goal) async {
+    await _appendRow(
+        spreadsheetId, SheetConstants.goalsSheet, _goalValues(goal));
+  }
+
+  Future<void> updateGoal(String spreadsheetId, Goal goal, int rowIndex) async {
+    await updateRow(
+        spreadsheetId, SheetConstants.goalsSheet, _goalValues(goal), rowIndex);
+  }
+
+  List<dynamic> _goalValues(Goal goal) {
+    final row = goal.toSheetRow();
+    return [for (final header in SheetConstants.goalHeaders) row[header]];
+  }
+
+  Future<void> _appendRow(
+    String spreadsheetId,
+    String sheetName,
+    List<dynamic> rowValues,
+  ) async {
+    try {
+      final api = await _api;
+      await api.spreadsheets.values.append(
+        sheets.ValueRange(values: [rowValues]),
+        spreadsheetId,
+        '$sheetName!A2',
+        valueInputOption: 'RAW',
+      );
+    } catch (e) {
+      throw SheetsException.writeFailed(e);
     }
   }
 
@@ -750,11 +831,12 @@ class SheetsService {
     ], rowIndex);
   }
 
-  /// Ensures that People and Loans sheets exist in the spreadsheet.
-  /// Creates any missing sheets with headers. This handles the case where
-  /// a user connected to an existing spreadsheet created before the loans feature.
+  /// Brings a spreadsheet made by an earlier version up to date: adds the
+  /// tabs it lacks (People, Loans, Recurring, Goals) with their headers, and
+  /// the Transactions tab's `labels` header.
   Future<void> ensureSheetsExist(String spreadsheetId) async {
     final api = await _api;
+    await _ensureTransactionLabelsHeader(api, spreadsheetId);
     final spreadsheet = await api.spreadsheets.get(spreadsheetId);
     final existingNames = spreadsheet.sheets!
         .map((s) => s.properties!.title!)
@@ -763,6 +845,8 @@ class SheetsService {
     final requiredSheets = {
       SheetConstants.peopleSheet: SheetConstants.personHeaders,
       SheetConstants.loansSheet: SheetConstants.loanHeaders,
+      SheetConstants.recurringSheet: SheetConstants.recurringHeaders,
+      SheetConstants.goalsSheet: SheetConstants.goalHeaders,
     };
 
     final missing = <String, List<String>>{};
@@ -809,6 +893,33 @@ class SheetsService {
     );
 
     debugPrint('ensureSheetsExist: created ${missing.length} sheet(s) with headers');
+  }
+
+  /// Writes the `labels` header over the Transactions column that holds
+  /// labels, when an older spreadsheet has no header there yet.
+  Future<void> _ensureTransactionLabelsHeader(
+    sheets.SheetsApi api,
+    String spreadsheetId,
+  ) async {
+    final column =
+        String.fromCharCode('A'.codeUnitAt(0) + SheetConstants.txnLabelsCol);
+    final cell = '${SheetConstants.transactionsSheet}!$column' '1';
+    final response = await api.spreadsheets.values.get(spreadsheetId, cell);
+    final current = response.values?.firstOrNull?.firstOrNull?.toString();
+    if (current == 'labels') return;
+    if (current != null && current.isNotEmpty) {
+      // Someone put their own heading there; leave it alone.
+      debugPrint('ensureSheetsExist: $cell holds "$current", not labels');
+      return;
+    }
+    await api.spreadsheets.values.update(
+      sheets.ValueRange(values: [
+        ['labels']
+      ]),
+      spreadsheetId,
+      cell,
+      valueInputOption: 'RAW',
+    );
   }
 
   Future<String?> getSpreadsheetUrl(String spreadsheetId) async {

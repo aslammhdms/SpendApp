@@ -36,5 +36,6 @@ class AppConstants {
 
   // Notification Channels
   static const String budgetNotificationChannel = 'budget_alerts';
-  static const String reminderNotificationChannel = 'reminders';
+  static const String reminderNotificationChannel = 'recurring_reminders';
+  static const String summaryNotificationChannel = 'spending_summaries';
 }

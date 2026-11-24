@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timezone/timezone.dart' as tz;
 import '../constants/app_constants.dart';
 import '../theme/app_color_schemes.dart';
 
@@ -36,6 +37,39 @@ class NotificationService {
       color: AppColorSchemes.seed,
     ),
     linux: LinuxNotificationDetails(),
+  );
+
+  static NotificationDetails _details({
+    required String channelId,
+    required String channelName,
+    required String channelDescription,
+  }) {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        channelId,
+        channelName,
+        channelDescription: channelDescription,
+        importance: Importance.defaultImportance,
+        priority: Priority.defaultPriority,
+        icon: _smallIcon,
+        visibility: NotificationVisibility.private,
+        color: AppColorSchemes.seed,
+        styleInformation: const BigTextStyleInformation(''),
+      ),
+      linux: const LinuxNotificationDetails(),
+    );
+  }
+
+  static final _reminderDetails = _details(
+    channelId: AppConstants.reminderNotificationChannel,
+    channelName: 'Repeating payments',
+    channelDescription: 'A reminder the day before a repeating payment',
+  );
+
+  static final _summaryDetails = _details(
+    channelId: AppConstants.summaryNotificationChannel,
+    channelName: 'Spending summaries',
+    channelDescription: 'What you spent last week or last month',
   );
 
   Future<void> _ensureInitialized() {
@@ -91,5 +125,54 @@ class NotificationService {
       body: body,
       notificationDetails: _budgetDetails,
     );
+  }
+
+  /// Shows a reminder about a repeating payment at [when]. A later call with
+  /// the same [id] replaces it.
+  Future<void> scheduleReminder({
+    required int id,
+    required DateTime when,
+    required String title,
+    required String body,
+  }) =>
+      _schedule(id, when, title, body, _reminderDetails);
+
+  /// Shows a spending summary at [when]. A later call with the same [id]
+  /// replaces it.
+  Future<void> scheduleSummary({
+    required int id,
+    required DateTime when,
+    required String title,
+    required String body,
+  }) =>
+      _schedule(id, when, title, body, _summaryDetails);
+
+  Future<void> _schedule(
+    int id,
+    DateTime when,
+    String title,
+    String body,
+    NotificationDetails details,
+  ) async {
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    await _ensureInitialized();
+    await _plugin.zonedSchedule(
+      id: id,
+      // The moment itself, held in UTC, so no time zone database is needed.
+      scheduledDate: tz.TZDateTime.from(when, tz.UTC),
+      notificationDetails: details,
+      // Inexact: needs no alarm permission, and a few minutes either way
+      // does not matter for a reminder or a summary.
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      title: title,
+      body: body,
+    );
+  }
+
+  /// Withdraws a scheduled or shown notification.
+  Future<void> cancel(int id) async {
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    await _ensureInitialized();
+    await _plugin.cancel(id: id);
   }
 }

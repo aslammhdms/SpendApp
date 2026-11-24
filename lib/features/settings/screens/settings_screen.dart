@@ -7,6 +7,7 @@ import '../../../core/services/biometric_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../providers/settings_provider.dart';
 import '../../wallet_capture/providers/wallet_capture_provider.dart';
+import '../../notices/scheduled_notices_service.dart';
 import '../widgets/sync_status_tile.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../shared/widgets/glass_sheet.dart';
@@ -22,16 +23,86 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   int _pendingCount = 0;
+  SummaryFrequency _summary = SummaryFrequency.monthly;
+  bool _reminders = true;
 
   @override
   void initState() {
     super.initState();
+    _loadNoticeSettings();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(settingsProvider.notifier).loadSettings();
       final count =
           await ref.read(settingsProvider.notifier).getPendingSyncCount();
       setState(() => _pendingCount = count);
     });
+  }
+
+  Future<void> _loadNoticeSettings() async {
+    final summary = await ScheduledNoticesService.summaryFrequency();
+    final reminders = await ScheduledNoticesService.remindersEnabled();
+    if (mounted) {
+      setState(() {
+        _summary = summary;
+        _reminders = reminders;
+      });
+    }
+  }
+
+  /// Puts scheduled summaries and reminders in line with the settings.
+  Future<void> _reschedule() async {
+    try {
+      await ref.read(scheduledNoticesServiceProvider).reschedule();
+    } catch (e) {
+      debugPrint('Rescheduling notifications failed: $e');
+    }
+  }
+
+  static String _summaryLabel(SummaryFrequency f) => switch (f) {
+        SummaryFrequency.off => 'Off',
+        SummaryFrequency.weekly => 'Every Monday morning',
+        SummaryFrequency.monthly => 'On the 1st of each month',
+      };
+
+  void _showSummaryPicker() {
+    showAppSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final f in [
+              SummaryFrequency.monthly,
+              SummaryFrequency.weekly,
+              SummaryFrequency.off,
+            ])
+              ListTile(
+                title: Text(switch (f) {
+                  SummaryFrequency.off => 'Off',
+                  SummaryFrequency.weekly => 'Weekly',
+                  SummaryFrequency.monthly => 'Monthly',
+                }),
+                subtitle: f == SummaryFrequency.off
+                    ? null
+                    : Text(_summaryLabel(f)),
+                trailing: _summary == f
+                    ? Icon(Icons.check,
+                        color: Theme.of(context).colorScheme.primary)
+                    : null,
+                onTap: () async {
+                  Navigator.pop(context);
+                  await ScheduledNoticesService.setSummaryFrequency(f);
+                  setState(() => _summary = f);
+                  if (f != SummaryFrequency.off) {
+                    _requestNotificationPermission();
+                  }
+                  await _reschedule();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -113,6 +184,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // Google Wallet payment reminders follow this switch too.
               await ref.read(walletCaptureProvider.notifier).syncNotify();
               if (value) _requestNotificationPermission();
+              await _reschedule();
             },
           ),
 
@@ -125,6 +197,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               settingsNotifier.setBudgetAlertsEnabled(value);
               if (value) _requestNotificationPermission();
             },
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.summarize_outlined),
+            title: const Text('Spending summary'),
+            subtitle: Text(_summaryLabel(_summary)),
+            enabled: settings.notificationsEnabled,
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _showSummaryPicker,
+          ),
+
+          SwitchListTile(
+            secondary: const Icon(Icons.event_repeat_outlined),
+            title: const Text('Payment reminders'),
+            subtitle: const Text('The day before a repeating payment'),
+            value: _reminders,
+            onChanged: settings.notificationsEnabled
+                ? (value) async {
+                    await ScheduledNoticesService.setRemindersEnabled(value);
+                    setState(() => _reminders = value);
+                    if (value) _requestNotificationPermission();
+                    await _reschedule();
+                  }
+                : null,
           ),
 
           SwitchListTile(
@@ -193,6 +289,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: const Text('Manage Accounts'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/accounts'),
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.repeat_rounded),
+            title: const Text('Repeating payments'),
+            subtitle: const Text('Rent, subscriptions, salary'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/recurring'),
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.savings_outlined),
+            title: const Text('Savings goals'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/goals'),
           ),
           const Divider(),
 
@@ -333,7 +444,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-              "Notifications are blocked for SpendSheet. Allow them in your phone's settings to get budget alerts."),
+              "Notifications are blocked for SpendSheet. Allow them in your phone's settings to get alerts and reminders."),
         ),
       );
     }

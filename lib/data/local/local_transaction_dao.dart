@@ -273,6 +273,92 @@ class LocalTransactionDao {
     return rows.map((row) => row['id'] as String).toSet();
   }
 
+  /// Every label on a live transaction, most used first, each in its most
+  /// common spelling.
+  Future<List<String>> getAllLabels() async {
+    final db = await _db;
+    final rows = await db.query(
+      'transactions',
+      columns: ['labels'],
+      where: "deleted_at IS NULL AND labels IS NOT NULL AND labels != ''",
+    );
+    final spellings = _LabelSpellings();
+    for (final row in rows) {
+      Transaction.splitLabels(row['labels'] as String?).forEach(spellings.add);
+    }
+    final keys = spellings.keys.toList()
+      ..sort((a, b) {
+        final byUse = spellings.uses(b).compareTo(spellings.uses(a));
+        return byUse != 0 ? byUse : a.compareTo(b);
+      });
+    return [for (final k in keys) spellings.of(k)];
+  }
+
+  /// Expense totals by label for transactions dated from [start] to [end],
+  /// keyed by the label's most common spelling. A transaction with two
+  /// labels counts towards both.
+  Future<Map<String, double>> getExpenseTotalsByLabel(
+    DateTime start,
+    DateTime end,
+  ) async {
+    final rows = await getByLabelRange(start, end);
+    final totals = <String, double>{};
+    final spellings = _LabelSpellings();
+    for (final t in rows) {
+      if (t.type != TransactionType.expense) continue;
+      for (final label in t.labels) {
+        spellings.add(label);
+        final key = label.toLowerCase();
+        totals[key] = (totals[key] ?? 0) + t.amount;
+      }
+    }
+    return {for (final e in totals.entries) spellings.of(e.key): e.value};
+  }
+
+  /// Live labelled transactions dated from [start] to [end].
+  Future<List<Transaction>> getByLabelRange(DateTime start, DateTime end) async {
+    final db = await _db;
+    final maps = await db.query(
+      'transactions',
+      where: "deleted_at IS NULL AND labels IS NOT NULL AND labels != '' "
+          'AND date >= ? AND date <= ?',
+      whereArgs: [start.toIso8601String(), end.toIso8601String()],
+      orderBy: 'date DESC',
+    );
+    return maps.map(_fromMap).toList();
+  }
+
+  /// Live transactions dated from [start] to [end] that carry [label]
+  /// (ignoring case).
+  Future<List<Transaction>> getByLabel(
+    String label, {
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    final db = await _db;
+    var where = "deleted_at IS NULL AND labels IS NOT NULL AND labels != ''";
+    final args = <Object>[];
+    if (start != null) {
+      where += ' AND date >= ?';
+      args.add(start.toIso8601String());
+    }
+    if (end != null) {
+      where += ' AND date <= ?';
+      args.add(end.toIso8601String());
+    }
+    final maps = await db.query(
+      'transactions',
+      where: where,
+      whereArgs: args,
+      orderBy: 'date DESC',
+    );
+    final wanted = label.toLowerCase();
+    return maps
+        .map(_fromMap)
+        .where((t) => t.labels.any((l) => l.toLowerCase() == wanted))
+        .toList();
+  }
+
   /// Deletes every row, except those whose ID is in [except].
   Future<int> deleteAll({Set<String> except = const {}}) async {
     final db = await _db;
@@ -291,6 +377,9 @@ class LocalTransactionDao {
       'note': transaction.note,
       'receipt_url': transaction.receiptUrl,
       'recurring_id': transaction.recurringId,
+      'labels': transaction.labels.isEmpty
+          ? null
+          : Transaction.joinLabels(transaction.labels),
       'created_at': transaction.createdAt.toIso8601String(),
       'updated_at': transaction.updatedAt.toIso8601String(),
       'deleted_at': transaction.deletedAt?.toIso8601String(),
@@ -312,11 +401,38 @@ class LocalTransactionDao {
       note: map['note'] as String?,
       receiptUrl: map['receipt_url'] as String?,
       recurringId: map['recurring_id'] as String?,
+      labels: Transaction.splitLabels(map['labels'] as String?),
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
       deletedAt: map['deleted_at'] != null
           ? DateTime.parse(map['deleted_at'] as String)
           : null,
     );
+  }
+}
+
+/// Counts labels that differ only in case, and picks the spelling used most
+/// (alphabetically first on a tie), so the same label always shows the same
+/// way whatever order the rows come in.
+class _LabelSpellings {
+  final _counts = <String, Map<String, int>>{};
+
+  void add(String label) {
+    final forms = _counts.putIfAbsent(label.toLowerCase(), () => {});
+    forms[label] = (forms[label] ?? 0) + 1;
+  }
+
+  Iterable<String> get keys => _counts.keys;
+
+  int uses(String key) =>
+      _counts[key]?.values.fold<int>(0, (a, b) => a + b) ?? 0;
+
+  String of(String key) {
+    final forms = _counts[key]!.entries.toList()
+      ..sort((a, b) {
+        final byUse = b.value.compareTo(a.value);
+        return byUse != 0 ? byUse : a.key.compareTo(b.key);
+      });
+    return forms.first.key;
   }
 }

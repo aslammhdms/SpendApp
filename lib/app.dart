@@ -6,6 +6,9 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/tokens.dart';
 import 'core/services/biometric_service.dart';
 import 'core/services/window_protection_service.dart';
+import 'features/goals/screens/add_edit_goal_screen.dart';
+import 'features/goals/screens/goals_screen.dart';
+import 'features/recurring/screens/recurring_screen.dart';
 import 'features/auth/screens/splash_screen.dart';
 import 'features/auth/screens/welcome_screen.dart';
 import 'features/auth/screens/sign_in_screen.dart';
@@ -154,6 +157,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/wallet-capture',
         builder: (context, state) => const WalletCaptureScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/recurring',
+        builder: (context, state) => const RecurringScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/goals',
+        builder: (context, state) => const GoalsScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/goals/add',
+        builder: (context, state) => const AddEditGoalScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/goals/edit/:id',
+        builder: (context, state) => AddEditGoalScreen(
+          goalId: state.pathParameters['id'],
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

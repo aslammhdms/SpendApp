@@ -15,6 +15,7 @@ class SheetConstants {
   static const String metaSheet = '_Meta';
   static const String peopleSheet = 'People';
   static const String loansSheet = 'Loans';
+  static const String goalsSheet = 'Goals';
 
   // Transactions Sheet Columns (0-indexed)
   static const int txnIdCol = 0;
@@ -30,6 +31,7 @@ class SheetConstants {
   static const int txnCreatedAtCol = 10;
   static const int txnUpdatedAtCol = 11;
   static const int txnDeletedAtCol = 12;
+  static const int txnLabelsCol = 13;
 
   static const List<String> transactionHeaders = [
     'id',
@@ -45,6 +47,7 @@ class SheetConstants {
     'created_at',
     'updated_at',
     'deleted_at',
+    'labels',
   ];
 
   // Categories Sheet Columns
@@ -222,6 +225,20 @@ class SheetConstants {
     'note',
     'date',
     'is_settlement',
+    'created_at',
+    'updated_at',
+    'deleted_at',
+  ];
+
+  // Goals Sheet Columns
+  static const List<String> goalHeaders = [
+    'id',
+    'name',
+    'target_amount',
+    'saved_amount',
+    'target_date',
+    'icon',
+    'color',
     'created_at',
     'updated_at',
     'deleted_at',

@@ -40,7 +40,7 @@
         <h2>1. Information We Access</h2>
         <p>SpendSheet requests access to the following Google services through your Google account:</p>
         <ul>
-            <li><strong>Google Sheets API</strong> &mdash; To create and manage a spreadsheet that stores your expense data (transactions, categories, accounts, budgets, and loans). SpendSheet asks only for access to files it creates itself (the <code>drive.file</code> permission); it cannot see your other spreadsheets or files.</li>
+            <li><strong>Google Sheets API</strong> &mdash; To create and manage a spreadsheet that stores your expense data (transactions and their labels, categories, accounts, budgets, repeating payments, savings goals, and loans). SpendSheet asks only for access to files it creates itself (the <code>drive.file</code> permission); it cannot see your other spreadsheets or files.</li>
             <li><strong>Google Drive API</strong> &mdash; To find SpendSheet spreadsheets the app created earlier, so you can connect to one again.</li>
             <li><strong>Google Sign-In</strong> &mdash; To authenticate your identity and obtain your name, email address, and profile photo for display within the app.</li>
         </ul>
@@ -53,6 +53,7 @@
         <ul>
             <li><strong>On your device:</strong> Your financial data is stored locally in an SQLite database on your device. App preferences (currency, theme, notification settings) are stored in local shared preferences.</li>
             <li><strong>Google Wallet payments (optional):</strong> The title, text, and time of each captured Google Wallet notification are stored only on your device, and are read on your device to find the amount, merchant, and last four digits of the card. They are not synced to your spreadsheet. A payment reaches your spreadsheet only as an ordinary expense, after you confirm it. Turning the feature off deletes everything it has collected, including payments you have not reviewed yet. Right after a payment, SpendSheet can show its own notification with the merchant and amount as a reminder to add it; this is created on your device, hides the amount on a lock screen that hides sensitive content, and can be turned off in the app.</li>
+            <li><strong>Summaries and reminders:</strong> SpendSheet can show a weekly or monthly summary of your spending, and a reminder the day before a repeating payment. Both are worked out and scheduled on your device from your own data; nothing is sent anywhere to produce them. They hide amounts on a lock screen that hides sensitive content, are withdrawn when you sign out, and can be turned off in the app's settings.</li>
             <li><strong>In your Google account:</strong> Your financial data is synced to a Google Sheets spreadsheet in your own Google Drive. This spreadsheet is created by and belongs to you. We do not have access to your Google Drive or spreadsheets.</li>
         </ul>
 

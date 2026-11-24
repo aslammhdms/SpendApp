@@ -62,6 +62,7 @@ class TransactionRepository {
     String? note,
     String? receiptUrl,
     String? recurringId,
+    List<String> labels = const [],
   }) async {
     final now = DateTime.now();
     final transaction = Transaction(
@@ -75,6 +76,7 @@ class TransactionRepository {
       note: note,
       receiptUrl: receiptUrl,
       recurringId: recurringId,
+      labels: Transaction.normalizeLabels(labels),
       createdAt: now,
       updatedAt: now,
     );
@@ -94,7 +96,10 @@ class TransactionRepository {
   }
 
   Future<Transaction> update(Transaction transaction) async {
-    final updated = transaction.copyWith(updatedAt: DateTime.now());
+    final updated = transaction.copyWith(
+      labels: Transaction.normalizeLabels(transaction.labels),
+      updatedAt: DateTime.now(),
+    );
 
     // Update locally first
     await _localDao.update(updated);
@@ -127,6 +132,20 @@ class TransactionRepository {
       data: deleted.toJson(),
     );
   }
+
+  /// Every label in use, most used first.
+  Future<List<String>> getAllLabels() => _localDao.getAllLabels();
+
+  Future<List<Transaction>> getByLabel(
+    String label, {
+    DateTime? start,
+    DateTime? end,
+  }) =>
+      _localDao.getByLabel(label, start: start, end: end);
+
+  Future<Map<String, double>> getExpenseTotalsByLabel(
+          DateTime start, DateTime end) =>
+      _localDao.getExpenseTotalsByLabel(start, end);
 
   Future<double> getTotalByTypeAndDateRange(
     TransactionType type,

@@ -29,6 +29,9 @@ dependencies:
 
   # Notifications
   flutter_local_notifications: ^23.0.2
+  # Already used by flutter_local_notifications; named here because the app
+  # passes its date type when scheduling a notification.
+  timezone: ^0.11.0
 
   # Image Handling
 

@@ -27,6 +27,7 @@ abstract class Transaction with _$Transaction {
     String? note,
     String? receiptUrl,
     String? recurringId,
+    @Default(<String>[]) List<String> labels,
     required DateTime createdAt,
     required DateTime updatedAt,
     DateTime? deletedAt,
@@ -65,6 +66,7 @@ abstract class Transaction with _$Transaction {
       'note': note ?? '',
       'receipt_url': receiptUrl ?? '',
       'recurring_id': recurringId ?? '',
+      'labels': joinLabels(labels),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'deleted_at': deletedAt?.toIso8601String() ?? '',
@@ -73,7 +75,7 @@ abstract class Transaction with _$Transaction {
 
   static Transaction fromSheetRow(List<dynamic> row) {
     // Pad row — Sheets API strips trailing empty cells
-    while (row.length < 13) {
+    while (row.length < 14) {
       row.add('');
     }
     return Transaction(
@@ -95,6 +97,32 @@ abstract class Transaction with _$Transaction {
       deletedAt: row[12]?.toString().isNotEmpty == true
           ? DateTime.tryParse(row[12].toString())
           : null,
+      labels: splitLabels(row[13]?.toString()),
     );
   }
+
+  /// Labels as stored in a cell or database column: "Goa trip, Wedding".
+  static String joinLabels(List<String> labels) => labels.join(', ');
+
+  static List<String> splitLabels(String? stored) =>
+      normalizeLabels((stored ?? '').split(','));
+
+  /// Trims each label, folds runs of spaces, drops empty ones and repeats
+  /// (ignoring case, the first spelling wins) and caps the length. A label
+  /// cannot hold a comma, which separates labels in the sheet.
+  static List<String> normalizeLabels(Iterable<String> labels) {
+    final seen = <String>{};
+    final out = <String>[];
+    for (final raw in labels) {
+      var label = raw.replaceAll(',', ' ').trim().replaceAll(RegExp(r'\s+'), ' ');
+      if (label.length > maxLabelLength) {
+        label = label.substring(0, maxLabelLength).trim();
+      }
+      if (label.isEmpty || !seen.add(label.toLowerCase())) continue;
+      out.add(label);
+    }
+    return out;
+  }
+
+  static const int maxLabelLength = 30;
 }

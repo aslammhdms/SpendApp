@@ -21,6 +21,9 @@ class TransactionFilter {
   final String? searchQuery;
   final bool showLoansOnly;
 
+  /// Only transactions carrying this label (ignoring case).
+  final String? label;
+
   const TransactionFilter({
     this.startDate,
     this.endDate,
@@ -31,6 +34,7 @@ class TransactionFilter {
     this.maxAmount,
     this.searchQuery,
     this.showLoansOnly = false,
+    this.label,
   });
 
   TransactionFilter copyWith({
@@ -43,6 +47,7 @@ class TransactionFilter {
     double? maxAmount,
     String? searchQuery,
     bool? showLoansOnly,
+    String? label,
   }) {
     return TransactionFilter(
       startDate: startDate ?? this.startDate,
@@ -54,6 +59,7 @@ class TransactionFilter {
       maxAmount: maxAmount ?? this.maxAmount,
       searchQuery: searchQuery ?? this.searchQuery,
       showLoansOnly: showLoansOnly ?? this.showLoansOnly,
+      label: label ?? this.label,
     );
   }
 
@@ -69,6 +75,7 @@ class TransactionFilter {
           maxAmount: maxAmount,
           searchQuery: searchQuery,
           showLoansOnly: showLoansOnly,
+          label: label,
         );
       case 'endDate':
         return TransactionFilter(
@@ -80,6 +87,7 @@ class TransactionFilter {
           maxAmount: maxAmount,
           searchQuery: searchQuery,
           showLoansOnly: showLoansOnly,
+          label: label,
         );
       case 'categoryId':
         return TransactionFilter(
@@ -91,6 +99,7 @@ class TransactionFilter {
           maxAmount: maxAmount,
           searchQuery: searchQuery,
           showLoansOnly: showLoansOnly,
+          label: label,
         );
       case 'accountId':
         return TransactionFilter(
@@ -102,6 +111,7 @@ class TransactionFilter {
           maxAmount: maxAmount,
           searchQuery: searchQuery,
           showLoansOnly: showLoansOnly,
+          label: label,
         );
       case 'type':
         return TransactionFilter(
@@ -113,6 +123,7 @@ class TransactionFilter {
           maxAmount: maxAmount,
           searchQuery: searchQuery,
           showLoansOnly: showLoansOnly,
+          label: label,
         );
       case 'showLoansOnly':
         return TransactionFilter(
@@ -125,6 +136,19 @@ class TransactionFilter {
           maxAmount: maxAmount,
           searchQuery: searchQuery,
           showLoansOnly: false,
+          label: label,
+        );
+      case 'label':
+        return TransactionFilter(
+          startDate: startDate,
+          endDate: endDate,
+          categoryId: categoryId,
+          accountId: accountId,
+          type: type,
+          minAmount: minAmount,
+          maxAmount: maxAmount,
+          searchQuery: searchQuery,
+          showLoansOnly: showLoansOnly,
         );
       default:
         return this;
@@ -140,6 +164,7 @@ class TransactionFilter {
       minAmount != null ||
       maxAmount != null ||
       showLoansOnly ||
+      label != null ||
       (searchQuery?.isNotEmpty ?? false);
 
   TransactionFilter clear() => const TransactionFilter();
@@ -278,7 +303,8 @@ class TransactionsNotifier extends StateNotifier<TransactionsState> {
         if (state.filter.searchQuery?.isNotEmpty ?? false) {
           final query = state.filter.searchQuery!.toLowerCase();
           transactions = transactions.where((t) {
-            return t.note?.toLowerCase().contains(query) ?? false;
+            return (t.note?.toLowerCase().contains(query) ?? false) ||
+                t.labels.any((l) => l.toLowerCase().contains(query));
           }).toList();
         }
       }
@@ -312,7 +338,13 @@ class TransactionsNotifier extends StateNotifier<TransactionsState> {
     final filter = state.filter;
     List<Transaction> transactions;
 
-    if (filter.startDate != null && filter.endDate != null) {
+    if (filter.label != null) {
+      transactions = await _repository.getByLabel(
+        filter.label!,
+        start: filter.startDate,
+        end: filter.endDate,
+      );
+    } else if (filter.startDate != null && filter.endDate != null) {
       transactions = await _repository.getByDateRange(
         filter.startDate!,
         filter.endDate!,

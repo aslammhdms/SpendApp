@@ -25,12 +25,16 @@ SpendSheet is an expense tracker that keeps your records in a Google Sheet in yo
 LOG IN SECONDS
 • Add expenses, income, transfers and loans with a large number pad
 • Your most-used categories come first, and every category is one tap away
+• Repeating payments such as rent or subscriptions are added for you, with a reminder the day before
+• Label spending across categories, like "Goa trip", and see what it cost in total
 • Works offline; changes sync when you are back online
 
 SEE WHERE THE MONEY GOES
 • This month's income, expenses and savings at a glance
 • Spending by category, by week, month or year
 • Budgets with progress bars and alerts when you get close
+• A weekly or monthly summary: what you spent, how it compares, where most of it went
+• Savings goals that show how close you are and what to put aside each month
 
 KEEP TRACK OF MONEY BETWEEN PEOPLE
 • Record money you lent or borrowed, and settle it later
@@ -152,7 +156,7 @@ Notes for the reviewer if asked:
 | Permission | Why |
 |---|---|
 | Notification access (`BIND_NOTIFICATION_LISTENER_SERVICE`) | Optional Google Wallet capture. Shown with an in-app disclosure and an Agree button before Android's settings screen opens. Only notifications from `com.google.android.apps.walletnfcrel` are read. |
-| `POST_NOTIFICATIONS` | Budget alerts, and the optional reminder after a Google Wallet payment. |
+| `POST_NOTIFICATIONS` | Budget alerts, spending summaries, reminders before repeating payments, and the optional reminder after a Google Wallet payment. |
 | `USE_BIOMETRIC` | Optional App Lock. |
 | `RECEIVE_BOOT_COMPLETED` | Keeps scheduled notifications after a restart (from the notifications plugin). |
 

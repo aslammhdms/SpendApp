@@ -131,10 +131,30 @@ class TransactionTile extends StatelessWidget {
                             ),
                             Text(' • ', style: secondary),
                           ],
+                          if (transaction.recurringId != null) ...[
+                            Icon(
+                              Icons.repeat_rounded,
+                              size: 14,
+                              color: secondary?.color,
+                              semanticLabel: 'Repeating',
+                            ),
+                            const SizedBox(width: 2),
+                          ],
                           Text(
                             AppDateUtils.formatDisplayTime(transaction.date),
                             style: secondary,
                           ),
+                          if (transaction.labels.isNotEmpty) ...[
+                            Text(' • ', style: secondary),
+                            Flexible(
+                              child: Text(
+                                transaction.labels.join(', '),
+                                style: secondary,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ],

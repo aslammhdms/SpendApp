@@ -59,6 +59,8 @@ abstract class RecurringRule with _$RecurringRule {
           targetYear,
           normalizedMonth,
           nextDueDate.day.clamp(1, maxDayMonthly),
+          nextDueDate.hour,
+          nextDueDate.minute,
         );
       case RecurringFrequency.yearly:
         final yearlyTargetYear = nextDueDate.year + interval;
@@ -67,6 +69,8 @@ abstract class RecurringRule with _$RecurringRule {
           yearlyTargetYear,
           nextDueDate.month,
           nextDueDate.day.clamp(1, maxDayYearly),
+          nextDueDate.hour,
+          nextDueDate.minute,
         );
     }
   }

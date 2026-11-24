@@ -11,6 +11,13 @@ class AnalyticsData {
   final Map<DateTime, double> monthlyIncome;
   final double totalExpense;
   final double totalIncome;
+
+  /// Expense totals by label in the period.
+  final Map<String, double> labelTotals;
+
+  /// The period the figures cover.
+  final DateTime? periodStart;
+  final DateTime? periodEnd;
   final bool isLoading;
   final String? error;
 
@@ -21,6 +28,9 @@ class AnalyticsData {
     this.monthlyIncome = const {},
     this.totalExpense = 0,
     this.totalIncome = 0,
+    this.labelTotals = const {},
+    this.periodStart,
+    this.periodEnd,
     this.isLoading = true,
     this.error,
   });
@@ -42,6 +52,9 @@ class AnalyticsData {
       monthlyIncome: monthlyIncome ?? this.monthlyIncome,
       totalExpense: totalExpense ?? this.totalExpense,
       totalIncome: totalIncome ?? this.totalIncome,
+      labelTotals: labelTotals,
+      periodStart: periodStart,
+      periodEnd: periodEnd,
       isLoading: isLoading ?? this.isLoading,
       error: error,
     );
@@ -110,6 +123,9 @@ class AnalyticsNotifier extends StateNotifier<AnalyticsData> {
         endDate,
       );
 
+      final labelTotals =
+          await _repository.getExpenseTotalsByLabel(startDate, endDate);
+
       // Daily expenses for the period
       final dailyExpenses = await _repository.getDailySpending(
         _period == AnalyticsPeriod.week ? 7 : 30,
@@ -147,6 +163,9 @@ class AnalyticsNotifier extends StateNotifier<AnalyticsData> {
         monthlyIncome: monthlyIncome,
         totalExpense: totalExpense,
         totalIncome: totalIncome,
+        labelTotals: labelTotals,
+        periodStart: startDate,
+        periodEnd: endDate,
         isLoading: false,
       );
     } catch (e) {

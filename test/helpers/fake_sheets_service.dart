@@ -6,6 +6,8 @@ import 'package:spendsheet/core/errors/app_exceptions.dart';
 import 'package:spendsheet/data/models/account.dart';
 import 'package:spendsheet/data/models/budget.dart';
 import 'package:spendsheet/data/models/category.dart';
+import 'package:spendsheet/data/models/goal.dart';
+import 'package:spendsheet/data/models/recurring_rule.dart';
 import 'package:spendsheet/data/models/loan.dart';
 import 'package:spendsheet/data/models/person.dart';
 import 'package:spendsheet/data/models/transaction.dart';
@@ -43,6 +45,8 @@ class FakeSheetsService extends Fake implements SheetsService {
   final budgets = FakeTab<Budget>((b) => b.id);
   final people = FakeTab<Person>((p) => p.id);
   final loans = FakeTab<Loan>((l) => l.id);
+  final recurring = FakeTab<RecurringRule>((r) => r.id);
+  final goals = FakeTab<Goal>((g) => g.id);
 
   /// Writes for these IDs fail, as if the sheet rejected them.
   final Set<String> failingIds = {};
@@ -64,6 +68,8 @@ class FakeSheetsService extends Fake implements SheetsService {
         SheetConstants.budgetsSheet => budgets,
         SheetConstants.peopleSheet => people,
         SheetConstants.loansSheet => loans,
+        SheetConstants.recurringSheet => recurring,
+        SheetConstants.goalsSheet => goals,
         _ => throw ArgumentError('Unknown sheet $sheetName'),
       };
 
@@ -169,4 +175,28 @@ class FakeSheetsService extends Fake implements SheetsService {
   @override
   Future<void> updateLoan(String spreadsheetId, Loan l, int rowIndex) =>
       _update(loans, l, rowIndex);
+
+  @override
+  Future<List<RecurringRule>> getAllRecurringRules(String spreadsheetId) async =>
+      List.of(recurring.rows);
+
+  @override
+  Future<void> appendRecurringRule(String spreadsheetId, RecurringRule r) =>
+      _append(recurring, r);
+
+  @override
+  Future<void> updateRecurringRule(
+          String spreadsheetId, RecurringRule r, int rowIndex) =>
+      _update(recurring, r, rowIndex);
+
+  @override
+  Future<List<Goal>> getAllGoals(String spreadsheetId) async =>
+      List.of(goals.rows);
+
+  @override
+  Future<void> appendGoal(String spreadsheetId, Goal g) => _append(goals, g);
+
+  @override
+  Future<void> updateGoal(String spreadsheetId, Goal g, int rowIndex) =>
+      _update(goals, g, rowIndex);
 }

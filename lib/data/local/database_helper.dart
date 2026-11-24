@@ -6,7 +6,7 @@ import '../../core/constants/category_defaults.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'spendsheet.db';
-  static const int _databaseVersion = 4;
+  static const int _databaseVersion = 5;
 
   static Database? _database;
 
@@ -49,7 +49,8 @@ class DatabaseHelper {
         recurring_id TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
-        deleted_at TEXT
+        deleted_at TEXT,
+        labels TEXT
       )
     ''');
 
@@ -176,6 +177,7 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_loans_type ON loans(type)');
 
     await _createCapturedPaymentsTable(db);
+    await _createGoalsTable(db);
 
     // Insert default categories and accounts
     await _insertDefaultCategories(db);
@@ -230,6 +232,29 @@ class DatabaseHelper {
     if (oldVersion < 4) {
       await _createCapturedPaymentsTable(db);
     }
+
+    if (oldVersion < 5) {
+      await db.execute('ALTER TABLE transactions ADD COLUMN labels TEXT');
+      await _createGoalsTable(db);
+    }
+  }
+
+  /// Savings goals, synced to the spreadsheet's Goals tab.
+  Future<void> _createGoalsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE goals (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        target_amount REAL NOT NULL,
+        saved_amount REAL NOT NULL DEFAULT 0,
+        target_date TEXT,
+        icon TEXT NOT NULL,
+        color INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        deleted_at TEXT
+      )
+    ''');
   }
 
   /// Payments read from Google Wallet notifications, kept on this device
@@ -345,6 +370,7 @@ class DatabaseHelper {
     'people',
     'loans',
     'captured_payments',
+    'goals',
   ];
 
   Future<void> clearAllData() async {

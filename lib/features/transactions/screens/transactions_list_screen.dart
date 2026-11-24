@@ -82,6 +82,7 @@ class _TransactionsListScreenState
   void _showFilterSheet() async {
     final categories = await ref.read(categoriesProvider.future);
     final accounts = await ref.read(accountRepositoryProvider).getAll();
+    final labels = await ref.read(transactionRepositoryProvider).getAllLabels();
 
     if (!mounted) return;
 
@@ -99,6 +100,7 @@ class _TransactionsListScreenState
             currentFilter: ref.read(transactionsProvider).filter,
             categories: categories,
             accounts: accounts,
+            labels: labels,
             onApply: (filter) {
               ref.read(transactionsProvider.notifier).setFilter(filter);
             },

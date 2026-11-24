@@ -10,6 +10,9 @@ class FilterSheet extends StatefulWidget {
   final TransactionFilter currentFilter;
   final List<Category> categories;
   final List<Account> accounts;
+
+  /// Labels in use, most used first.
+  final List<String> labels;
   final ValueChanged<TransactionFilter> onApply;
 
   const FilterSheet({
@@ -17,6 +20,7 @@ class FilterSheet extends StatefulWidget {
     required this.currentFilter,
     required this.categories,
     required this.accounts,
+    this.labels = const [],
     required this.onApply,
   });
 
@@ -175,6 +179,26 @@ class _FilterSheetState extends State<FilterSheet> {
             const SizedBox(height: 20),
           ],
 
+          // Label
+          if (widget.labels.isNotEmpty) ...[
+            Text(
+              'Label',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 40,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: widget.labels.length + 1,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) => _buildLabelChip(
+                    index == 0 ? null : widget.labels[index - 1]),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -246,6 +270,24 @@ class _FilterSheetState extends State<FilterSheet> {
           } else {
             _filter = _filter.copyWith(categoryId: categoryId);
           }
+        });
+      },
+    );
+  }
+
+  Widget _buildLabelChip(String? label) {
+    final isSelected = label == null
+        ? _filter.label == null
+        : _filter.label?.toLowerCase() == label.toLowerCase();
+    return FilterChip(
+      avatar: label == null ? null : const Icon(Icons.sell_outlined, size: 18),
+      label: Text(label ?? 'All'),
+      selected: isSelected,
+      onSelected: (_) {
+        setState(() {
+          _filter = label == null
+              ? _filter.clearField('label')
+              : _filter.copyWith(label: label);
         });
       },
     );

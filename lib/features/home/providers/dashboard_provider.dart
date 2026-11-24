@@ -16,6 +16,10 @@ import '../../../data/local/sync_queue_dao.dart';
 import '../../../data/repositories/category_repository.dart';
 import '../../../data/remote/sync_engine.dart';
 import '../../budgets/services/budget_alert_service.dart';
+import '../../goals/providers/goals_provider.dart';
+import '../../notices/scheduled_notices_service.dart';
+import '../../recurring/providers/recurring_provider.dart';
+import '../../../data/repositories/recurring_repository.dart';
 import '../../onboarding/providers/sheet_setup_provider.dart';
 
 class DashboardData {
@@ -78,6 +82,8 @@ class DashboardNotifier extends StateNotifier<DashboardData> {
   final BudgetRepository _budgetRepo;
   final LoanRepository _loanRepo;
   final BudgetAlertService? _budgetAlerts;
+  final RecurringRepository? _recurring;
+  final ScheduledNoticesService? _notices;
 
   DashboardNotifier({
     required TransactionRepository transactionRepo,
@@ -85,11 +91,15 @@ class DashboardNotifier extends StateNotifier<DashboardData> {
     required BudgetRepository budgetRepo,
     required LoanRepository loanRepo,
     BudgetAlertService? budgetAlerts,
+    RecurringRepository? recurring,
+    ScheduledNoticesService? notices,
   })  : _transactionRepo = transactionRepo,
         _accountRepo = accountRepo,
         _budgetRepo = budgetRepo,
         _loanRepo = loanRepo,
         _budgetAlerts = budgetAlerts,
+        _recurring = recurring,
+        _notices = notices,
         super(const DashboardData());
 
   Future<void> refresh() async {
@@ -97,6 +107,10 @@ class DashboardNotifier extends StateNotifier<DashboardData> {
 
     try {
       final now = DateTime.now();
+
+      // Repeating payments that have come due are added first, so the
+      // totals below include them.
+      await _addDueRepeatingPayments(now);
 
       // Get monthly totals
       final monthlyIncome = await _transactionRepo.getMonthlyIncome(now);
@@ -133,11 +147,33 @@ class DashboardNotifier extends StateNotifier<DashboardData> {
       // Budget progress is fresh here: after every saved expense, when Home
       // opens, and after the start-up sync.
       await _checkBudgetAlerts(budgets);
+      await _rescheduleNotices();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to load dashboard data: $e',
       );
+    }
+  }
+
+  Future<void> _addDueRepeatingPayments(DateTime now) async {
+    final recurring = _recurring;
+    if (recurring == null) return;
+    try {
+      await recurring.processDue(now);
+    } catch (e) {
+      debugPrint('Repeating payments failed: $e');
+    }
+  }
+
+  /// Summaries and reminders carry amounts, so they follow the data.
+  Future<void> _rescheduleNotices() async {
+    final notices = _notices;
+    if (notices == null) return;
+    try {
+      await notices.reschedule();
+    } catch (e) {
+      debugPrint('Scheduling notifications failed: $e');
     }
   }
 
@@ -178,6 +214,8 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
     budgetDao: ref.watch(localBudgetDaoProvider),
     personDao: ref.watch(localPersonDaoProvider),
     loanDao: ref.watch(localLoanDaoProvider),
+    recurringDao: ref.watch(localRecurringDaoProvider),
+    goalDao: ref.watch(localGoalDaoProvider),
     syncQueueDao: ref.watch(syncQueueDaoProvider),
   );
 });
@@ -242,5 +280,7 @@ final dashboardProvider =
     budgetRepo: ref.watch(budgetRepositoryProvider),
     loanRepo: ref.watch(loanRepositoryProvider),
     budgetAlerts: ref.watch(budgetAlertServiceProvider),
+    recurring: ref.watch(recurringRepositoryProvider),
+    notices: ref.watch(scheduledNoticesServiceProvider),
   );
 });

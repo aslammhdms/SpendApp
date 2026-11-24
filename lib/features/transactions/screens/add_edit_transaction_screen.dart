@@ -10,6 +10,9 @@ import '../../../data/models/category.dart';
 import '../../../data/models/account.dart';
 import '../../../data/models/loan.dart';
 import '../../../data/models/person.dart';
+import '../../../data/models/recurring_rule.dart';
+import '../../recurring/providers/recurring_provider.dart';
+import '../widgets/labels_sheet.dart';
 import '../providers/transactions_provider.dart';
 import '../services/category_order.dart';
 import '../widgets/amount_input_pad.dart';
@@ -57,6 +60,10 @@ class _AddEditTransactionScreenState
   bool _isLoading = false;
   Transaction? _existingTransaction;
 
+  /// How often a new transaction repeats; null for once.
+  RecurringFrequency? _repeat;
+  List<String> _labels = const [];
+
   // Loan tab state
   String? _selectedPersonId;
   LoanType _loanType = LoanType.lent;
@@ -97,6 +104,7 @@ class _AddEditTransactionScreenState
         _toAccountId = transaction.toAccountId;
         _date = transaction.date;
         _noteController.text = transaction.note ?? '';
+        _labels = transaction.labels;
         _tabController.index = _type.index;
         _isLoading = false;
       });
@@ -123,6 +131,8 @@ class _AddEditTransactionScreenState
       }
       _categoryId = null; // Reset category when type changes
       _pinnedCategoryId = null;
+      // Transfers and loans do not repeat.
+      if (_isLoanTab || _type == TransactionType.transfer) _repeat = null;
     });
   }
 
@@ -228,10 +238,11 @@ class _AddEditTransactionScreenState
               note: _noteController.text.trim().isEmpty
                   ? null
                   : _noteController.text.trim(),
+              labels: _labels,
             ),
           );
         } else {
-          await repository.create(
+          final created = await repository.create(
             amount: _amount,
             type: _type,
             categoryId: _categoryId ?? '',
@@ -241,7 +252,18 @@ class _AddEditTransactionScreenState
             note: _noteController.text.trim().isEmpty
                 ? null
                 : _noteController.text.trim(),
+            labels: _labels,
           );
+          final repeat = _repeat;
+          if (repeat != null) {
+            final rule = await ref.read(recurringRepositoryProvider).createFrom(
+                  created,
+                  frequency: repeat,
+                  name: await _repeatName(created),
+                );
+            await repository.update(created.copyWith(recurringId: rule.id));
+            ref.invalidate(recurringRulesProvider);
+          }
         }
 
         HapticFeedback.mediumImpact();
@@ -416,15 +438,21 @@ class _AddEditTransactionScreenState
         ],
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Space.lg),
-          child: isTransfer
-              ? Column(
-                  children: [
-                    _DetailsBar(tiles: [accountTile, toAccountTile]),
-                    const SizedBox(height: Space.sm),
-                    _DetailsBar(tiles: [_dateTile(), _noteTile()]),
-                  ],
-                )
-              : _DetailsBar(tiles: [accountTile, _dateTile(), _noteTile()]),
+          child: Column(
+            children: [
+              if (isTransfer) ...[
+                _DetailsBar(tiles: [accountTile, toAccountTile]),
+                const SizedBox(height: Space.sm),
+                _DetailsBar(tiles: [_dateTile(), _noteTile()]),
+              ] else
+                _DetailsBar(tiles: [accountTile, _dateTile(), _noteTile()]),
+              const SizedBox(height: Space.sm),
+              _DetailsBar(tiles: [
+                if (!isTransfer && !isEditing) _repeatTile(),
+                _labelsTile(),
+              ]),
+            ],
+          ),
         ),
       ],
     );
@@ -435,6 +463,101 @@ class _AddEditTransactionScreenState
         value: AppDateUtils.formatDisplayDate(_date),
         onTap: _pickDate,
       );
+
+  _DetailTile _repeatTile() => _DetailTile(
+        caption: 'Repeat',
+        value: repeatLabel(_repeat),
+        isPlaceholder: _repeat == null,
+        onTap: _pickRepeat,
+      );
+
+  _DetailTile _labelsTile() => _DetailTile(
+        caption: 'Labels',
+        value: _labels.isEmpty ? 'Add label' : _labels.join(', '),
+        isPlaceholder: _labels.isEmpty,
+        onTap: _editLabels,
+      );
+
+  Future<void> _pickRepeat() async {
+    const choices = <RecurringFrequency?>[
+      null,
+      RecurringFrequency.daily,
+      RecurringFrequency.weekly,
+      RecurringFrequency.monthly,
+      RecurringFrequency.yearly,
+    ];
+    final picked = await showAppSheet<({RecurringFrequency? value})>(
+      context: context,
+      builder: (context) {
+        final scheme = Theme.of(context).colorScheme;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    Space.xl, 0, Space.xl, Space.xs),
+                child: Text('Repeat',
+                    style: Theme.of(context).textTheme.titleMedium),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    Space.xl, 0, Space.xl, Space.sm),
+                child: Text(
+                  'SpendSheet adds it again on each date, and reminds you '
+                  'the day before.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ),
+              for (final choice in choices)
+                ListTile(
+                  title: Text(repeatLabel(choice)),
+                  trailing: choice == _repeat
+                      ? Icon(Icons.check_rounded, color: scheme.primary)
+                      : null,
+                  selected: choice == _repeat,
+                  onTap: () => Navigator.pop(context, (value: choice)),
+                ),
+              const SizedBox(height: Space.sm),
+            ],
+          ),
+        );
+      },
+    );
+    if (picked != null && mounted) setState(() => _repeat = picked.value);
+  }
+
+  Future<void> _editLabels() async {
+    final suggestions =
+        await ref.read(transactionRepositoryProvider).getAllLabels();
+    if (!mounted) return;
+    final picked = await showLabelsSheet(
+      context,
+      selected: _labels,
+      suggestions: suggestions,
+    );
+    if (picked != null && mounted) setState(() => _labels = picked);
+  }
+
+  /// The repeating payment's name: the note, or else the category's name.
+  Future<String> _repeatName(Transaction t) async {
+    final note = t.note?.trim();
+    if (note != null && note.isNotEmpty) return note;
+    final categories = await ref.read(
+      (t.type == TransactionType.income
+              ? incomeCategoriesProvider
+              : expenseCategoriesProvider)
+          .future,
+    );
+    for (final c in categories) {
+      if (c.id == t.categoryId) return c.name;
+    }
+    return 'Repeating payment';
+  }
 
   _DetailTile _noteTile() {
     final note = _noteController.text.trim();
@@ -1037,3 +1160,19 @@ final accountsWithBalanceProvider = FutureProvider<List<Account>>((ref) async {
   final repository = ref.watch(accountRepositoryProvider);
   return await repository.getAllWithBalances();
 });
+
+/// "Every month", or "Doesn't repeat" for null.
+String repeatLabel(RecurringFrequency? frequency) {
+  switch (frequency) {
+    case null:
+      return "Doesn't repeat";
+    case RecurringFrequency.daily:
+      return 'Every day';
+    case RecurringFrequency.weekly:
+      return 'Every week';
+    case RecurringFrequency.monthly:
+      return 'Every month';
+    case RecurringFrequency.yearly:
+      return 'Every year';
+  }
+}

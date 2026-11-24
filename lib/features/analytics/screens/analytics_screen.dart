@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/utils/currency_utils.dart';
@@ -8,6 +9,8 @@ import '../../../shared/widgets/signal_stat.dart';
 import '../providers/analytics_provider.dart';
 import '../widgets/category_pie_chart.dart';
 import '../widgets/income_expense_bar_chart.dart';
+import '../widgets/label_totals_card.dart';
+import '../../transactions/providers/transactions_provider.dart';
 import '../widgets/spending_line_chart.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../../shared/widgets/screen_insets.dart';
@@ -125,6 +128,16 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen>
                       ),
                       const SizedBox(height: Space.lg),
 
+                      if (analytics.labelTotals.isNotEmpty) ...[
+                        LabelTotalsCard(
+                          labelTotals: analytics.labelTotals,
+                          currency: currency,
+                          onOpenLabel: (label) =>
+                              _openLabel(label, analytics),
+                        ),
+                        const SizedBox(height: Space.lg),
+                      ],
+
                       // Daily Spending Trend
                       SpendingLineChart(
                         dailySpending: analytics.dailyExpenses,
@@ -145,6 +158,18 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen>
                   ),
                 ),
     );
+  }
+}
+
+extension on _AnalyticsScreenState {
+  /// Shows the transactions carrying [label] in the period on screen.
+  void _openLabel(String label, AnalyticsData analytics) {
+    ref.read(transactionsProvider.notifier).setFilter(TransactionFilter(
+          label: label,
+          startDate: analytics.periodStart,
+          endDate: analytics.periodEnd,
+        ));
+    context.go('/transactions');
   }
 }
 

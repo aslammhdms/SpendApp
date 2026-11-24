@@ -15,6 +15,9 @@ import '../widgets/spending_trend_chart.dart';
 import '../widgets/recent_transactions_list.dart';
 import '../widgets/budget_progress_bars.dart';
 import '../widgets/loans_summary_card.dart';
+import '../widgets/plans_cards.dart';
+import '../../goals/providers/goals_provider.dart';
+import '../../recurring/providers/recurring_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../../wallet_capture/providers/wallet_capture_provider.dart';
 import '../../wallet_capture/widgets/pending_captures_banner.dart';
@@ -38,8 +41,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _listenToSync();
       ref.read(walletCaptureProvider.notifier).refresh();
       await _askForAlertPermission();
-      if (mounted) await ref.read(dashboardProvider.notifier).refresh();
+      if (mounted) await _refresh();
     });
+  }
+
+  /// Refreshing the dashboard also adds repeating payments that came due,
+  /// so the cards that list them reload after it.
+  Future<void> _refresh() async {
+    await ref.read(dashboardProvider.notifier).refresh();
+    if (!mounted) return;
+    ref.invalidate(recurringRulesProvider);
+    ref.invalidate(goalsProvider);
   }
 
   /// Budget alerts are on by default, but Android 13 and later show nothing
@@ -65,9 +77,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _listenToSync() {
     _syncSubscription =
         ref.read(syncEngineProvider).statusStream.listen((status) {
-      if (status == SyncStatus.synced && mounted) {
-        ref.read(dashboardProvider.notifier).refresh();
-      }
+      if (status == SyncStatus.synced && mounted) _refresh();
     });
   }
 
@@ -78,9 +88,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _handleRefresh() async {
-    await ref.read(dashboardProvider.notifier).refresh();
-  }
+  Future<void> _handleRefresh() => _refresh();
 
   @override
   Widget build(BuildContext context) {
@@ -172,6 +180,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           currency: currency,
                         ),
                         const SizedBox(height: Space.lg),
+                        UpcomingPaymentsCard(currency: currency),
+                        GoalsSummaryCard(currency: currency),
                         LoansSummaryCard(
                           totalOwedToYou: dashboardData.totalOwedToYou,
                           totalYouOwe: dashboardData.totalYouOwe,
