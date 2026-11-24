@@ -32,6 +32,7 @@ class WalletCaptureService {
   final DateTime Function() _now;
 
   static const _enabledKey = 'wallet_capture.enabled';
+  static const _notifyKey = 'wallet_capture.notify';
   static const _categoryRulePrefix = 'wallet_capture.category.';
   static const _accountRulePrefix = 'wallet_capture.account.';
 
@@ -53,6 +54,35 @@ class WalletCaptureService {
     // Turning capture off also removes what it has collected.
     if (!enabled) await _dao.deleteAll();
   }
+
+  /// Whether the user wants a reminder after each payment. On by default.
+  Future<bool> isNotifyEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_notifyKey) ?? true;
+  }
+
+  /// Saves the reminder choice and passes it on to the listener, which
+  /// runs without the app. [notificationsAllowed] is the app-wide
+  /// Notifications switch, which turns the reminders off too.
+  Future<void> setNotifyEnabled(
+    bool enabled, {
+    required bool notificationsAllowed,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_notifyKey, enabled);
+    await syncNotify(notificationsAllowed: notificationsAllowed);
+  }
+
+  /// Tells the listener whether reminders are on, from the saved choice
+  /// and the app-wide Notifications switch.
+  Future<void> syncNotify({required bool notificationsAllowed}) async {
+    final on = notificationsAllowed && await isNotifyEnabled();
+    await _channel.setNotifyEnabled(on);
+    if (!on) await _channel.clearPaymentNotifications();
+  }
+
+  Future<void> clearPaymentNotifications() =>
+      _channel.clearPaymentNotifications();
 
   Future<bool> hasAccess() => _channel.hasAccess();
 

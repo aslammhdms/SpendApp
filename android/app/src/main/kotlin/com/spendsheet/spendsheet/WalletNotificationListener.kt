@@ -28,5 +28,13 @@ class WalletNotificationListener : NotificationListenerService() {
         if (title.isBlank() && text.isBlank()) return
 
         WalletCaptureStore.add(this, sbn.key, title, text, sbn.postTime)
+
+        if (WalletCaptureStore.isNotifyEnabled(this)) {
+            val payment = WalletPaymentParser.parse(title, text) ?: return
+            // Wallet can post the same notification again; remind only once.
+            if (WalletCaptureStore.markNotified(this, sbn.key)) {
+                WalletPaymentNotifier.show(this, sbn.key, payment)
+            }
+        }
     }
 }

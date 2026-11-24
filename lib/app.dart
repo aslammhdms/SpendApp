@@ -209,6 +209,24 @@ class _MainShellState extends ConsumerState<_MainShell>
     // Payments made while the app was in the background show up on return.
     if (state == AppLifecycleState.resumed) {
       ref.read(walletCaptureProvider.notifier).refresh();
+      _openPaymentsIfReminderTapped();
+    }
+  }
+
+  /// A tapped Google Wallet payment reminder opens the payment list,
+  /// whether it started the app or brought it back.
+  Future<void> _openPaymentsIfReminderTapped() async {
+    final channel = ref.read(walletCaptureChannelProvider);
+    try {
+      if (!await channel.takeOpenRequest() || !mounted) return;
+    } catch (e) {
+      debugPrint('Checking for a payment reminder tap failed: $e');
+      return;
+    }
+    final router = GoRouter.of(context);
+    final current = router.routerDelegate.currentConfiguration.uri.path;
+    if (current != '/wallet-capture') {
+      router.push('/wallet-capture');
     }
   }
 
@@ -232,6 +250,11 @@ class _MainShellState extends ConsumerState<_MainShell>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _currentIndex = _getSelectedIndex();
+    ref
+        .read(walletCaptureChannelProvider)
+        .listenForReminderTaps(_openPaymentsIfReminderTapped);
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _openPaymentsIfReminderTapped());
   }
 
   @override

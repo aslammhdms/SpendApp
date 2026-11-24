@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/local/local_captured_payment_dao.dart';
+import '../../onboarding/providers/sheet_setup_provider.dart';
 import '../../home/providers/dashboard_provider.dart';
 import '../models/captured_payment.dart';
 import '../services/wallet_capture_channel.dart';
@@ -10,6 +11,7 @@ class WalletCaptureState {
     this.isSupported = false,
     this.isEnabled = false,
     this.hasAccess = false,
+    this.notifyOnPayment = true,
     this.pending = const [],
     this.isLoading = true,
   });
@@ -23,6 +25,9 @@ class WalletCaptureState {
   /// Android's notification access is granted.
   final bool hasAccess;
 
+  /// Post a reminder right after each payment.
+  final bool notifyOnPayment;
+
   /// Payments waiting to be added or dismissed, newest first.
   final List<CapturedPayment> pending;
   final bool isLoading;
@@ -34,6 +39,7 @@ class WalletCaptureState {
     bool? isSupported,
     bool? isEnabled,
     bool? hasAccess,
+    bool? notifyOnPayment,
     List<CapturedPayment>? pending,
     bool? isLoading,
   }) {
@@ -41,6 +47,7 @@ class WalletCaptureState {
       isSupported: isSupported ?? this.isSupported,
       isEnabled: isEnabled ?? this.isEnabled,
       hasAccess: hasAccess ?? this.hasAccess,
+      notifyOnPayment: notifyOnPayment ?? this.notifyOnPayment,
       pending: pending ?? this.pending,
       isLoading: isLoading ?? this.isLoading,
     );
@@ -48,9 +55,14 @@ class WalletCaptureState {
 }
 
 class WalletCaptureNotifier extends StateNotifier<WalletCaptureState> {
-  WalletCaptureNotifier(this._service) : super(const WalletCaptureState());
+  WalletCaptureNotifier(this._service, {Future<bool> Function()? notificationsAllowed})
+      : _notificationsAllowed = notificationsAllowed ?? (() async => true),
+        super(const WalletCaptureState());
 
   final WalletCaptureService _service;
+
+  /// The app-wide Notifications switch in Settings.
+  final Future<bool> Function() _notificationsAllowed;
 
   /// Collects newly captured payments and reloads the inbox and status.
   Future<void> refresh() async {
@@ -62,10 +74,14 @@ class WalletCaptureNotifier extends StateNotifier<WalletCaptureState> {
       final enabled = await _service.isEnabled();
       final hasAccess = enabled && await _service.hasAccess();
       if (hasAccess) await _service.importPending();
+      final notify = await _service.isNotifyEnabled();
+      await _service.syncNotify(
+          notificationsAllowed: await _notificationsAllowed());
       state = WalletCaptureState(
         isSupported: true,
         isEnabled: enabled,
         hasAccess: hasAccess,
+        notifyOnPayment: notify,
         pending: await _service.getPending(),
         isLoading: false,
       );
@@ -80,6 +96,23 @@ class WalletCaptureNotifier extends StateNotifier<WalletCaptureState> {
   }
 
   Future<void> openAccessSettings() => _service.openAccessSettings();
+
+  Future<void> setNotifyOnPayment(bool enabled) async {
+    await _service.setNotifyEnabled(enabled,
+        notificationsAllowed: await _notificationsAllowed());
+    state = state.copyWith(notifyOnPayment: enabled);
+  }
+
+  /// Passes a change of the app-wide Notifications switch on to the
+  /// listener.
+  Future<void> syncNotify() async {
+    await _service.syncNotify(
+        notificationsAllowed: await _notificationsAllowed());
+  }
+
+  /// The person is looking at the list, so the reminders have done their
+  /// job.
+  Future<void> clearReminders() => _service.clearPaymentNotifications();
 
   /// Turns capture on and, if Android has not granted notification access
   /// yet, opens the screen where the person grants it. Call only after the
@@ -129,5 +162,10 @@ final walletCaptureServiceProvider = Provider<WalletCaptureService>((ref) {
 
 final walletCaptureProvider =
     StateNotifierProvider<WalletCaptureNotifier, WalletCaptureState>((ref) {
-  return WalletCaptureNotifier(ref.watch(walletCaptureServiceProvider));
+  final settings = ref.watch(settingsRepositoryProvider);
+  return WalletCaptureNotifier(
+    ref.watch(walletCaptureServiceProvider),
+    notificationsAllowed: () async =>
+        (await settings.getSettings()).notificationsEnabled,
+  );
 });

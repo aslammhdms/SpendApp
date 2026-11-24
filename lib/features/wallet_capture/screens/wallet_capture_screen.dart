@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../data/models/account.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -51,7 +52,9 @@ class _WalletCaptureScreenState extends ConsumerState<WalletCaptureScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(walletCaptureProvider.notifier).refresh();
+      final notifier = ref.read(walletCaptureProvider.notifier);
+      notifier.refresh();
+      notifier.clearReminders();
     });
   }
 
@@ -65,7 +68,9 @@ class _WalletCaptureScreenState extends ConsumerState<WalletCaptureScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Coming back from Android's notification access settings.
     if (state == AppLifecycleState.resumed) {
-      ref.read(walletCaptureProvider.notifier).refresh();
+      final notifier = ref.read(walletCaptureProvider.notifier);
+      notifier.refresh();
+      notifier.clearReminders();
     }
   }
 
@@ -97,6 +102,20 @@ class _WalletCaptureScreenState extends ConsumerState<WalletCaptureScreen>
     }
   }
 
+  Future<bool> _requestNotificationPermission() async {
+    final allowed =
+        await ref.read(notificationServiceProvider).requestPermission();
+    if (!allowed && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              "Notifications are blocked for SpendSheet. Payments still wait in this list; allow notifications in your phone's settings to get a reminder."),
+        ),
+      );
+    }
+    return allowed;
+  }
+
   @override
   Widget build(BuildContext context) {
     final capture = ref.watch(walletCaptureProvider);
@@ -120,7 +139,12 @@ class _WalletCaptureScreenState extends ConsumerState<WalletCaptureScreen>
                   child: ListView(
                     padding: ScreenInsets.of(context, bottom: Space.xxl),
                     children: [
-                      _SetupCard(capture: capture, notifier: notifier),
+                      _SetupCard(
+                        capture: capture,
+                        notifier: notifier,
+                        requestNotificationPermission:
+                            _requestNotificationPermission,
+                      ),
                       if (capture.isEnabled) ...[
                         const OverlineHeader('To review'),
                         if (capture.pending.isEmpty)
@@ -175,10 +199,17 @@ class _WalletCaptureScreenState extends ConsumerState<WalletCaptureScreen>
 }
 
 class _SetupCard extends StatelessWidget {
-  const _SetupCard({required this.capture, required this.notifier});
+  const _SetupCard({
+    required this.capture,
+    required this.notifier,
+    required this.requestNotificationPermission,
+  });
 
   final WalletCaptureState capture;
   final WalletCaptureNotifier notifier;
+
+  /// Asks Android for permission to show notifications; true if allowed.
+  final Future<bool> Function() requestNotificationPermission;
 
   @override
   Widget build(BuildContext context) {
@@ -203,6 +234,12 @@ class _SetupCard extends StatelessWidget {
                 // before an app reads notifications.
                 final agreed = await showWalletCaptureDisclosure(context);
                 if (!agreed) return;
+                // Before Android's access screen opens, so the two
+                // requests do not overlap. Without it the payments still
+                // wait in this list, just without a reminder.
+                if (capture.notifyOnPayment) {
+                  await requestNotificationPermission();
+                }
                 await notifier.enableAfterConsent();
               } else {
                 await notifier.setEnabled(false);
@@ -260,6 +297,18 @@ class _SetupCard extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          if (capture.isEnabled)
+            SwitchListTile(
+              title: const Text('Remind me after each payment'),
+              subtitle: const Text(
+                'A notification right after you pay, to add it in one tap.',
+              ),
+              value: capture.notifyOnPayment,
+              onChanged: (value) async {
+                if (value) await requestNotificationPermission();
+                await notifier.setNotifyOnPayment(value);
+              },
             ),
         ],
       ),

@@ -47,6 +47,34 @@ class WalletCaptureChannel {
     await _channel.invokeMethod<void>('setEnabled', enabled);
   }
 
+  /// Tells the listener whether to post a reminder after each payment.
+  Future<void> setNotifyEnabled(bool enabled) async {
+    if (!isSupported) return;
+    await _channel.invokeMethod<void>('setNotifyEnabled', enabled);
+  }
+
+  /// Removes the payment reminders SpendSheet is showing.
+  Future<void> clearPaymentNotifications() async {
+    if (!isSupported) return;
+    await _channel.invokeMethod<void>('clearPaymentNotifications');
+  }
+
+  /// Whether a payment reminder was tapped since the last call. Each tap
+  /// is reported once.
+  Future<bool> takeOpenRequest() async {
+    if (!isSupported) return false;
+    return await _channel.invokeMethod<bool>('takeOpenRequest') ?? false;
+  }
+
+  /// Calls [onTap] when a payment reminder is tapped while the app is
+  /// running. Follow it with [takeOpenRequest].
+  void listenForReminderTaps(void Function() onTap) {
+    if (!isSupported) return;
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'openPayments') onTap();
+    });
+  }
+
   /// Collects the notifications captured since the last call.
   Future<List<RawWalletNotification>> drain() async {
     if (!isSupported) return const [];

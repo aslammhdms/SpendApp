@@ -6,6 +6,7 @@ import '../../../core/utils/currency_utils.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../providers/settings_provider.dart';
+import '../../wallet_capture/providers/wallet_capture_provider.dart';
 import '../widgets/sync_status_tile.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../shared/widgets/glass_sheet.dart';
@@ -107,8 +108,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: const Text('Notifications'),
             subtitle: const Text('Enable push notifications'),
             value: settings.notificationsEnabled,
-            onChanged: (value) {
-              settingsNotifier.setNotificationsEnabled(value);
+            onChanged: (value) async {
+              await settingsNotifier.setNotificationsEnabled(value);
+              // Google Wallet payment reminders follow this switch too.
+              await ref.read(walletCaptureProvider.notifier).syncNotify();
               if (value) _requestNotificationPermission();
             },
           ),

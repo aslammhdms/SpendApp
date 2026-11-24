@@ -35,6 +35,21 @@ class _FakeChannel implements WalletCaptureChannel {
   @override
   Future<void> setEnabled(bool enabled) async => enabledOnDevice = enabled;
 
+  bool? notifyOnDevice;
+  int remindersCleared = 0;
+
+  @override
+  Future<void> setNotifyEnabled(bool enabled) async => notifyOnDevice = enabled;
+
+  @override
+  Future<void> clearPaymentNotifications() async => remindersCleared++;
+
+  @override
+  Future<bool> takeOpenRequest() async => false;
+
+  @override
+  void listenForReminderTaps(void Function() onTap) {}
+
   @override
   Future<List<RawWalletNotification>> drain() async {
     final items = List.of(queued);
@@ -398,5 +413,32 @@ void main() {
       await dao.getById(pending.firstWhere((p) => p.merchant == 'Old Shop').id),
       isNull,
     );
+  });
+
+  group('payment reminders', () {
+    test('are on by default', () async {
+      expect(await service.isNotifyEnabled(), isTrue);
+
+      await service.syncNotify(notificationsAllowed: true);
+
+      expect(channel.notifyOnDevice, isTrue);
+    });
+
+    test('turning them off tells the listener and clears shown reminders',
+        () async {
+      await service.setNotifyEnabled(false, notificationsAllowed: true);
+
+      expect(await service.isNotifyEnabled(), isFalse);
+      expect(channel.notifyOnDevice, isFalse);
+      expect(channel.remindersCleared, 1);
+    });
+
+    test('the app-wide Notifications switch turns them off too', () async {
+      await service.syncNotify(notificationsAllowed: false);
+
+      expect(channel.notifyOnDevice, isFalse);
+      expect(await service.isNotifyEnabled(), isTrue,
+          reason: 'the reminder choice itself is kept for later');
+    });
   });
 }

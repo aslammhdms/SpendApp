@@ -42,7 +42,7 @@ YOUR DATA, YOUR SPREADSHEET
 • SpendSheet can only reach the files it creates, not the rest of your Drive
 
 GOOGLE WALLET PAYMENTS (OPTIONAL, OFF BY DEFAULT)
-Pay with Google Wallet and SpendSheet lists the payment, with the amount, the merchant and a suggested category, ready to add as an expense with one tap. This needs notification access. SpendSheet reads only Google Wallet's notifications, keeps them on your phone, and adds nothing until you tap Add.
+Pay with Google Wallet and SpendSheet reminds you straight away, then lists the payment with the amount, the merchant and a suggested category, ready to add as an expense with one tap. This needs notification access. SpendSheet reads only Google Wallet's notifications, keeps them on your phone, and adds nothing until you tap Add.
 
 PRIVATE BY DESIGN
 • Optional App Lock with your fingerprint, face or screen lock
@@ -152,7 +152,7 @@ Notes for the reviewer if asked:
 | Permission | Why |
 |---|---|
 | Notification access (`BIND_NOTIFICATION_LISTENER_SERVICE`) | Optional Google Wallet capture. Shown with an in-app disclosure and an Agree button before Android's settings screen opens. Only notifications from `com.google.android.apps.walletnfcrel` are read. |
-| `POST_NOTIFICATIONS` | Budget alerts. |
+| `POST_NOTIFICATIONS` | Budget alerts, and the optional reminder after a Google Wallet payment. |
 | `USE_BIOMETRIC` | Optional App Lock. |
 | `RECEIVE_BOOT_COMPLETED` | Keeps scheduled notifications after a restart (from the notifications plugin). |
 

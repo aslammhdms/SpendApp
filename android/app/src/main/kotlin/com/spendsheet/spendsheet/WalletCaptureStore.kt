@@ -18,6 +18,9 @@ object WalletCaptureStore {
     private const val KEY_ENABLED = "enabled"
     private const val KEY_PENDING = "pending"
     private const val MAX_PENDING = 200
+    private const val KEY_NOTIFY = "notify"
+    private const val KEY_NOTIFIED = "notified"
+    private const val MAX_NOTIFIED = 50
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -28,8 +31,37 @@ object WalletCaptureStore {
     @Synchronized
     fun setEnabled(context: Context, enabled: Boolean) {
         val editor = prefs(context).edit().putBoolean(KEY_ENABLED, enabled)
-        if (!enabled) editor.remove(KEY_PENDING)
+        if (!enabled) editor.remove(KEY_PENDING).remove(KEY_NOTIFIED)
         editor.apply()
+    }
+
+    /**
+     * Whether to post a reminder after each payment. The app sets this from
+     * its own settings (the payment reminder and the main notifications
+     * switch), since the listener runs without the app.
+     */
+    fun isNotifyEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_NOTIFY, true)
+
+    fun setNotifyEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_NOTIFY, enabled).apply()
+    }
+
+    /** Records that [key] was reminded about. False if it already was. */
+    @Synchronized
+    fun markNotified(context: Context, key: String): Boolean {
+        val prefs = prefs(context)
+        val notified = JSONArray(prefs.getString(KEY_NOTIFIED, "[]"))
+        for (i in 0 until notified.length()) {
+            if (notified.optString(i) == key) return false
+        }
+        notified.put(key)
+        val trimmed = JSONArray()
+        for (i in maxOf(0, notified.length() - MAX_NOTIFIED) until notified.length()) {
+            trimmed.put(notified.get(i))
+        }
+        prefs.edit().putString(KEY_NOTIFIED, trimmed.toString()).apply()
+        return true
     }
 
     @Synchronized
